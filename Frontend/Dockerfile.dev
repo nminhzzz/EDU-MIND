@@ -1,0 +1,19 @@
+# Dockerfile.dev - Môi trường Phát triển (Development)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Sao chép package.json và package-lock.json để cài đặt dependency trước
+COPY package*.json ./
+
+# Cài đặt toàn bộ dependencies (bao gồm cả devDependencies)
+RUN npm install
+
+# Sao chép toàn bộ mã nguồn frontend
+COPY . .
+
+# Expose cổng mặc định của Next.js dev server
+EXPOSE 3000
+
+# Khởi chạy Next.js ở chế độ phát triển
+CMD ["npm", "run", "dev"]

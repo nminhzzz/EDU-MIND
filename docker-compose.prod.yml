@@ -1,0 +1,91 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    restart: always
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.prod
+    container_name: backend_prod
+    # Cổng 8000 được giữ nội bộ trong docker network, không expose ra máy host
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@db:3306/learning_db
+      - MONGODB_URL=mongodb://mongodb:27017/chat_db
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+      - mongodb
+      - redis
+    networks:
+      - app-network
+    restart: always
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile.prod
+    container_name: frontend_prod
+    # Cổng 3000 được giữ nội bộ, người dùng truy cập web qua Nginx (cổng 443)
+    environment:
+      - NEXT_PUBLIC_API_URL=/api
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db_prod
+    environment:
+      - MYSQL_DATABASE=learning_db
+      - MYSQL_ROOT_PASSWORD=password
+    # Khóa cổng 3306 ở prod để tránh bị dò quét database từ bên ngoài
+    volumes:
+      - db_data_prod:/var/lib/mysql
+    networks:
+      - app-network
+    restart: always
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb_chat_prod
+    volumes:
+      - mongo_data_prod:/data/db
+    networks:
+      - app-network
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache_prod
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  db_data_prod:
+  mongo_data_prod:
+  redis_data_prod:
+  nginx_logs:
+
+networks:
+  app-network:
+    driver: bridge

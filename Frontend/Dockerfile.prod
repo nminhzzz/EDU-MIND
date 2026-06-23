@@ -1,0 +1,42 @@
+# Stage 1: Build dependencies & Next.js app
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Sao chép package.json và package-lock.json
+COPY package*.json ./
+
+# Cài đặt dependencies (sử dụng npm ci để cài đặt nhanh và nhất quán)
+RUN npm ci
+
+# Sao chép toàn bộ mã nguồn
+COPY . .
+
+# Build ứng dụng Next.js (sẽ tạo ra bản build dạng standalone nhờ config output: "standalone")
+RUN npm run build
+
+# Stage 2: Runtime image (Chỉ chứa code chạy thực tế để tối ưu dung lượng < 200MB)
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Tạo user/group system để bảo mật (không chạy bằng root)
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Sao chép các thư mục static và public từ builder stage
+COPY --from=builder /app/public ./public
+
+# Sao chép bản build standalone (chứa cả node_modules thu nhỏ phục vụ runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Khởi chạy Next.js standalone server
+CMD ["node", "server.js"]

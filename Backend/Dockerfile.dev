@@ -1,0 +1,22 @@
+# Dockerfile.dev - Môi trường Phát triển (Development)
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Cài đặt curl để phục vụ kiểm tra healthcheck nếu cần
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy và cài đặt thư viện trước để tận dụng cache của Docker
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy toàn bộ mã nguồn
+COPY . .
+
+# Expose port của FastAPI uvicorn dev mode
+EXPOSE 8000
+
+# Chạy uvicorn với cờ --reload để tự động load code khi thay đổi
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

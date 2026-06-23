@@ -1,0 +1,82 @@
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.dev
+    container_name: backend_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend:/app
+      - /app/venv # Tránh ghi đè venv từ host vào container
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@db:3306/learning_db
+      - MONGODB_URL=mongodb://mongodb:27017/chat_db
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+      - mongodb
+      - redis
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules # Tránh ghi đè thư mục node_modules đã cài trong container
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      - MYSQL_DATABASE=learning_db
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb_chat
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+  mongo_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
