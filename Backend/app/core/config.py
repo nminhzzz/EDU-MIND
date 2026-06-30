@@ -17,12 +17,19 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # Mặc định Access Token 15 phút
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7     # Mặc định Refresh Token 7 ngày
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "https://localhost", "https://127.0.0.1"]
+    COOKIE_SECURE: bool = False  # Set to True in production env
     
     # AI Keys
     GEMINI_API_KEY: str = ""
     NVIDIA_API_KEY: str = ""
     NVIDIA_MODEL: str = "meta/llama-3.1-8b-instruct"
     USE_NVIDIA: bool = False
+
+    # Cloudinary Configurations
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
 
     class Config:
         env_file = ".env"

@@ -21,13 +21,11 @@ from app.models.student_preference import StudentPreference
 from app.models.subject import Subject
 from app.models.classroom import Classroom
 from app.models.classroom_student import ClassroomStudent
-from app.models.classroom_subject import ClassroomSubject
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.study_plan_progress import StudyPlanProgress
-from app.models.question_bank import QuestionBank
+from app.models.study_document import StudyDocument
 from app.models.quiz import Quiz
-from app.models.question import Question
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_analytic import LearningAnalytic
 from app.models.ai_recommendation_review import AIRecommendationReview
@@ -36,8 +34,7 @@ from app.models.notification import Notification
 print("Kiem tra import MongoDB Pydantic models...")
 
 from app.models.mongodb_models import (
-    ChatSession, ChatMessage, AILog, AIRecommendation,
-    StudyMaterialEmbedding, LearningEvent, GeneratedQuiz, AgentMemory
+    ChatSession, ChatMessage, StudyMaterialEmbedding
 )
 
 print()
@@ -51,13 +48,11 @@ mysql_models = [
     ("subjects",                 "Subject"),
     ("classrooms",               "Classroom"),
     ("classroom_students",       "ClassroomStudent"),
-    ("classroom_subjects",       "ClassroomSubject"),
     ("study_goals",              "StudyGoal"),
     ("study_plans",              "StudyPlan"),
     ("study_plan_progress",      "StudyPlanProgress"),
-    ("question_bank",            "QuestionBank"),
+    ("study_documents",          "StudyDocument"),
     ("quizzes",                  "Quiz"),
-    ("questions",                "Question"),
     ("quiz_attempts",            "QuizAttempt"),
     ("learning_analytics",       "LearningAnalytic"),
     ("ai_recommendation_reviews","AIRecommendationReview"),
@@ -69,8 +64,7 @@ for table, model in mysql_models:
     print(f"  [OK] {table:35s} <- {model}")
 
 mongo_models = [
-    "ChatSession", "ChatMessage", "AILog", "AIRecommendation",
-    "StudyMaterialEmbedding", "LearningEvent", "GeneratedQuiz", "AgentMemory"
+    "ChatSession", "ChatMessage", "StudyMaterialEmbedding"
 ]
 print(f"\nMongoDB Collections ({len(mongo_models)} collections):")
 for m in mongo_models:

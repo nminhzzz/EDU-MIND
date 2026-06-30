@@ -19,6 +19,7 @@ class SubjectResponse(BaseModel):
 
 
 class ClassroomCreate(BaseModel):
+    subject_id: int = Field(..., description="ID môn học")
     class_name: str = Field(..., description="Tên lớp học")
     class_code: str = Field(..., description="Mã lớp học duy nhất")
     description: Optional[str] = Field(None, description="Mô tả lớp học")
@@ -33,6 +34,7 @@ class ClassroomUpdate(BaseModel):
 class ClassroomResponse(BaseModel):
     id: int
     teacher_id: int
+    subject_id: int
     class_name: str
     class_code: str
     description: Optional[str] = None
@@ -46,9 +48,6 @@ class ClassroomStudentAdd(BaseModel):
     student_email: EmailStr = Field(..., description="Email của học sinh cần thêm vào lớp")
 
 
-class ClassroomSubjectAdd(BaseModel):
-    subject_id: int = Field(..., description="ID môn học cần gán vào lớp")
-
 
 class ClassroomJoin(BaseModel):
     class_code: str = Field(..., description="Mã lớp học để tham gia")
@@ -57,4 +56,4 @@ class ClassroomJoin(BaseModel):
 class ClassroomDetailResponse(ClassroomResponse):
     teacher: Optional[UserResponse] = None
     students: Optional[List[UserResponse]] = None
-    subjects: Optional[List[SubjectResponse]] = None
+    subject: Optional[SubjectResponse] = None

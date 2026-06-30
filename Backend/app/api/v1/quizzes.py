@@ -1,17 +1,16 @@
 """
-API quản lý Đề thi và Chấm bài (Quizzes & Question Bank) — Giai đoạn 3.
+API quản lý Đề thi và Chấm bài (Quizzes & Question Bank) — Giai đoạn 3 & 4.
 """
 from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
 from app.database.mongodb import get_mongodb_db
 from app.models.user import User
 from app.models.quiz import Quiz
-from app.models.question import Question
 from app.models.quiz_attempt import QuizAttempt
-from app.schemas.quiz import QuizCreateRequest, QuizResponse, QuizDetailResponse, QuestionBankResponse, QuestionBankDetailResponse
+from app.schemas.quiz import QuizCreateRequest, QuizResponse, QuizDetailResponse
 from app.schemas.quiz_attempt import QuizAttemptCreate, QuizAttemptResponse
 from app.services.quiz_service import generate_and_save_quiz, submit_quiz_attempt
 from app.services.analytic_service import update_student_analytics_and_recommend
@@ -19,7 +18,6 @@ from app.services.analytic_service import update_student_analytics_and_recommend
 router = APIRouter()
 
 
-# ── POST /quizzes/generate — Sinh đề thi tự động bằng RAG ───────────
 @router.post(
     "/generate",
     response_model=QuizResponse,
@@ -37,20 +35,22 @@ async def generate_new_quiz(
     db_mongo: Any = Depends(get_mongodb_db),
     current_user: User = Depends(get_current_user)
 ):
-    try:
-        # Nếu là giáo viên, truyền teacher_id của họ. Nếu học sinh tự sinh, teacher_id = None
-        teacher_id = current_user.id if current_user.role == "teacher" else None
+    # Học sinh tự sinh hoặc Giáo viên sinh đề cho Học sinh
+    student_id = current_user.id
+    if current_user.role == "teacher":
+        # Với giáo viên, sinh đề thi thử nghiệm cho chính họ
+        student_id = current_user.id
 
+    try:
         quiz = await generate_and_save_quiz(
             db=db,
             db_mongo=db_mongo,
-            classroom_id=body.classroom_id,
+            student_id=student_id,
             subject_id=body.subject_id,
             topic=body.topic,
             difficulty=body.difficulty,
             total_questions=body.total_questions,
-            question_type=body.question_type,
-            teacher_id=teacher_id
+            study_plan_id=body.study_plan_id
         )
     except ValueError as ve:
         raise HTTPException(
@@ -63,19 +63,9 @@ async def generate_new_quiz(
             detail=f"Lỗi hệ thống khi sinh đề thi: {str(e)}"
         )
 
-    # Nạp câu hỏi từ junction table để khớp response model
-    questions_list = []
-    for q_junction in quiz.questions:
-        qb_item = q_junction.question_bank_item
-        if qb_item:
-            questions_list.append(qb_item)
-
-    # Gán tạm để serialize qua response_model
-    quiz.questions = questions_list
     return quiz
 
 
-# ── GET /quizzes/{quiz_id} — Xem chi tiết đề thi (không hiện đáp án) ───
 @router.get(
     "/{quiz_id}",
     response_model=QuizResponse,
@@ -86,30 +76,15 @@ def get_quiz_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    quiz = (
-        db.query(Quiz)
-        .options(joinedload(Quiz.questions).joinedload(Question.question_bank_item))
-        .filter(Quiz.id == quiz_id)
-        .first()
-    )
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy đề thi."
         )
-
-    # Nạp câu hỏi
-    questions_list = []
-    for q_junction in quiz.questions:
-        qb_item = q_junction.question_bank_item
-        if qb_item:
-            questions_list.append(qb_item)
-
-    quiz.questions = questions_list
     return quiz
 
 
-# ── GET /quizzes/{quiz_id}/review — Xem chi tiết đề thi có đáp án (Giáo viên / Học sinh đã nộp) ───
 @router.get(
     "/{quiz_id}/review",
     response_model=QuizDetailResponse,
@@ -120,13 +95,7 @@ def get_quiz_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Lấy đề thi
-    quiz = (
-        db.query(Quiz)
-        .options(joinedload(Quiz.questions).joinedload(Question.question_bank_item))
-        .filter(Quiz.id == quiz_id)
-        .first()
-    )
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -146,18 +115,31 @@ def get_quiz_review(
                 detail="Bạn chưa hoàn thành bài thi này nên không thể xem đáp án giải thích."
             )
 
-    # Nạp câu hỏi đầy đủ đáp án
-    questions_list = []
-    for q_junction in quiz.questions:
-        qb_item = q_junction.question_bank_item
-        if qb_item:
-            questions_list.append(qb_item)
-
-    quiz.questions = questions_list
     return quiz
 
 
-# ── POST /quizzes/{quiz_id}/submit — Nộp bài thi và chấm điểm ───────
+@router.get(
+    "/plan/{study_plan_id}",
+    response_model=QuizResponse,
+    summary="Lấy đề thi luyện tập đã liên kết sẵn với lịch học cụ thể"
+)
+def get_quiz_by_study_plan(
+    study_plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    quiz = db.query(Quiz).filter(
+        Quiz.study_plan_id == study_plan_id,
+        Quiz.student_id == current_user.id
+    ).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy đề thi liên kết với lịch học này."
+        )
+    return quiz
+
+
 @router.post(
     "/{quiz_id}/submit",
     response_model=QuizAttemptResponse,
@@ -210,3 +192,62 @@ def submit_quiz(
         )
 
     return attempt
+
+
+@router.get(
+    "/student/history",
+    summary="Học sinh lấy danh sách toàn bộ các đề thi đã làm và điểm số"
+)
+def api_get_student_attempts_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.services.quiz_service import get_student_quiz_attempts
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ học sinh mới có thể xem lịch sử làm bài luyện tập."
+        )
+    return get_student_quiz_attempts(db=db, student_id=current_user.id)
+
+
+# ── TEACHER ASSIGNMENTS & ATTEMPTS ──
+
+from app.api.deps import get_current_teacher
+from app.schemas.teacher import TeacherQuizCreate
+from app.services.quiz_service import teacher_create_quiz, get_classroom_quiz_attempts
+
+@router.post(
+    "/teacher/create",
+    response_model=QuizResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Giáo viên tự tạo đề thi/bài tập tự soạn gán cho lớp học"
+)
+def api_teacher_create_quiz(
+    body: TeacherQuizCreate,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher)
+):
+    return teacher_create_quiz(
+        db=db,
+        teacher_id=current_teacher.id,
+        obj_in=body,
+        current_user_role=current_teacher.role
+    )
+
+@router.get(
+    "/classroom/{classroom_id}/attempts",
+    summary="Giáo viên xem toàn bộ lịch sử điểm số bài làm của học sinh trong lớp"
+)
+def api_get_classroom_quiz_attempts(
+    classroom_id: int,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher)
+):
+    return get_classroom_quiz_attempts(
+        db=db,
+        classroom_id=classroom_id,
+        current_teacher_id=current_teacher.id,
+        current_user_role=current_teacher.role
+    )
+

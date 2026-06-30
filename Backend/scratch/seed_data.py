@@ -30,7 +30,6 @@ from app.models.student_preference import StudentPreference
 from app.models.subject import Subject
 from app.models.classroom import Classroom
 from app.models.classroom_student import ClassroomStudent
-from app.models.classroom_subject import ClassroomSubject
 from app.services.embedding_service import save_study_material
 
 # Dữ liệu tài liệu học tập để làm RAG
@@ -106,8 +105,6 @@ async def seed_data():
                 password_hash=hash_password("password123"),
                 full_name="Thầy Nguyễn Hoàng Java",
                 role="teacher",
-                grade="Đại học",
-                learning_level=None,
                 is_active=True
             )
             db.add(teacher)
@@ -125,8 +122,6 @@ async def seed_data():
                 password_hash=hash_password("password123"),
                 full_name="Trần Văn Học",
                 role="student",
-                grade="Đại học năm 2",
-                learning_level="average",
                 is_active=True
             )
             db.add(student)
@@ -144,13 +139,13 @@ async def seed_data():
                 study_hours_per_day=2,
                 preferred_study_time="evening",
                 available_schedule={
-                    "mon": True,
-                    "tue": True,
-                    "wed": True,
-                    "thu": True,
-                    "fri": True,
-                    "sat": False,
-                    "sun": False
+                    "mon": {"morning": True, "afternoon": False, "evening": True},
+                    "tue": {"morning": True, "afternoon": True, "evening": True},
+                    "wed": {"morning": False, "afternoon": True, "evening": True},
+                    "thu": {"morning": True, "afternoon": False, "evening": True},
+                    "fri": {"morning": True, "afternoon": True, "evening": False},
+                    "sat": {"morning": False, "afternoon": False, "evening": False},
+                    "sun": {"morning": False, "afternoon": False, "evening": False}
                 }
             )
             db.add(pref)
@@ -187,10 +182,12 @@ async def seed_data():
         ]
 
         for code, name, desc, subj_code in classrooms_data:
+            subj = subjects_map[subj_code]
             classroom = db.query(Classroom).filter(Classroom.class_code == code).first()
             if not classroom:
                 classroom = Classroom(
                     teacher_id=teacher.id,
+                    subject_id=subj.id,
                     class_name=name,
                     class_code=code,
                     description=desc
@@ -198,25 +195,9 @@ async def seed_data():
                 db.add(classroom)
                 db.commit()
                 db.refresh(classroom)
-                print(f"  -> Đã tạo lớp học: {name} (Mã: {code})")
+                print(f"  -> Đã tạo lớp học: {name} (Mã: {code}) - Môn: {subj.name}")
             else:
                 print(f"  -> Lớp học đã tồn tại: {name} (Mã: {code})")
-
-            # Gán Môn học cho Lớp học (ClassroomSubject)
-            subj = subjects_map[subj_code]
-            class_subj = (
-                db.query(ClassroomSubject)
-                .filter(
-                    ClassroomSubject.classroom_id == classroom.id,
-                    ClassroomSubject.subject_id == subj.id
-                )
-                .first()
-            )
-            if not class_subj:
-                class_subj = ClassroomSubject(classroom_id=classroom.id, subject_id=subj.id)
-                db.add(class_subj)
-                db.commit()
-                print(f"     * Gán môn '{subj.name}' vào lớp '{classroom.class_name}'")
 
             # Cho học sinh tham gia lớp (ClassroomStudent)
             class_student = (

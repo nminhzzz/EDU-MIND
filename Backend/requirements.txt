@@ -17,4 +17,7 @@ langchain-openai>=0.0.8
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 pymorphy2>=0.9.1
+python-multipart>=0.0.9
+cloudinary>=1.36.0
 email-validator>=2.0.0
+alembic>=1.13.0

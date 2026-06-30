@@ -21,6 +21,7 @@ class StudyPlan(Base):
 
     title = Column(String(255), nullable=False)
     task_description = Column(Text, nullable=True)
+    rag_content = Column(Text, nullable=True)
 
     study_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
@@ -45,3 +46,8 @@ class StudyPlan(Base):
         back_populates="study_plan",
         cascade="all, delete-orphan"
     )
+
+    @property
+    def subject_id(self) -> int:
+        return self.goal.subject_id if self.goal else None
+

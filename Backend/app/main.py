@@ -8,16 +8,18 @@ from app.api.v1.router import api_router
 
 app = FastAPI(
     title="AI Learning Assistant Platform",
-    description="Nền tảng học tập thông minh hỗ trợ bởi AI (Gemini + LangGraph).",
+    description="Nền tảng học tập thông minh hỗ trợ bởi AI (Llama 3.1 8B).",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
+from app.core.config import settings
+
 # ── CORS ─────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Chỉnh lại khi deploy production
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

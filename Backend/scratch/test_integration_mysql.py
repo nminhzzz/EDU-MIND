@@ -62,9 +62,7 @@ def run_mysql_test():
                 email="student_mysql@test.com",
                 password_hash="hashedpassword123",
                 full_name="Nguyễn Văn A (MySQL)",
-                role="student",
-                grade="Đại học năm 1",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()

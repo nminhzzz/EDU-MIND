@@ -13,13 +13,11 @@ from app.models.student_preference import StudentPreference
 from app.models.subject import Subject
 from app.models.classroom import Classroom
 from app.models.classroom_student import ClassroomStudent
-from app.models.classroom_subject import ClassroomSubject
+from app.models.study_document import StudyDocument
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.study_plan_progress import StudyPlanProgress
-from app.models.question_bank import QuestionBank
 from app.models.quiz import Quiz
-from app.models.question import Question
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_analytic import LearningAnalytic
 from app.models.ai_recommendation_review import AIRecommendationReview
@@ -29,12 +27,7 @@ from app.models.notification import Notification
 from app.models.mongodb_models import (
     ChatSession,
     ChatMessage,
-    AILog,
-    AIRecommendation,
     StudyMaterialEmbedding,
-    LearningEvent,
-    GeneratedQuiz,
-    AgentMemory,
 )
 
 __all__ = [
@@ -46,13 +39,11 @@ __all__ = [
     "Subject",
     "Classroom",
     "ClassroomStudent",
-    "ClassroomSubject",
+    "StudyDocument",
     "StudyGoal",
     "StudyPlan",
     "StudyPlanProgress",
-    "QuestionBank",
     "Quiz",
-    "Question",
     "QuizAttempt",
     "LearningAnalytic",
     "AIRecommendationReview",
@@ -60,10 +51,5 @@ __all__ = [
     # MongoDB
     "ChatSession",
     "ChatMessage",
-    "AILog",
-    "AIRecommendation",
     "StudyMaterialEmbedding",
-    "LearningEvent",
-    "GeneratedQuiz",
-    "AgentMemory",
 ]

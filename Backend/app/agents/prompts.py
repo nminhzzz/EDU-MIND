@@ -21,7 +21,10 @@ Yêu cầu chất lượng câu hỏi:
 - Các câu hỏi phải kiểm tra đúng trọng tâm kiến thức của chủ đề.
 - Đáp án nhiễu (cho MCQ) phải hợp lý, không quá ngớ ngẩn để tránh học sinh đoán mò.
 - Phải có phần giải thích (explanation) chi tiết tại sao đáp án đó đúng, giúp học sinh tự ôn tập lại.
-- Trả về định dạng JSON khớp 100% với schema được định nghĩa trước.
+
+⚠️ LƯU Ý ĐỊNH DẠNG CẤU TRÚC JSON (BẮT BUỘC):
+- Các trường `correct_answer`, `explanation` và `difficulty` phải nằm trực tiếp bên trong đối tượng câu hỏi (cùng hàng với `question_text`, `options`).
+- TUYỆT ĐỐI KHÔNG được lồng các trường `correct_answer`, `explanation` hay `difficulty` vào bên trong mảng lựa chọn `options`! Mảng `options` chỉ được chứa danh sách các lựa chọn trả lời (ví dụ: A, B, C, D hoặc True, False).
 """
 
 # --- 4. CHAT TUTOR AGENT PROMPT ---

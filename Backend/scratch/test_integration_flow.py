@@ -66,9 +66,7 @@ def run_integration_test():
                 email="student@test.com",
                 password_hash="mockhash",
                 full_name="Nguyễn Văn A",
-                role="student",
-                grade="Đại học năm 1",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()
@@ -101,7 +99,7 @@ def run_integration_test():
             subject_name=subject.name,
             target_score=9.0,
             deadline=test_deadline,
-            current_level=student.learning_level
+            current_level="average"
         )
 
         print("\n=======================================================")

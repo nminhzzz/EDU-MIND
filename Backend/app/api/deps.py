@@ -28,23 +28,47 @@ def get_db() -> Generator:
         db.close()
 
 
+from app.core.config import settings
+
+
 def get_token_from_request(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
 ) -> str:
     """
     Trích xuất access token từ:
-    1. Cookie 'access_token'
-    2. Header 'Authorization: Bearer <token>' (cho Swagger UI/Postman)
+    1. Header 'Authorization: Bearer <token>' (Ưu tiên hàng đầu - chống CSRF tốt nhất)
+    2. Cookie 'access_token' (Bảo vệ bổ sung bằng cách kiểm tra Origin/Referer đối với các request ghi)
     """
-    # 1. Thử lấy từ cookie 'access_token'
-    token = request.cookies.get("access_token")
-    if token:
-        return token
-
-    # 2. Thử lấy từ Header Authorization qua HTTPBearer
+    # 1. Thử lấy từ Header Authorization trước (Swagger UI, Postman, hoặc SPA custom headers)
     if credentials and credentials.credentials:
         return credentials.credentials
+
+    # 2. Thử lấy từ cookie 'access_token'
+    token = request.cookies.get("access_token")
+    if token:
+        # Bảo vệ chống CSRF đối với các request sửa đổi dữ liệu (POST, PUT, DELETE, PATCH)
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            origin = request.headers.get("origin")
+            referer = request.headers.get("referer")
+            
+            allowed = settings.BACKEND_CORS_ORIGINS
+            is_trusted = False
+            
+            if origin and origin in allowed:
+                is_trusted = True
+            elif referer:
+                for allowed_origin in allowed:
+                    if referer.startswith(allowed_origin):
+                        is_trusted = True
+                        break
+            
+            if not is_trusted:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cảnh báo CSRF: Request bị từ chối do không trùng khớp Origin được tin tưởng."
+                )
+        return token
 
     # Nếu không tìm thấy bất kỳ token nào
     raise HTTPException(
@@ -106,3 +130,14 @@ def get_current_teacher(current_user: User = Depends(get_current_user)) -> User:
             detail="Chỉ giáo viên mới có quyền truy cập endpoint này."
         )
     return current_user
+
+
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Dependency chỉ cho phép quản trị viên (role=admin) truy cập."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ quản trị viên mới có quyền truy cập hệ thống quản trị này."
+        )
+    return current_user
+

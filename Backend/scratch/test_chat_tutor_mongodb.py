@@ -47,9 +47,7 @@ async def run_chat_tutor_memory_test():
                 email="student_tutor_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Chat Tutor",
-                role="student",
-                grade="Đại học",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()

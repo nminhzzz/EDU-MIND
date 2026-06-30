@@ -14,6 +14,12 @@ class Classroom(Base):
         nullable=False
     )
 
+    subject_id = Column(
+        BigInteger,
+        ForeignKey("subjects.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
     class_name = Column(String(255), nullable=False)
 
     # Mã lớp duy nhất để học sinh tham gia (ví dụ: "TOAN12A-2024")
@@ -25,5 +31,5 @@ class Classroom(Base):
     # Relationships
     teacher = relationship("User", foreign_keys=[teacher_id])
     students = relationship("ClassroomStudent", back_populates="classroom", cascade="all, delete-orphan")
-    subjects = relationship("ClassroomSubject", back_populates="classroom", cascade="all, delete-orphan")
+    subject = relationship("Subject", foreign_keys=[subject_id], back_populates="classrooms")
     quizzes = relationship("Quiz", back_populates="classroom")

@@ -33,7 +33,10 @@ services:
       - /app/node_modules # Tránh ghi đè thư mục node_modules đã cài trong container
       - /app/.next
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+
     depends_on:
       - backend
     networks:

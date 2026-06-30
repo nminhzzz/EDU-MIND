@@ -16,7 +16,8 @@ from app.schemas.chat import (
 from app.agents.chat_tutor.memory import (
     create_tutor_session,
     get_tutor_sessions,
-    get_tutor_history
+    get_tutor_history,
+    delete_tutor_session
 )
 from app.agents.chat_tutor.agent import chat_with_tutor, chat_with_tutor_stream
 
@@ -145,4 +146,28 @@ async def stream_message(
             yield f"data: [ERROR: {str(e)}]\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# ── DELETE /tutor/session/{session_id} ─────────────────────────────
+@router.delete(
+    "/tutor/session/{session_id}",
+    summary="Xóa một phiên chat của học sinh"
+)
+async def delete_session(
+    session_id: str,
+    current_user: User = Depends(get_current_student)
+):
+    try:
+        success = await delete_tutor_session(session_id, current_user.id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy phiên chat này hoặc bạn không có quyền xóa."
+            )
+        return {"message": "Xóa phiên chat thành công."}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi xóa phiên chat: {str(e)}"
+        )
 

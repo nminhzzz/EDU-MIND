@@ -17,8 +17,8 @@ class Subject(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
-    classroom_subjects = relationship("ClassroomSubject", back_populates="subject")
+    classrooms = relationship("Classroom", back_populates="subject")
     study_goals = relationship("StudyGoal", back_populates="subject")
-    question_bank = relationship("QuestionBank", back_populates="subject")
+    documents = relationship("StudyDocument", back_populates="subject", cascade="all, delete-orphan")
     quizzes = relationship("Quiz", back_populates="subject")
     learning_analytics = relationship("LearningAnalytic", back_populates="subject")

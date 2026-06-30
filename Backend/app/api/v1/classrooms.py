@@ -12,7 +12,6 @@ from app.schemas.classroom import (
     ClassroomResponse,
     ClassroomDetailResponse,
     ClassroomStudentAdd,
-    ClassroomSubjectAdd,
     ClassroomJoin
 )
 from app.services.classroom_service import (
@@ -20,7 +19,6 @@ from app.services.classroom_service import (
     get_classrooms_for_user,
     get_classroom_detail,
     add_student_to_classroom,
-    add_subject_to_classroom,
     student_join_classroom
 )
 
@@ -76,13 +74,14 @@ def api_get_classroom_detail(
         return ClassroomDetailResponse(
             id=classroom.id,
             teacher_id=classroom.teacher_id,
+            subject_id=classroom.subject_id,
             class_name=classroom.class_name,
             class_code=classroom.class_code,
             description=classroom.description,
             created_at=classroom.created_at,
             teacher=detail["teacher"],
             students=detail["students"],
-            subjects=detail["subjects"]
+            subject=detail["subject"]
         )
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
@@ -116,31 +115,6 @@ def api_add_student(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
 
 
-# ── POST /{classroom_id}/subjects — Thêm môn học (Chỉ Giáo viên) ──────
-@router.post(
-    "/{classroom_id}/subjects",
-    status_code=status.HTTP_200_OK,
-    summary="Giáo viên gán môn học vào lớp học"
-)
-def api_add_subject(
-    classroom_id: int,
-    body: ClassroomSubjectAdd,
-    db: Session = Depends(get_db),
-    current_teacher: User = Depends(get_current_teacher)
-):
-    try:
-        add_subject_to_classroom(
-            db=db,
-            classroom_id=classroom_id,
-            teacher_id=current_teacher.id,
-            subject_id=body.subject_id
-        )
-        return {"message": "Đã gán môn học vào lớp học thành công."}
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
-    except PermissionError as pe:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
-
 
 # ── POST /join — Học sinh tự tham gia lớp học bằng class_code ────────
 @router.post(
@@ -158,3 +132,95 @@ def api_join_classroom(
         return {"message": "Tham gia lớp học thành công!"}
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+
+# ── ADMIN ENDPOINTS ──
+from app.api.deps import get_current_admin
+from app.services.classroom_service import (
+    list_all_classrooms_admin,
+    get_classroom_students_progress,
+    remove_student_from_classroom
+)
+
+@router.get(
+    "/admin/all",
+    response_model=List[ClassroomResponse],
+    summary="Admin xem tất cả lớp học trên hệ thống"
+)
+def api_admin_list_all_classrooms(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    return list_all_classrooms_admin(db=db, skip=skip, limit=limit)
+
+@router.delete(
+    "/{classroom_id}",
+    summary="Admin hoặc Giáo viên chủ quản xóa/giải tán lớp học"
+)
+def api_delete_classroom(
+    classroom_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.services.classroom_service import classroom_repository
+    from app.models.classroom import Classroom
+
+    classroom = classroom_repository.get(db, classroom_id)
+    if not classroom:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lớp học.")
+
+    # Chỉ Admin hoặc Giáo viên tạo lớp mới được quyền xóa
+    if current_user.role != "admin" and classroom.teacher_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền giải tán lớp học này."
+        )
+
+    from app.repositories.classroom_repository import classroom_repository as cr
+    cr.remove(db=db, id=classroom_id)
+    return {"message": "Đã giải tán lớp học thành công."}
+
+
+# ── TEACHER MANAGE STUDENTS IN CLASSROOM ──
+from app.schemas.teacher import TeacherClassroomStudentResponse
+
+@router.get(
+    "/{classroom_id}/students/progress",
+    response_model=List[TeacherClassroomStudentResponse],
+    summary="Giáo viên lấy danh sách học sinh kèm báo cáo tiến độ học tập"
+)
+def api_get_classroom_students_progress(
+    classroom_id: int,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher)
+):
+    return get_classroom_students_progress(
+        db=db,
+        classroom_id=classroom_id,
+        current_teacher_id=current_teacher.id,
+        current_user_role=current_teacher.role
+    )
+
+@router.delete(
+    "/{classroom_id}/students/{student_id}",
+    summary="Giáo viên hoặc Admin xóa học sinh khỏi lớp học"
+)
+def api_remove_student_from_classroom(
+    classroom_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    remove_student_from_classroom(
+        db=db,
+        classroom_id=classroom_id,
+        student_id=student_id,
+        current_user_id=current_user.id,
+        current_user_role=current_user.role
+    )
+    return {"message": "Đã xóa học sinh khỏi lớp học thành công."}
+
+
+

@@ -43,9 +43,7 @@ async def run_chat_streaming_test():
                 email="streaming_student_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Streaming",
-                role="student",
-                grade="Đại học",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()

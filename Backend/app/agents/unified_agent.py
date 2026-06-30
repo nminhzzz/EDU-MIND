@@ -8,6 +8,43 @@ from app.schemas.unified_goal import UnifiedGoalPlanResponse
 from app.agents.tools.db_tools import get_student_analytics_db, get_recent_attempts_db
 from app.services.embedding_service import vector_search_materials
 
+def format_available_schedule(schedule: Optional[Dict[str, Any]]) -> str:
+    if not schedule:
+        return "Linh hoạt tất cả các ngày"
+    weekday_names = {
+        "mon": "Thứ 2", "tue": "Thứ 3", "wed": "Thứ 4",
+        "thu": "Thứ 5", "fri": "Thứ 6", "sat": "Thứ 7", "sun": "Chủ nhật"
+    }
+    slot_names = {
+        "morning": "Sáng",
+        "afternoon": "Chiều",
+        "evening": "Tối"
+    }
+    parts = []
+    for day_key in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
+        if day_key in schedule:
+            val = schedule[day_key]
+            if isinstance(val, dict):
+                free_slots = []
+                for s in ["morning", "afternoon", "evening"]:
+                    if val.get(s):
+                        start = val.get(f"{s}_start")
+                        end = val.get(f"{s}_end")
+                        if start and end:
+                            free_slots.append(f"{slot_names[s]} ({start}-{end})")
+                        else:
+                            free_slots.append(slot_names[s])
+                if len(free_slots) == 3:
+                    parts.append(f"{weekday_names[day_key]} (Cả ngày)")
+                elif free_slots:
+                    parts.append(f"{weekday_names[day_key]} ({', '.join(free_slots)})")
+            elif val is True:
+                parts.append(f"{weekday_names[day_key]} (Cả ngày)")
+    if not parts:
+        return "Linh hoạt tất cả các ngày"
+    return "; ".join(parts)
+
+
 
 async def generate_unified_plan(
     subject: str,
@@ -48,15 +85,7 @@ async def generate_unified_plan(
 
     # 2. Xử lý ngày nghỉ và lịch rảnh
     off_days_str = ", ".join(off_days) if off_days else "Không có"
-    WEEKDAY_NAMES = {
-        "mon": "Thứ 2", "tue": "Thứ 3", "wed": "Thứ 4",
-        "thu": "Thứ 5", "fri": "Thứ 6", "sat": "Thứ 7", "sun": "Chủ nhật"
-    }
-    if available_schedule:
-        free_days = [WEEKDAY_NAMES.get(k, k) for k, v in available_schedule.items() if v]
-        schedule_text = f"Ngày rảnh học trong tuần: {', '.join(free_days) if free_days else 'Linh hoạt'}"
-    else:
-        schedule_text = "Lịch rảnh học trong tuần: Linh hoạt tất cả các ngày"
+    schedule_text = f"Ngày rảnh học trong tuần: {format_available_schedule(available_schedule)}"
 
     # Tính số ngày còn lại
     today = date.today()
@@ -95,10 +124,9 @@ YÊU CẦU BẮT BUỘC:
    - Bạn PHẢI tuân thủ số giờ học mỗi ngày: {study_hours_per_day} giờ, khung giờ học ưu tiên: {preferred_time}.
    - Tuyệt đối KHÔNG xếp lịch học vào những ngày nghỉ: {off_days_str}.
    - Bám sát lịch rảnh: {schedule_text}.
-2. Thiết kế danh sách giáo trình/tài liệu học tập tham khảo (curriculum_materials) dựa trên RAG Context được cung cấp bên dưới.
-3. Sinh đề thi thử trắc nghiệm (quizzes) gồm các câu hỏi chất lượng cao dựa trên tài liệu tham khảo đó để học sinh luyện tập.
-4. Nếu học sinh phản hồi tinh chỉnh, hãy đọc kỹ lịch sử chat (history) để giữ nguyên các phần đã đồng ý và chỉ điều chỉnh các phần học sinh yêu cầu trong JSON kết quả.
-5. Câu trả lời luôn luôn phải là một đối tượng JSON khớp chính xác 100% với cấu trúc JSON Schema được định nghĩa.
+2. Tuyệt đối KHÔNG sinh tài liệu tham khảo (curriculum_materials) và đề thi trắc nghiệm (quizzes) ở giai đoạn này. Luôn trả về hai danh sách này dưới dạng mảng rỗng ([]) để đảm bảo tốc độ phản hồi nhanh nhất.
+3. Nếu học sinh phản hồi tinh chỉnh, hãy đọc kỹ lịch sử chat (history) để giữ nguyên các phần đã đồng ý và chỉ điều chỉnh các phần học sinh yêu cầu trong JSON kết quả.
+4. Câu trả lời luôn luôn phải là một đối tượng JSON khớp chính xác 100% với cấu trúc JSON Schema được định nghĩa.
 """
 
     if analytics_str:
@@ -115,14 +143,11 @@ Trả về một đối tượng JSON hợp lệ với cấu trúc sau:
 {
   "weeks": [{"week": 1, "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"]}],
   "daily_schedule": [{"date": "YYYY-MM-DD", "start_time": "HH:MM", "end_time": "HH:MM", "task": "tiêu đề", "description": "mô tả chi tiết"}],
-  "curriculum_materials": [{"topic": "chủ đề", "content": "nội dung tóm tắt"}],
-  "quizzes": [{"title": "tiêu đề bài thi", "questions": [{"question_text": "nội dung câu hỏi", "question_type": "mcq", "options": [{"key": "A", "value": "nội dung"}], "correct_answer": "A", "explanation": "giải thích", "difficulty": "medium"}]}]
+  "curriculum_materials": [],
+  "quizzes": []
 }
 - weeks: mảng lộ trình tuần, mỗi tuần có week (số thứ tự) và tasks (mảng nhiệm vụ)
 - daily_schedule: mảng lịch học từng ngày, KHÔNG xếp vào ngày nghỉ, tôn trọng số giờ học mỗi ngày
-- curriculum_materials: mảng tài liệu tham khảo từ RAG context (có thể mở rộng thêm)
-- quizzes: mảng bài kiểm tra, mỗi bài có title và questions (mcq hoặc true_false)
-- Với true_false: options phải có [{"key": "True", "value": "Đúng"}, {"key": "False", "value": "Sai"}]
 - LUÔN LUÔN bao gồm trường "options" cho mọi câu hỏi, không bao giờ bỏ sót
 Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫn."""
 
@@ -200,15 +225,7 @@ async def generate_unified_plan_stream(
 
     yield ("progress", "📊 Đang phân tích học lực...")
 
-    WEEKDAY_NAMES = {
-        "mon": "Thứ 2", "tue": "Thứ 3", "wed": "Thứ 4",
-        "thu": "Thứ 5", "fri": "Thứ 6", "sat": "Thứ 7", "sun": "Chủ nhật"
-    }
-    if available_schedule:
-        free_days = [WEEKDAY_NAMES.get(k, k) for k, v in available_schedule.items() if v]
-        schedule_text = f"Ngày rảnh: {', '.join(free_days) if free_days else 'Linh hoạt'}"
-    else:
-        schedule_text = "Lịch rảnh: Linh hoạt tất cả các ngày"
+    schedule_text = f"Ngày rảnh: {format_available_schedule(available_schedule)}"
 
     today = date.today()
     days_left = (deadline - today).days
@@ -249,10 +266,9 @@ YÊU CẦU BẮT BUỘC:
    - Bạn PHẢI tuân thủ số giờ học mỗi ngày: {study_hours_per_day} giờ, khung giờ học ưu tiên: {preferred_time}.
    - Tuyệt đối KHÔNG xếp lịch học vào những ngày nghỉ: {off_days_str}.
    - Bám sát lịch rảnh: {schedule_text}.
-2. Thiết kế danh sách giáo trình/tài liệu học tập tham khảo (curriculum_materials) dựa trên RAG Context được cung cấp bên dưới.
-3. Sinh đề thi thử trắc nghiệm (quizzes) gồm các câu hỏi chất lượng cao dựa trên tài liệu tham khảo đó để học sinh luyện tập.
-4. Nếu học sinh phản hồi tinh chỉnh, hãy đọc kỹ lịch sử chat (history) để giữ nguyên các phần đã đồng ý và chỉ điều chỉnh các phần học sinh yêu cầu trong JSON kết quả.
-5. Câu trả lời luôn luôn phải là một đối tượng JSON khớp chính xác 100% với cấu trúc JSON Schema được định nghĩa.
+2. Tuyệt đối KHÔNG sinh tài liệu tham khảo (curriculum_materials) và đề thi trắc nghiệm (quizzes) ở giai đoạn này. Luôn trả về hai danh sách này dưới dạng mảng rỗng ([]) để đảm bảo tốc độ phản hồi nhanh nhất.
+3. Nếu học sinh phản hồi tinh chỉnh, hãy đọc kỹ lịch sử chat (history) để giữ nguyên các phần đã đồng ý và chỉ điều chỉnh các phần học sinh yêu cầu trong JSON kết quả.
+4. Câu trả lời luôn luôn phải là một đối tượng JSON khớp chính xác 100% với cấu trúc JSON Schema được định nghĩa.
 """
     if analytics_str:
         system_instruction += f"\n{analytics_str}"
@@ -268,14 +284,13 @@ Trả về một đối tượng JSON hợp lệ với cấu trúc sau:
 {
   "weeks": [{"week": 1, "tasks": ["nhiệm vụ 1", "nhiệm vụ 2"]}],
   "daily_schedule": [{"date": "YYYY-MM-DD", "start_time": "HH:MM", "end_time": "HH:MM", "task": "tiêu đề", "description": "mô tả chi tiết"}],
-  "curriculum_materials": [{"topic": "chủ đề", "content": "nội dung tóm tắt"}],
-  "quizzes": [{"title": "tiêu đề bài thi", "questions": [{"question_text": "nội dung câu hỏi", "question_type": "mcq", "options": [{"key": "A", "value": "nội dung"}], "correct_answer": "A", "explanation": "giải thích", "difficulty": "medium"}]}]
+  "curriculum_materials": [],
+  "quizzes": []
 }
 - weeks: mảng lộ trình tuần, mỗi tuần có week (số thứ tự) và tasks (mảng nhiệm vụ dạng chuỗi văn bản thuần)
 - daily_schedule: mảng lịch học từng ngày, KHÔNG xếp vào ngày nghỉ, tôn trọng số giờ học mỗi ngày
-- curriculum_materials: mảng tài liệu tham khảo từ RAG context (có thể mở rộng thêm)
-- quizzes: mảng bài kiểm tra, mỗi bài có title và questions (mcq hoặc true_false)
-- Với true_false: options phải có [{"key": "True", "value": "Đúng"}, {"key": "False", "value": "Sai"}]
+- curriculum_materials: LUÔN để danh sách rỗng []
+- quizzes: LUÔN để danh sách rỗng []
 - LUÔN LUÔN bao gồm trường "options" cho mọi câu hỏi, không bao giờ bỏ sót
 Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫn."""
 

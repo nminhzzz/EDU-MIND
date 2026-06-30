@@ -35,5 +35,5 @@ class UnifiedQuiz(BaseModel):
 class UnifiedGoalPlanResponse(BaseModel):
     weeks: List[WeeklyPlan] = Field(description="Lộ trình học tập chia theo từng tuần")
     daily_schedule: List[DailyScheduleTask] = Field(description="Thời khóa biểu chi tiết hàng ngày rải đều theo lịch rảnh")
-    curriculum_materials: List[CurriculumMaterial] = Field(description="Danh sách các tài liệu học tập tham khảo (RAG Context)")
-    quizzes: List[UnifiedQuiz] = Field(description="Các bài kiểm tra trắc nghiệm thử tương ứng với lộ trình")
+    curriculum_materials: Optional[List[CurriculumMaterial]] = Field(default=[], description="Danh sách các tài liệu học tập tham khảo (RAG Context)")
+    quizzes: Optional[List[UnifiedQuiz]] = Field(default=[], description="Các bài kiểm tra trắc nghiệm thử tương ứng với lộ trình")

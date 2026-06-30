@@ -1,8 +1,8 @@
 """
-Pydantic schemas cho Quiz và Question Bank — Giai đoạn 3.
+Pydantic schemas cho Quiz sinh bởi AI — Giai đoạn 3 & 4.
 """
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -11,52 +11,53 @@ class QuizOptionSchema(BaseModel):
     value: str = Field(description="Nội dung lựa chọn")
 
 
-class QuestionBankResponse(BaseModel):
-    id: int
-    subject_id: int
-    topic: Optional[str] = None
-    difficulty: str
-    question_text: str
-    options: Optional[List[QuizOptionSchema]] = None
-    # Ẩn correct_answer và explanation khi học sinh xem đề (chỉ trả về khi xem kết quả / teacher xem)
-    created_by: Optional[int] = None
-    embedding_id: Optional[str] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
+class QuestionItemStudentResponse(BaseModel):
+    """Câu hỏi trả về cho học sinh làm bài (không lộ đáp án)."""
+    question_text: str = Field(description="Nội dung câu hỏi")
+    options: List[QuizOptionSchema] = Field(description="Danh sách các lựa chọn")
 
 
-class QuestionBankDetailResponse(QuestionBankResponse):
-    correct_answer: str
-    explanation: Optional[str] = None
+class QuestionItemDetailResponse(QuestionItemStudentResponse):
+    """Câu hỏi kèm đáp án và giải thích (cho giáo viên hoặc sau khi học sinh nộp bài)."""
+    correct_answer: str = Field(description="Đáp án đúng (A, B, C, D hoặc True, False)")
+    explanation: Optional[str] = Field(None, description="Giải thích lý thuyết")
 
 
 class QuizCreateRequest(BaseModel):
-    classroom_id: int = Field(description="ID lớp học để giao đề thi")
     subject_id: int = Field(description="ID môn học")
-    topic: str = Field(description="Chủ đề cần kiểm tra")
+    study_plan_id: Optional[int] = Field(None, description="ID bài học ngày liên quan")
+    topic: str = Field(description="Chủ đề kiến thức cần kiểm tra")
     difficulty: str = Field(default="medium", description="Độ khó: easy, medium, hard")
     total_questions: int = Field(default=5, description="Số lượng câu hỏi cần tạo")
-    question_type: str = Field(default="mcq", description="Loại câu hỏi: mcq hoặc true_false")
 
 
 class QuizResponse(BaseModel):
     id: int
-    classroom_id: int
+    student_id: int
     subject_id: int
-    teacher_id: Optional[int] = None
+    study_plan_id: Optional[int] = None
     title: str
     difficulty: str
     total_questions: int
     generated_by_ai: bool
     created_at: datetime
-    questions: Optional[List[QuestionBankResponse]] = None
+    questions: List[QuestionItemStudentResponse]
 
     class Config:
         from_attributes = True
 
 
-class QuizDetailResponse(QuizResponse):
-    """Chi tiết đề thi kèm đáp án và giải thích (cho giáo viên hoặc sau khi học sinh nộp bài)."""
-    questions: Optional[List[QuestionBankDetailResponse]] = None
+class QuizDetailResponse(BaseModel):
+    id: int
+    student_id: int
+    subject_id: int
+    study_plan_id: Optional[int] = None
+    title: str
+    difficulty: str
+    total_questions: int
+    generated_by_ai: bool
+    created_at: datetime
+    questions: List[QuestionItemDetailResponse]
+
+    class Config:
+        from_attributes = True

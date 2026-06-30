@@ -30,8 +30,6 @@ from app.models.subject import Subject
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.quiz import Quiz
-from app.models.question import Question
-from app.models.question_bank import QuestionBank
 from app.models.student_preference import StudentPreference
 
 from app.services.unified_service import generate_unified_draft, confirm_unified_draft
@@ -64,9 +62,7 @@ async def run_unified_flow_test():
                 email="unified_student_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Hợp Nhất",
-                role="student",
-                grade="Đại học",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()
@@ -82,7 +78,15 @@ async def run_unified_flow_test():
                 student_id=student.id,
                 study_hours_per_day=2,
                 preferred_study_time="evening",
-                available_schedule={"mon": True, "tue": True, "wed": True, "thu": True, "fri": True, "sat": False, "sun": False}
+                available_schedule={
+                    "mon": {"morning": True, "afternoon": False, "evening": True},
+                    "tue": {"morning": True, "afternoon": True, "evening": True},
+                    "wed": {"morning": False, "afternoon": True, "evening": True},
+                    "thu": {"morning": True, "afternoon": False, "evening": True},
+                    "fri": {"morning": True, "afternoon": True, "evening": False},
+                    "sat": {"morning": False, "afternoon": False, "evening": False},
+                    "sun": {"morning": False, "afternoon": False, "evening": False}
+                }
             )
             db.add(pref)
             db.commit()
@@ -219,7 +223,7 @@ async def run_unified_flow_test():
         assert db_quiz is not None, "Đề thi trắc nghiệm chưa được lưu!"
         print(f"✓ MySQL Quiz: Tìm thấy đề thi ID={db_quiz.id}, Title='{db_quiz.title}'")
 
-        db_qb_questions_count = db.query(Question).filter(Question.quiz_id == db_quiz.id).count()
+        db_qb_questions_count = len(db_quiz.questions) if db_quiz.questions else 0
         print(f"✓ MySQL Questions trong đề thi: {db_qb_questions_count} câu hỏi.")
         assert db_qb_questions_count > 0, "Đề thi không có câu hỏi nào!"
 

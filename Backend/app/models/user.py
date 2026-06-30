@@ -12,19 +12,20 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     avatar_url = Column(String(500), nullable=True)
+    grade = Column(
+        Enum(
+            "grade_6", "grade_7", "grade_8", "grade_9",
+            "grade_10", "grade_11", "grade_12",
+            "uni_year_1", "uni_year_2", "uni_year_3", "uni_year_4",
+            name="student_grade"
+        ),
+        nullable=True
+    )
 
     role = Column(
         Enum("student", "teacher", "admin", name="user_roles"),
         nullable=False,
         default="student"
-    )
-
-    # Ví dụ: "Lớp 12", "Đại học năm 1"
-    grade = Column(String(50), nullable=True)
-
-    learning_level = Column(
-        Enum("weak", "average", "good", "excellent", name="learning_levels"),
-        nullable=True
     )
 
     is_active = Column(Boolean, default=True)

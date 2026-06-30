@@ -169,4 +169,26 @@ async def summarize_session_if_needed(session_id: str) -> None:
         print(f"-> Deleted {len(ids_to_delete)} old messages from tutor_messages.")
         
     except Exception as e:
-        print(f"WARNING: Lỗi khi sinh tóm tắt hội thoại bằng Gemini: {e}")
+        print(f"WARNING: Lỗi khi sinh tóm tắt hội thoại bằng NVIDIA NIM: {e}")
+
+
+async def delete_tutor_session(session_id: str, student_id: int) -> bool:
+    """
+    Xóa một phiên chat và tất cả tin nhắn liên quan khỏi MongoDB.
+    """
+    db = get_mongodb_db()
+    # 1. Kiểm tra session có tồn tại và thuộc về student không
+    session = await db["tutor_sessions"].find_one({
+        "_id": ObjectId(session_id),
+        "student_id": student_id
+    })
+    if not session:
+        return False
+
+    # 2. Xóa tất cả tin nhắn liên quan
+    await db["tutor_messages"].delete_many({"session_id": ObjectId(session_id)})
+
+    # 3. Xóa session
+    await db["tutor_sessions"].delete_one({"_id": ObjectId(session_id)})
+    return True
+

@@ -13,12 +13,14 @@ from app.models.quiz import Quiz
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_analytic import LearningAnalytic
 from app.models.notification import Notification
+from app.database.mysql import SessionLocal
 
 router = APIRouter()
 
 
-async def generate_progress_events(student_id: int, db: Session):
+async def generate_progress_events(student_id: int):
     while True:
+        db: Session = SessionLocal()
         try:
             active_goals = db.query(StudyGoal).filter(
                 StudyGoal.student_id == student_id,
@@ -104,6 +106,8 @@ async def generate_progress_events(student_id: int, db: Session):
             yield f"data: {json.dumps(event_data, ensure_ascii=False)}\n\n"
         except Exception as e:
             yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        finally:
+            db.close() # Giải phóng connection về pool
 
         await asyncio.sleep(5)
 
@@ -114,11 +118,10 @@ async def generate_progress_events(student_id: int, db: Session):
     description="Stream tiến độ học tập realtime: tasks hôm nay, tổng quan lộ trình, quiz stats, weak areas."
 )
 async def dashboard_stream(
-    current_user: User = Depends(get_current_student),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_student)
 ):
     return StreamingResponse(
-        generate_progress_events(current_user.id, db),
+        generate_progress_events(current_user.id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

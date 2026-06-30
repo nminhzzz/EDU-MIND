@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, BigInteger, Integer, String, JSON, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, BigInteger, Integer, String, JSON, DateTime, ForeignKey, UniqueConstraint, Enum
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -18,8 +18,12 @@ class StudentPreference(Base):
     # Số giờ học mỗi ngày mong muốn
     study_hours_per_day = Column(Integer, nullable=True, default=2)
 
-    # Khung giờ ưa thích: "morning", "afternoon", "evening", "night"
-    preferred_study_time = Column(String(50), nullable=True, default="evening")
+    # Khung giờ ưa thích: "morning", "afternoon", "evening"
+    preferred_study_time = Column(
+        Enum("morning", "afternoon", "evening", name="study_times"),
+        nullable=True,
+        default="evening"
+    )
 
     # Lịch rảnh theo ngày trong tuần: {"mon": true, "tue": false, ...}
     available_schedule = Column(JSON, nullable=True)

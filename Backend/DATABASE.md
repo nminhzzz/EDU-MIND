@@ -36,6 +36,7 @@ erDiagram
     CLASSROOMS {
         BIGINT id PK
         BIGINT teacher_id FK
+        BIGINT subject_id FK
         VARCHAR class_name
         VARCHAR class_code UK
         TEXT description
@@ -57,12 +58,6 @@ erDiagram
         DATETIME created_at
     }
 
-    CLASSROOM_SUBJECTS {
-        BIGINT id PK
-        BIGINT classroom_id FK
-        BIGINT subject_id FK
-        DATETIME created_at
-    }
 
     STUDY_GOALS {
         BIGINT id PK
@@ -179,8 +174,7 @@ erDiagram
     USERS ||--o{ CLASSROOMS : "teaches"
     USERS ||--o{ CLASSROOM_STUDENTS : "joins"
     CLASSROOMS ||--o{ CLASSROOM_STUDENTS : "contains"
-    CLASSROOMS ||--o{ CLASSROOM_SUBJECTS : "has"
-    SUBJECTS ||--o{ CLASSROOM_SUBJECTS : "belongs to"
+    SUBJECTS ||--o{ CLASSROOMS : "contains"
     USERS ||--o{ STUDY_GOALS : "sets"
     SUBJECTS ||--o{ STUDY_GOALS : "targets"
     STUDY_GOALS ||--o{ STUDY_PLANS : "generates"
@@ -298,7 +292,7 @@ erDiagram
 | 1 | `USERS` → `STUDENT_PREFERENCES` | **1-1**: Mỗi học sinh có đúng 1 bộ cài đặt học tập. |
 | 2 | `USERS` → `CLASSROOMS` | Một giáo viên quản lý nhiều lớp. |
 | 3 | `CLASSROOMS` ↔ `USERS` | **N-N** qua `CLASSROOM_STUDENTS`: Học sinh tham gia nhiều lớp. |
-| 4 | `CLASSROOMS` ↔ `SUBJECTS` | **N-N** qua `CLASSROOM_SUBJECTS`: Một lớp học nhiều môn. |
+| 4 | `SUBJECTS` → `CLASSROOMS` | **1-N**: Một môn học có nhiều lớp học giảng dạy, mỗi lớp chỉ thuộc về 1 môn. |
 | 5 | `STUDY_GOALS` → `STUDY_PLANS` | Mỗi mục tiêu sinh ra nhiều task học tập theo ngày. |
 | 6 | `STUDY_PLANS` → `STUDY_PLAN_PROGRESS` | Theo dõi % hoàn thành từng task (cập nhật nhiều lần). |
 | 7 | `QUESTION_BANK` ↔ `QUIZZES` | **N-N** qua `QUESTIONS`: Câu hỏi từ kho được tái sử dụng trên nhiều đề. |

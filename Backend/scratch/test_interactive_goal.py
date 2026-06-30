@@ -45,9 +45,7 @@ async def run_interactive_test():
                 email="student_interactive@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Tương Tác",
-                role="student",
-                grade="Đại học",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()

@@ -38,12 +38,20 @@ api_router.include_router(
     tags=["📅 Daily Planner"]
 )
 
-# ── Giai đoạn 3: Question Bank & RAG Quizzes ─────────────────
+# ── Giai đoạn 3: Document Bank & RAG Quizzes ─────────────────
+from app.api.v1.study_documents import router as documents_router
 from app.api.v1.quizzes import router as quizzes_router
+
+api_router.include_router(
+    documents_router,
+    prefix="/documents",
+    tags=["📂 Document Bank"]
+)
+
 api_router.include_router(
     quizzes_router,
     prefix="/quizzes",
-    tags=["📚 Question Bank & RAG"]
+    tags=["📚 AI Quiz Generator"]
 )
 
 # ── Giai đoạn 4: Classrooms & AI Recommendation Reviews ──────
@@ -85,3 +93,26 @@ api_router.include_router(
     prefix="/dashboard",
     tags=["📊 Dashboard"]
 )
+
+# ── Users & Student Preferences ─────────────────────────────
+from app.api.v1.users import router as users_router
+api_router.include_router(
+    users_router,
+    prefix="/users",
+    tags=["👤 Users"]
+)
+
+# ── System Analytics ─────────────────────────────
+from app.api.v1.analytics import router as analytics_router
+api_router.include_router(
+    analytics_router,
+    prefix="/analytics",
+    tags=["📊 System Analytics"]
+)
+
+
+
+
+
+
+

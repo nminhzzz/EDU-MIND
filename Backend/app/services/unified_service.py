@@ -9,8 +9,6 @@ from app.models.subject import Subject
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.quiz import Quiz
-from app.models.question import Question
-from app.models.question_bank import QuestionBank
 from app.models.student_preference import StudentPreference
 
 from app.database.mongodb import get_mongodb_db
@@ -65,7 +63,12 @@ async def generate_unified_draft(
         preferred_time = pref.preferred_study_time or "evening"
         available_schedule = pref.available_schedule
         if available_schedule:
-            off_days = [k for k, v in available_schedule.items() if not v]
+            off_days = []
+            for k, v in available_schedule.items():
+                is_available = any(v.get(slot) for slot in ["morning", "afternoon", "evening"]) if isinstance(v, dict) else bool(v)
+
+                if not is_available:
+                    off_days.append(k)
 
     # Khung giờ tiếng Việt tương ứng
     TIME_MAP = {"morning": "buổi sáng", "afternoon": "buổi chiều", "evening": "buổi tối"}
@@ -149,7 +152,11 @@ async def generate_unified_draft_stream(
         preferred_time = pref.preferred_study_time or "evening"
         available_schedule = pref.available_schedule
         if available_schedule:
-            off_days = [k for k, v in available_schedule.items() if not v]
+            off_days = []
+            for k, v in available_schedule.items():
+                is_available = any(v.values()) if isinstance(v, dict) else bool(v)
+                if not is_available:
+                    off_days.append(k)
 
     TIME_MAP = {"morning": "buổi sáng", "afternoon": "buổi chiều", "evening": "buổi tối"}
     preferred_time_vn = TIME_MAP.get(preferred_time, "buổi tối")
@@ -257,6 +264,7 @@ async def confirm_unified_draft(
             student_id=student.id,
             title=day_task.task,
             task_description=day_task.description,
+            rag_content=None, # Sẽ sinh hoặc truy vấn RAG on-the-fly khi bắt đầu học
             study_date=study_date_val,
             start_time=start_time_val,
             end_time=end_time_val,
@@ -269,41 +277,44 @@ async def confirm_unified_draft(
     # 3. Lưu đề thi thử (Quiz & QuestionBank)
     total_quizzes = 0
     for quiz_item in plan.quizzes:
+        questions_json = []
+        for q in quiz_item.questions:
+            options_data = [{"key": opt.key, "value": opt.value} for opt in q.options] if q.options else []
+            questions_json.append({
+                "question_text": q.question_text,
+                "options": options_data,
+                "correct_answer": q.correct_answer,
+                "explanation": q.explanation
+            })
+
+        # Tìm study_plan_id phù hợp trong db_plans để liên kết quiz vào đúng task ngày học
+        matched_plan_id = None
+        for p in db_plans:
+            clean_quiz_title = quiz_item.title.lower()
+            for r in ["quiz", "bài kiểm tra", "tuần", "luyện tập", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ":", "-", "_"]:
+                clean_quiz_title = clean_quiz_title.replace(r, "")
+            clean_quiz_title = clean_quiz_title.strip()
+
+            if len(clean_quiz_title) >= 3 and (clean_quiz_title in p.title.lower() or p.title.lower() in clean_quiz_title):
+                matched_plan_id = p.id
+                break
+
+        # Nếu không khớp, lấy task cuối cùng của tuần liên quan (hoặc fallback về task gần nhất)
+        if not matched_plan_id and db_plans:
+            matched_plan_id = db_plans[-1].id
+
         db_quiz = Quiz(
-            classroom_id=None,
+            student_id=student.id,
             subject_id=subject_obj.id,
-            teacher_id=None,  # AI generated
+            study_plan_id=matched_plan_id,
             title=quiz_item.title,
             difficulty="medium",
-            total_questions=len(quiz_item.questions),
+            total_questions=len(questions_json),
+            questions=questions_json,
             generated_by_ai=True
         )
         db.add(db_quiz)
-        db.flush()
         total_quizzes += 1
-
-        for q in quiz_item.questions:
-            options_data = [{"key": opt.key, "value": opt.value} for opt in q.options] if q.options else []
-
-            db_qb_question = QuestionBank(
-                subject_id=subject_obj.id,
-                topic=quiz_item.title,
-                difficulty=q.difficulty or "medium",
-                question_text=q.question_text,
-                options=options_data,
-                correct_answer=q.correct_answer,
-                explanation=q.explanation,
-                created_by=None,
-                embedding_id=None
-            )
-            db.add(db_qb_question)
-            db.flush()
-
-            db_junction = Question(
-                quiz_id=db_quiz.id,
-                question_bank_id=db_qb_question.id
-            )
-            db.add(db_junction)
 
     db.commit()
     db.refresh(db_goal)
@@ -354,3 +365,96 @@ def get_active_goal_for_subject(db, student_id: int, subject_id: int):
         StudyGoal.subject_id == subject_id,
         StudyGoal.status == "active"
     ).order_by(StudyGoal.created_at.desc()).first()
+
+
+async def generate_materials_and_quizzes_for_plans_bg(
+    goal_id: int,
+    student_id: int,
+    subject_id: int
+):
+    from app.database.mysql import SessionLocal
+    from app.database.mongodb import get_mongodb_db
+    from app.models.study_plan import StudyPlan
+    from app.models.quiz import Quiz
+    from app.services.quiz_service import generate_and_save_quiz
+    from app.services.embedding_service import vector_search_materials
+    from app.agents.base import generate_content_nvidia
+    
+    db = SessionLocal()
+    db_mongo = get_mongodb_db()
+    try:
+        # 1. Lấy tất cả kế hoạch học tập của mục tiêu này
+        plans = db.query(StudyPlan).filter(
+            StudyPlan.goal_id == goal_id,
+            StudyPlan.student_id == student_id
+        ).all()
+        
+        print(f"[BG Task] Bắt đầu sinh ngầm tài liệu & quiz cho lộ trình {goal_id}. Số lượng ngày học: {len(plans)}")
+        
+        for p in plans:
+            # 1.1 RAG: Tìm tài liệu liên quan trong MongoDB
+            try:
+                materials = await vector_search_materials(
+                    db_mongo=db_mongo,
+                    query_text=p.title,
+                    subject_id=subject_id,
+                    top_k=5
+                )
+            except Exception as e:
+                print(f"[BG Task] Lỗi tìm tài liệu cho bài học {p.id}: {e}")
+                materials = []
+                
+            if materials:
+                context_str = "\n\n".join([m["content"] for m in materials if "content" in m])
+                
+                # 1.2 Gọi AI viết bài giảng lý thuyết chuyên sâu (tối thiểu 1500 từ)
+                messages = [
+                    {
+                        "role": "user",
+                        "content": f"Dựa trên tài liệu tham khảo giáo trình sau, hãy biên soạn một tài liệu bài giảng lý thuyết cực kỳ chi tiết, chuyên sâu và đầy đủ (độ dài tối thiểu 1500 từ) về chủ đề '{p.title}'.\n\nTài liệu tham khảo:\n{context_str}"
+                    }
+                ]
+                try:
+                    rag_content = generate_content_nvidia(
+                        messages=messages,
+                        system_instruction=(
+                            "Bạn là một giáo sư đại học có thâm niên giảng dạy. Hãy viết tài liệu bài học bằng tiếng Việt cực kỳ chi tiết, khoa học, phân tích cặn kẽ bản chất và đưa ra các liên hệ thực tiễn sinh động.\n"
+                            "CẤU TRÚC TÀI LIỆU (BẮT BUỘC):\n"
+                            "I. KHÁI NIỆM CỐT LÕI & CƠ SỞ LÝ LUẬN\n"
+                            "II. PHÂN TÍCH CHI TIẾT & BẢN CHẤT LÝ LUẬN (Phân tích sâu sắc, đa chiều)\n"
+                            "III. VÍ DỤ THỰC TIỄN & MINH HỌA SINH ĐỘNG (Liên hệ ví dụ cụ thể đời sống)\n"
+                            "IV. KẾT LUẬN & BÀI HỌC RÚT RA\n"
+                            "Hãy đi trực tiếp vào nội dung tài liệu, không viết lời dẫn mở đầu hay lời chào của AI."
+                        ),
+                        temperature=0.3
+                    )
+                    # Cập nhật cột rag_content trong MySQL
+                    p.rag_content = rag_content
+                    db.commit()
+                    print(f"[BG Task] Đã sinh tài liệu RAG chi tiết cho bài học {p.id}: {p.title}")
+                except Exception as e:
+                    print(f"[BG Task] Lỗi sinh nội dung RAG cho bài học {p.id}: {e}")
+            
+            # 1.3 Kiểm tra xem đã có đề thi liên kết chưa, nếu chưa thì tạo
+            existing_quiz = db.query(Quiz).filter(Quiz.study_plan_id == p.id).first()
+            if not existing_quiz:
+                try:
+                    await generate_and_save_quiz(
+                        db=db,
+                        db_mongo=db_mongo,
+                        student_id=student_id,
+                        subject_id=subject_id,
+                        topic=p.title,
+                        difficulty="medium",
+                        total_questions=10,
+                        study_plan_id=p.id
+                    )
+                    print(f"[BG Task] Đã sinh và liên kết đề thi 10 câu thành công cho bài học {p.id}")
+                except Exception as e:
+                    print(f"[BG Task] Lỗi sinh quiz cho bài học {p.id}: {e}")
+                    
+        print(f"[BG Task] Hoàn tất sinh ngầm tài liệu & quiz cho lộ trình {goal_id}!")
+    except Exception as e:
+        print(f"[BG Task] Lỗi nghiêm trọng trong tác vụ nền: {e}")
+    finally:
+        db.close()

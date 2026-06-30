@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_student
 from app.models.user import User
 from app.models.subject import Subject
 from app.schemas.study_goal import StudyGoalDraftCreate, StudyGoalConfirm
-from app.services.unified_service import generate_unified_draft, confirm_unified_draft
+from app.services.unified_service import (
+    generate_unified_draft,
+    confirm_unified_draft,
+    generate_materials_and_quizzes_for_plans_bg
+)
 
 router = APIRouter()
 
@@ -55,6 +59,7 @@ async def create_or_update_unified_draft(
 )
 async def confirm_unified(
     body: StudyGoalConfirm,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student)
 ):
@@ -77,6 +82,14 @@ async def confirm_unified(
         )
         
         goal = result["goal"]
+        
+        # Kích hoạt sinh tài liệu và đề thi ngầm cho từng ngày học
+        background_tasks.add_task(
+            generate_materials_and_quizzes_for_plans_bg,
+            goal.id,
+            current_user.id,
+            subject.id
+        )
         return {
             "message": "Xác nhận và lưu lộ trình hợp nhất chính thức thành công!",
             "goal": {

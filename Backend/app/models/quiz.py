@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, BigInteger, String, Integer, Boolean, Enum, DateTime, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Integer, Boolean, Enum, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -9,21 +9,24 @@ class Quiz(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
-    # Lớp học chứa đề thi này (NULL nếu là đề AI tự sinh cho cá nhân)
-    classroom_id = Column(
+    student_id = Column(
         BigInteger,
-        ForeignKey("classrooms.id", ondelete="CASCADE"),
-        nullable=True
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
     )
     subject_id = Column(
         BigInteger,
         ForeignKey("subjects.id", ondelete="CASCADE"),
         nullable=False
     )
-    # Giáo viên tạo đề (NULL nếu do AI tạo hoàn toàn)
-    teacher_id = Column(
+    study_plan_id = Column(
         BigInteger,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("study_plans.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    classroom_id = Column(
+        BigInteger,
+        ForeignKey("classrooms.id", ondelete="SET NULL"),
         nullable=True
     )
 
@@ -37,14 +40,17 @@ class Quiz(Base):
 
     total_questions = Column(Integer, nullable=False, default=5)
 
-    # True nếu đề thi được AI tự sinh từ QuestionBank
-    generated_by_ai = Column(Boolean, default=False)
+    # Danh sách câu hỏi lưu dạng JSON: 
+    # [{"question_text": "...", "options": [{"key": "A", "value": "..."}, ...], "correct_answer": "A", "explanation": "..."}]
+    questions = Column(JSON, nullable=False)
 
+    generated_by_ai = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
-    classroom = relationship("Classroom", back_populates="quizzes")
+    student = relationship("User", foreign_keys=[student_id])
     subject = relationship("Subject", foreign_keys=[subject_id], back_populates="quizzes")
-    teacher = relationship("User", foreign_keys=[teacher_id])
-    questions = relationship("Question", back_populates="quiz", cascade="all, delete-orphan")
+    study_plan = relationship("StudyPlan", foreign_keys=[study_plan_id])
+    classroom = relationship("Classroom", back_populates="quizzes")
     attempts = relationship("QuizAttempt", back_populates="quiz", cascade="all, delete-orphan")
+

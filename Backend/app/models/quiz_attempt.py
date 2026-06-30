@@ -19,7 +19,7 @@ class QuizAttempt(Base):
         nullable=False
     )
 
-    # Đáp án học sinh chọn: [{"question_bank_id": 1, "answer": "A"}, ...]
+    # Đáp án học sinh chọn: [{"question_index": 0, "answer": "A", "is_correct": true}, ...]
     answers = Column(JSON, nullable=False)
 
     # Điểm số (thang 10)

@@ -12,76 +12,8 @@ from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.study_plan_progress import StudyPlanProgress
 from app.schemas.study_plan import StudyPlanResponse, StudyPlanUpdate
-from app.services.plan_service import generate_and_save_daily_plans
 
 router = APIRouter()
-
-
-# ── POST /plans/generate/{goal_id} — Kích hoạt Daily Planner Agent ────────
-@router.post(
-    "/generate/{goal_id}",
-    summary="Kích hoạt Daily Planner Agent để lập lịch học chi tiết hàng ngày",
-    description="""
-    Nhận mục tiêu học tập theo tuần, sử dụng AI sinh lịch chi tiết từng ngày dựa trên tuỳ chọn rảnh và số giờ học.
-    Có thể truyền các tham số tùy biến trong request body, nếu trống sẽ lấy từ cài đặt StudentPreference của học sinh.
-    """
-)
-def generate_daily_schedule(
-    goal_id: int,
-    study_hours_per_day: Optional[float] = None,
-    preferred_time: Optional[str] = None,
-    off_days: Optional[List[str]] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
-):
-    # Kiểm tra mục tiêu học tập tồn tại và thuộc về học sinh hiện tại
-    goal = (
-        db.query(StudyGoal)
-        .filter(StudyGoal.id == goal_id, StudyGoal.student_id == current_user.id)
-        .first()
-    )
-    if not goal:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy mục tiêu học tập với ID={goal_id}."
-        )
-
-    try:
-        plans = generate_and_save_daily_plans(
-            db=db,
-            goal_id=goal_id,
-            study_hours_per_day=study_hours_per_day,
-            preferred_time=preferred_time,
-            off_days=off_days
-        )
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ve)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi AI lập lịch học hàng ngày: {str(e)}"
-        )
-
-    return {
-        "message": "AI lập lịch học chi tiết hàng ngày thành công!",
-        "goal_id": goal_id,
-        "total_tasks": len(plans),
-        "plans": [
-            {
-                "id": p.id,
-                "title": p.title,
-                "task_description": p.task_description,
-                "study_date": str(p.study_date),
-                "start_time": str(p.start_time),
-                "end_time": str(p.end_time),
-                "status": p.status
-            }
-            for p in plans
-        ]
-    }
 
 
 # ── GET /plans/ — Lấy danh sách plans của học sinh ───────────
@@ -161,6 +93,13 @@ def update_plan(
         )
 
     update_data = body.model_dump(exclude_unset=True)
+
+    # Chặn không cho học sinh tự tích hoàn thành ("done") thủ công
+    if "status" in update_data and update_data["status"] == "done":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bạn không thể tự tích hoàn thành nhiệm vụ này. Hãy hoàn thành bài kiểm tra nhanh đạt từ 8 điểm trở lên để hệ thống tự động xác nhận."
+        )
 
     # Cập nhật các trường
     for field, value in update_data.items():

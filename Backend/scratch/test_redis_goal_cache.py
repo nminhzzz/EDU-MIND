@@ -55,9 +55,7 @@ async def run_redis_cache_test():
                 email="student_redis_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Redis",
-                role="student",
-                grade="Đại học",
-                learning_level="average"
+                role="student"
             )
             db.add(student)
             db.commit()

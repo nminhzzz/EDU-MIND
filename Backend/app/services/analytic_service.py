@@ -18,7 +18,7 @@ from app.agents.analytics_agent.agent import evaluate_learning_performance
 from app.agents.recommender.agent import generate_recommendation
 
 
-def update_student_analytics_and_recommend(
+async def update_student_analytics_and_recommend(
     db: Session,
     student_id: int,
     subject_id: int,
@@ -108,7 +108,7 @@ def update_student_analytics_and_recommend(
         # Nếu AI lỗi, ghi nhận log và giữ nguyên đánh giá cũ
         print(f"[Warning] AI Analytics Agent error: {eval_err}")
 
-    # ── 7. Nếu bài thi vừa làm chưa đạt yêu cầu (< 8.0), tự sinh đề xuất ôn tập AI ──
+    # ── 7. Nếu bài thi vừa làm chưa đạt yêu cầu (< 8.0), tự sinh đề xuất ôn tập AI (Tự động duyệt và áp dụng) ──
     if score < 8.0:
         # Gọi AI Recommender Agent sinh đề xuất học tập cụ thể
         try:
@@ -119,28 +119,68 @@ def update_student_analytics_and_recommend(
                 weak_topics=analytic.weak_topics
             )
 
-            # Giáo viên phụ trách lớp học (đề xuất sẽ gửi cho giáo viên này duyệt)
+            # Giáo viên phụ trách lớp học (ghi nhận để log/history)
             teacher_id = quiz.classroom.teacher_id if (quiz.classroom and quiz.classroom.teacher_id) else None
 
-            # Tạo bản ghi đề xuất ôn tập ở trạng thái pending (HITL)
+            # Tạo bản ghi đề xuất ôn tập ở trạng thái approved (tự động duyệt)
             db_review = AIRecommendationReview(
                 student_id=student_id,
                 teacher_id=teacher_id,
                 recommendation=ai_recommendation_text,
-                status="pending"
+                status="approved"
             )
             db.add(db_review)
+            db.flush()
 
-            # Gửi thông báo đến giáo viên nếu được gán
-            if teacher_id:
-                db_teacher_notif = Notification(
-                    user_id=teacher_id,
-                    title="Đề xuất ôn tập AI mới cần duyệt",
-                    content=f"Học sinh {student.full_name} làm bài kiểm tra '{quiz.title}' đạt {score}/10. Có đề xuất ôn tập AI đang chờ duyệt.",
-                    type="plan",
-                    is_read=False
+            # Tự động tạo kế hoạch ôn tập trong MySQL cho học sinh nếu họ có mục tiêu học tập (StudyGoal) active
+            from app.models.study_goal import StudyGoal
+            from app.models.study_plan import StudyPlan
+            from datetime import date, timedelta, time
+
+            # Tìm mục tiêu học tập active cho môn học này trước, nếu không có thì tìm mục tiêu bất kỳ của học sinh
+            goal = (
+                db.query(StudyGoal)
+                .filter(StudyGoal.student_id == student_id, StudyGoal.subject_id == subject_id)
+                .order_by(StudyGoal.created_at.desc())
+                .first()
+            )
+            if not goal:
+                goal = (
+                    db.query(StudyGoal)
+                    .filter(StudyGoal.student_id == student_id)
+                    .order_by(StudyGoal.created_at.desc())
+                    .first()
                 )
-                db.add(db_teacher_notif)
+
+            if goal:
+                study_date = date.today() + timedelta(days=1)
+                start_time = time(19, 0, 0)
+                end_time = time(20, 0, 0)
+
+                title_text = f"[Ôn tập AI] {ai_recommendation_text[:50]}..." if len(ai_recommendation_text) > 50 else f"[Ôn tập AI] {ai_recommendation_text}"
+
+                db_plan = StudyPlan(
+                    student_id=student_id,
+                    goal_id=goal.id,
+                    title=title_text,
+                    task_description=ai_recommendation_text,
+                    study_date=study_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    ai_generated=True,
+                    status="todo"
+                )
+                db.add(db_plan)
+
+            # Gửi thông báo trực tiếp đến học sinh
+            db_student_rec_notif = Notification(
+                user_id=student_id,
+                title="Lịch ôn tập AI bổ sung đã được tạo",
+                content=f"Dựa trên kết quả bài '{quiz.title}' ({score}/10), AI đã tự động tạo lịch ôn tập mới cho bạn.",
+                type="plan",
+                is_read=False
+            )
+            db.add(db_student_rec_notif)
 
         except Exception as rec_err:
             print(f"[Warning] AI Recommender Agent error: {rec_err}")
@@ -197,3 +237,30 @@ def update_student_analytics_and_recommend(
     db.add(db_student_notif)
 
     db.commit()
+
+
+def get_system_analytics(db: Session) -> dict:
+    """Lấy báo cáo thống kê chỉ số vận hành nền tảng dành cho Admin."""
+    from app.models.user import User as DBUser
+    from app.models.classroom import Classroom
+    from app.models.study_goal import StudyGoal
+    from app.models.study_plan import StudyPlan
+    from app.models.quiz import Quiz
+
+    total_students = db.query(DBUser).filter(DBUser.role == "student").count()
+    total_teachers = db.query(DBUser).filter(DBUser.role == "teacher").count()
+    total_admins = db.query(DBUser).filter(DBUser.role == "admin").count()
+    total_classrooms = db.query(Classroom).count()
+    total_active_goals = db.query(StudyGoal).filter(StudyGoal.status == "active").count()
+    total_study_plans = db.query(StudyPlan).count()
+    total_quizzes = db.query(Quiz).count()
+    
+    return {
+        "total_students": total_students,
+        "total_teachers": total_teachers,
+        "total_admins": total_admins,
+        "total_classrooms": total_classrooms,
+        "total_active_goals": total_active_goals,
+        "total_study_plans": total_study_plans,
+        "total_quizzes": total_quizzes
+    }

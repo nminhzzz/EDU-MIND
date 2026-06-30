@@ -8,8 +8,10 @@ class StudyPlanResponse(BaseModel):
     id: int
     student_id: int
     goal_id: int
+    subject_id: Optional[int] = None
     title: str
     task_description: Optional[str] = None
+    rag_content: Optional[str] = None
     study_date: date
     start_time: time
     end_time: time
@@ -26,6 +28,7 @@ class StudyPlanUpdate(BaseModel):
     status: Optional[str] = None   # "todo" | "doing" | "done"
     title: Optional[str] = None
     task_description: Optional[str] = None
+    rag_content: Optional[str] = None
     study_date: Optional[date] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None

@@ -94,33 +94,30 @@ def get_last_attempt_details_db(student_id: int) -> dict:
         if not quiz:
             return {}
 
-        # Tạo mapping đáp án học sinh chọn: {question_bank_id: chosen_answer}
-        # Định dạng answers: [{"question_bank_id": 1, "answer": "A"}, ...]
+        # Tạo mapping đáp án học sinh chọn: {question_index: chosen_answer}
         chosen_map = {}
         if isinstance(att.answers, list):
             for ans in att.answers:
-                q_id = ans.get("question_bank_id")
-                chosen_map[q_id] = ans.get("answer")
+                q_idx = ans.get("question_index")
+                chosen_map[q_idx] = ans.get("answer")
 
-        # Lấy danh sách câu hỏi trong đề từ question_bank
+        # Lấy danh sách câu hỏi từ quiz.questions (JSON)
         questions_details = []
-        for q in quiz.questions:
-            qb_item = q.question_bank_item
-            if qb_item:
-                q_id = qb_item.id
-                chosen = chosen_map.get(q_id, "Không có câu trả lời")
-                correct = qb_item.correct_answer
-                is_correct = str(chosen).strip().lower() == str(correct).strip().lower()
+        questions_list = quiz.questions or []
+        for idx, qb_item in enumerate(questions_list):
+            chosen = chosen_map.get(idx, "Không có câu trả lời")
+            correct = qb_item.get("correct_answer", "")
+            is_correct = str(chosen).strip().lower() == str(correct).strip().lower()
 
-                questions_details.append({
-                    "question_bank_id": q_id,
-                    "question_text": qb_item.question_text,
-                    "options": qb_item.options,
-                    "correct_answer": correct,
-                    "chosen_answer": chosen,
-                    "is_correct": is_correct,
-                    "explanation": qb_item.explanation
-                })
+            questions_details.append({
+                "question_index": idx,
+                "question_text": qb_item.get("question_text", ""),
+                "options": qb_item.get("options", []),
+                "correct_answer": correct,
+                "chosen_answer": chosen,
+                "is_correct": is_correct,
+                "explanation": qb_item.get("explanation", "")
+            })
 
         return {
             "quiz_title": quiz.title,

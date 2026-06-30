@@ -6,15 +6,23 @@ def test_allocation():
     
     # 1. Available schedule (no weekend study)
     available_schedule = {
-        "mon": True, "tue": True, "wed": True, "thu": True, "fri": True,
-        "sat": False, "sun": False
+        "mon": {"morning": True, "afternoon": False, "evening": True},
+        "tue": {"morning": True, "afternoon": True, "evening": True},
+        "wed": {"morning": False, "afternoon": True, "evening": True},
+        "thu": {"morning": True, "afternoon": False, "evening": True},
+        "fri": {"morning": True, "afternoon": True, "evening": False},
+        "sat": {"morning": False, "afternoon": False, "evening": False},
+        "sun": {"morning": False, "afternoon": False, "evening": False}
     }
     
     WEEKDAY_MAP = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
     
     def is_study_day(d: date) -> bool:
         day_key = WEEKDAY_MAP.get(d.weekday(), "")
-        return bool(available_schedule.get(day_key, True))
+        val = available_schedule.get(day_key, True)
+        if isinstance(val, dict):
+            return any(val.values())
+        return bool(val)
         
     # 2. Collect all available study days from today to deadline
     all_study_days = []
