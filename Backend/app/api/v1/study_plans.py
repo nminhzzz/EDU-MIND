@@ -1,6 +1,7 @@
 """
 API quản lý kế hoạch học tập chi tiết hàng ngày (Study Plans) — Giai đoạn 2.
 """
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -20,7 +21,7 @@ router = APIRouter()
 @router.get(
     "/",
     response_model=List[StudyPlanResponse],
-    summary="Lấy danh sách các task học tập hàng ngày của học sinh"
+    summary="Lấy danh sách các task học tập hàng ngày của học sinh",
 )
 def get_my_plans(
     goal_id: Optional[int] = None,
@@ -28,12 +29,21 @@ def get_my_plans(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
-    query = db.query(StudyPlan).filter(StudyPlan.student_id == current_user.id)
-
     if goal_id:
-        query = query.filter(StudyPlan.goal_id == goal_id)
+        query = db.query(StudyPlan).filter(
+            StudyPlan.student_id == current_user.id, StudyPlan.goal_id == goal_id
+        )
+    else:
+        query = (
+            db.query(StudyPlan)
+            .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
+            .filter(
+                StudyPlan.student_id == current_user.id, StudyGoal.status == "active"
+            )
+        )
+
     if status_filter:
         query = query.filter(StudyPlan.status == status_filter)
     if start_date:
@@ -49,12 +59,12 @@ def get_my_plans(
 @router.get(
     "/{plan_id}",
     response_model=StudyPlanResponse,
-    summary="Xem chi tiết một task học tập hàng ngày"
+    summary="Xem chi tiết một task học tập hàng ngày",
 )
 def get_plan_detail(
     plan_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     plan = (
         db.query(StudyPlan)
@@ -63,8 +73,7 @@ def get_plan_detail(
     )
     if not plan:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy lịch học này."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lịch học này."
         )
     return plan
 
@@ -73,13 +82,13 @@ def get_plan_detail(
 @router.patch(
     "/{plan_id}",
     response_model=StudyPlanResponse,
-    summary="Cập nhật trạng thái hoặc thông tin một task học tập"
+    summary="Cập nhật trạng thái hoặc thông tin một task học tập",
 )
 def update_plan(
     plan_id: int,
     body: StudyPlanUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     plan = (
         db.query(StudyPlan)
@@ -88,8 +97,7 @@ def update_plan(
     )
     if not plan:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy lịch học này."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lịch học này."
         )
 
     update_data = body.model_dump(exclude_unset=True)
@@ -98,7 +106,7 @@ def update_plan(
     if "status" in update_data and update_data["status"] == "done":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bạn không thể tự tích hoàn thành nhiệm vụ này. Hãy hoàn thành bài kiểm tra nhanh đạt từ 8 điểm trở lên để hệ thống tự động xác nhận."
+            detail="Bạn không thể tự tích hoàn thành nhiệm vụ này. Hãy hoàn thành bài kiểm tra nhanh đạt từ 8 điểm trở lên để hệ thống tự động xác nhận.",
         )
 
     # Cập nhật các trường
@@ -109,8 +117,12 @@ def update_plan(
     if "status" in update_data:
         status_val = update_data["status"]
         # Lấy hoặc tạo bản ghi tiến độ cho plan này
-        progress = db.query(StudyPlanProgress).filter(StudyPlanProgress.study_plan_id == plan.id).first()
-        
+        progress = (
+            db.query(StudyPlanProgress)
+            .filter(StudyPlanProgress.study_plan_id == plan.id)
+            .first()
+        )
+
         # Phần trăm hoàn thành tương ứng
         percent = 0.0
         if status_val == "doing":
@@ -123,7 +135,7 @@ def update_plan(
                 study_plan_id=plan.id,
                 student_id=current_user.id,
                 completion_percent=percent,
-                completed_at=datetime.utcnow() if status_val == "done" else None
+                completed_at=datetime.utcnow() if status_val == "done" else None,
             )
             db.add(progress)
         else:

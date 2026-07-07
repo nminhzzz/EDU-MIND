@@ -1,6 +1,7 @@
 """
 Pydantic schemas cho Quiz sinh bởi AI — Giai đoạn 3 & 4.
 """
+
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -13,12 +14,14 @@ class QuizOptionSchema(BaseModel):
 
 class QuestionItemStudentResponse(BaseModel):
     """Câu hỏi trả về cho học sinh làm bài (không lộ đáp án)."""
+
     question_text: str = Field(description="Nội dung câu hỏi")
     options: List[QuizOptionSchema] = Field(description="Danh sách các lựa chọn")
 
 
 class QuestionItemDetailResponse(QuestionItemStudentResponse):
     """Câu hỏi kèm đáp án và giải thích (cho giáo viên hoặc sau khi học sinh nộp bài)."""
+
     correct_answer: str = Field(description="Đáp án đúng (A, B, C, D hoặc True, False)")
     explanation: Optional[str] = Field(None, description="Giải thích lý thuyết")
 

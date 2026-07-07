@@ -1,5 +1,6 @@
 from app.services.embedding_service import get_embedding
 
+
 def test_embed():
     print("Testing get_embedding('hello')...")
     try:
@@ -9,7 +10,9 @@ def test_embed():
     except Exception as e:
         print("Error calling get_embedding:")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_embed()

@@ -8,9 +8,10 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
-    role: str = "student"            # "student" | "teacher" | "admin"
-    grade: Optional[StudentGrade] = None  # Khối lớp học (chỉ dùng cho học sinh: grade_10, grade_11, grade_12)
-
+    role: str = "student"  # "student" | "teacher" | "admin"
+    grade: Optional[StudentGrade] = (
+        None  # Khối lớp học (chỉ dùng cho học sinh: grade_10, grade_11, grade_12)
+    )
 
 
 # ── Đăng nhập ─────────────────────────────────────────────────

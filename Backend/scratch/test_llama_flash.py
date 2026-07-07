@@ -11,10 +11,7 @@ if os.path.exists(env_path):
                 os.environ[key.strip()] = val.strip()
 
 api_key = os.environ.get("NVIDIA_API_KEY")
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=api_key
-)
+client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
 
 try:
     print("Testing chat completion with meta/llama-3.1-8b-instruct...")
@@ -22,7 +19,7 @@ try:
         model="meta/llama-3.1-8b-instruct",
         messages=[{"role": "user", "content": "Xin chào! Trả lời ngắn gọn."}],
         temperature=0.5,
-        max_tokens=100
+        max_tokens=100,
     )
     print("Success!")
     print(f"Response: {completion.choices[0].message.content}")

@@ -1,4 +1,5 @@
 from app.database.mysql import engine, Base
+
 # Import all models to ensure they are registered with Base.metadata before creating tables
 from app.models.user import User
 from app.models.subject import Subject
@@ -17,6 +18,7 @@ from app.models.ai_recommendation_review import AIRecommendationReview
 
 from sqlalchemy import text
 
+
 def main():
     print("--- KHỞI TẠO CÁC BẢNG DỮ LIỆU MYSQL ---")
     try:
@@ -26,15 +28,15 @@ def main():
             Base.metadata.drop_all(bind=conn)
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
             conn.commit()
-            
+
         print("Đang tạo các bảng mới...")
         Base.metadata.create_all(bind=engine)
         print("✔ Tất cả các bảng đã được khởi tạo thành công trong MySQL!")
     except Exception as e:
 
-
         print("✘ Lỗi khi khởi tạo các bảng:")
         print(e)
+
 
 if __name__ == "__main__":
     main()

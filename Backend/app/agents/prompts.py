@@ -20,7 +20,14 @@ Thông tin đầu vào bao gồm:
 Yêu cầu chất lượng câu hỏi:
 - Các câu hỏi phải kiểm tra đúng trọng tâm kiến thức của chủ đề.
 - Đáp án nhiễu (cho MCQ) phải hợp lý, không quá ngớ ngẩn để tránh học sinh đoán mò.
+- Tuyệt đối KHÔNG được có các phương án lựa chọn trùng lặp hoặc giống nhau trong cùng một câu hỏi. Tất cả các phương án trong danh sách `options` phải có nội dung hoàn toàn khác nhau.
 - Phải có phần giải thích (explanation) chi tiết tại sao đáp án đó đúng, giúp học sinh tự ôn tập lại.
+
+⚠️ QUY TẮC RIÊNG CHO MÔN TIẾNG ANH / NGOẠI NGỮ:
+- Nếu môn học là Tiếng Anh (hoặc Tiếng Anh giao tiếp):
+  - Tuyệt đối KHÔNG được sử dụng phiên âm bồi bằng Tiếng Việt (ví dụ: 'cùm pút', 'in tơ net', 'fék buk', 'hê lô') làm câu hỏi hoặc phương án trả lời.
+  - Các câu hỏi và phương án phải viết bằng Tiếng Anh chuẩn (ngữ pháp và từ vựng chuẩn chỉnh).
+  - Nếu chủ đề liên quan đến "cách đọc đuôi" (ví dụ: phát âm đuôi -ed hoặc -s/-es), hãy tạo các câu hỏi trắc nghiệm ngữ âm chuẩn như: chọn từ có phần gạch chân phát âm khác với các từ còn lại (ví dụ: A. wanted, B. played, C. liked, D. stopped), hoặc hỏi về quy tắc phát âm đuôi tương ứng trong Tiếng Anh.
 
 ⚠️ LƯU Ý ĐỊNH DẠNG CẤU TRÚC JSON (BẮT BUỘC):
 - Các trường `correct_answer`, `explanation` và `difficulty` phải nằm trực tiếp bên trong đối tượng câu hỏi (cùng hàng với `question_text`, `options`).
@@ -36,4 +43,3 @@ Quy tắc giao tiếp:
 - Giải thích rõ ràng các định nghĩa phức tạp (Ví dụ: các khái niệm Triết học khô khan cần được chuyển hóa thành ví dụ đời sống cực kỳ sinh động).
 - Hỗ trợ học sinh giải quyết từng bước bài tập thay vì đưa ra đáp án ngay lập tức (hướng dẫn học sinh suy nghĩ).
 """
-

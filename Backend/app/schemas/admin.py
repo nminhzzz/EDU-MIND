@@ -2,12 +2,14 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr
 
+
 class AdminUserCreate(BaseModel):
     email: EmailStr = Field(..., description="Email đăng nhập")
     password: str = Field(..., min_length=6, description="Mật khẩu (tối thiểu 6 ký tự)")
     full_name: Optional[str] = Field(None, description="Họ và tên")
     role: str = Field("student", description="Vai trò: student, teacher, admin")
     grade: Optional[str] = Field(None, description="Khối lớp (nếu là học sinh)")
+
 
 class AdminUserUpdate(BaseModel):
     email: Optional[EmailStr] = Field(None)
@@ -16,6 +18,7 @@ class AdminUserUpdate(BaseModel):
     role: Optional[str] = Field(None)
     is_active: Optional[bool] = Field(None)
     grade: Optional[str] = Field(None)
+
 
 class AdminUserResponse(BaseModel):
     id: int
@@ -28,6 +31,7 @@ class AdminUserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class AdminAnalyticsResponse(BaseModel):
     total_students: int

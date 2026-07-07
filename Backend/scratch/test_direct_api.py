@@ -28,7 +28,7 @@ system_instruction = (
 
 messages = [
     {"role": "system", "content": system_instruction},
-    {"role": "user", "content": "Lập lộ trình môn 'Toán Đại số'."}
+    {"role": "user", "content": "Lập lộ trình môn 'Toán Đại số'."},
 ]
 
 print("Calling API directly...", flush=True)
@@ -39,7 +39,7 @@ try:
         messages=messages,
         temperature=0.2,
         max_tokens=2048,
-        timeout=60
+        timeout=60,
     )
     elapsed = time.time() - t0
     resp = completion.choices[0].message.content

@@ -16,9 +16,14 @@ if os.path.exists(env_path):
 
 from google import genai
 
+
 def list_gemini_models():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Chưa thiết lập GEMINI_API_KEY trong .env")
         return
 
@@ -32,6 +37,7 @@ def list_gemini_models():
             print(f"- {model.name}")
     except Exception as e:
         print(f"Lỗi khi liệt kê model: {e}")
+
 
 if __name__ == "__main__":
     list_gemini_models()

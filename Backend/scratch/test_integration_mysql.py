@@ -35,14 +35,19 @@ from app.models.notification import Notification
 
 import app.services.goal_service as goal_service
 
+
 def run_mysql_test():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Bạn chưa điền GEMINI_API_KEY thực tế vào file .env!")
         return
 
     print("--- KHỞI CHẠY KIỂM THỬ TÍCH HỢP AI & DATABASE MYSQL THỰC TẾ ---")
-    
+
     # 1. Tạo các bảng trong MySQL (Nếu chưa tồn tại)
     try:
         print("Đang kết nối tới MySQL và đồng bộ cấu trúc bảng...")
@@ -50,7 +55,9 @@ def run_mysql_test():
         print("Đồng bộ cấu trúc bảng thành công!")
     except Exception as e:
         print(f"\nERROR: Không thể kết nối tới MySQL hoặc tạo bảng: {e}")
-        print("Vui lòng kiểm tra lại cấu hình DATABASE_URL trong file .env và chắc chắn MySQL đã hoạt động.")
+        print(
+            "Vui lòng kiểm tra lại cấu hình DATABASE_URL trong file .env và chắc chắn MySQL đã hoạt động."
+        )
         return
 
     db = SessionLocal()
@@ -62,7 +69,7 @@ def run_mysql_test():
                 email="student_mysql@test.com",
                 password_hash="hashedpassword123",
                 full_name="Nguyễn Văn A (MySQL)",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
@@ -77,7 +84,7 @@ def run_mysql_test():
             subject = Subject(
                 name="Triết học Mác - Lênin",
                 code="TRIETHOC_MYSQL",
-                description="Môn học Triết học cơ bản"
+                description="Môn học Triết học cơ bản",
             )
             db.add(subject)
             db.commit()
@@ -87,10 +94,14 @@ def run_mysql_test():
             print(f"Môn học đã tồn tại trong MySQL, ID: {subject.id}")
 
         # 3.1 Tạo dữ liệu học lực mẫu (Learning Analytics) môn Triết học để kiểm thử AI Agent Tool Calling
-        analytic = db.query(LearningAnalytic).filter(
-            LearningAnalytic.student_id == student.id,
-            LearningAnalytic.subject_id == subject.id
-        ).first()
+        analytic = (
+            db.query(LearningAnalytic)
+            .filter(
+                LearningAnalytic.student_id == student.id,
+                LearningAnalytic.subject_id == subject.id,
+            )
+            .first()
+        )
         if not analytic:
             analytic = LearningAnalytic(
                 student_id=student.id,
@@ -99,25 +110,31 @@ def run_mysql_test():
                 quizzes_completed=3,
                 weak_topics=["Vật chất", "Ý thức"],
                 strong_topics=["Khái quát lịch sử Triết học"],
-                ai_feedback="Học lực trung bình yếu. Cần ôn tập kỹ các phạm trù Vật chất và Ý thức."
+                ai_feedback="Học lực trung bình yếu. Cần ôn tập kỹ các phạm trù Vật chất và Ý thức.",
             )
             db.add(analytic)
             db.commit()
             db.refresh(analytic)
-            print(f"Đã tạo dữ liệu học lực mẫu (Learning Analytics) trong MySQL, ID: {analytic.id}")
+            print(
+                f"Đã tạo dữ liệu học lực mẫu (Learning Analytics) trong MySQL, ID: {analytic.id}"
+            )
         else:
             analytic.average_score = 4.5
             analytic.weak_topics = ["Vật chất", "Ý thức"]
             analytic.strong_topics = ["Khái quát lịch sử Triết học"]
             db.commit()
-            print("Đã đồng bộ dữ liệu học lực mẫu của học sinh (Điểm TB: 4.5, Phần yếu: Vật chất, Ý thức).")
+            print(
+                "Đã đồng bộ dữ liệu học lực mẫu của học sinh (Điểm TB: 4.5, Phần yếu: Vật chất, Ý thức)."
+            )
 
         # Đặt hạn chót cách hôm nay 2 tuần để AI lập lịch ngắn gọn
         test_deadline = (date.today() + timedelta(days=14)).strftime("%Y-%m-%d")
 
-        print(f"\nAI đang lập lộ trình học môn '{subject.name}' cho học sinh '{student.full_name}'...")
+        print(
+            f"\nAI đang lập lộ trình học môn '{subject.name}' cho học sinh '{student.full_name}'..."
+        )
         print(f"Mục tiêu: 9.0 điểm | Hạn chót: {test_deadline}")
-        
+
         # 4. Kích hoạt Service điều phối AI
         test_deadline_date = datetime.strptime(test_deadline, "%Y-%m-%d").date()
         result = goal_service.create_goal_and_schedule_plans(
@@ -125,7 +142,7 @@ def run_mysql_test():
             student=student,
             subject_obj=subject,
             target_score=9.0,
-            deadline=test_deadline_date
+            deadline=test_deadline_date,
         )
 
         print("\n=======================================================")
@@ -134,15 +151,19 @@ def run_mysql_test():
         print(f"1. Đã lưu StudyGoal ID vào MySQL: {result['goal'].id}")
         print(f"2. Điểm số mục tiêu: {result['goal'].target_score}")
         print(f"3. Lộ trình được chia làm: {result['total_weeks']} tuần")
-        print(f"4. Tổng số lịch học ngày được lưu vào MySQL: {len(result['plans'])} tasks")
-        
+        print(
+            f"4. Tổng số lịch học ngày được lưu vào MySQL: {len(result['plans'])} tasks"
+        )
+
         # Truy vấn kiểm tra lại dữ liệu trong MySQL để xác thực
-        db_goal = db.query(StudyGoal).filter(StudyGoal.id == result['goal'].id).first()
+        db_goal = db.query(StudyGoal).filter(StudyGoal.id == result["goal"].id).first()
         db_plans = db.query(StudyPlan).filter(StudyPlan.goal_id == db_goal.id).all()
-        
+
         print(f"\n[MySQL Query] Dữ liệu thực tế vừa lưu trong bảng study_plans:")
         for i, plan in enumerate(db_plans, 1):
-            print(f"  Task {i}: [{plan.study_date}] ({plan.start_time} - {plan.end_time}) -> {plan.title}")
+            print(
+                f"  Task {i}: [{plan.study_date}] ({plan.start_time} - {plan.end_time}) -> {plan.title}"
+            )
             print(f"          Mô tả: {plan.task_description}")
             print("-" * 60)
 
@@ -150,6 +171,7 @@ def run_mysql_test():
         print(f"\nERROR: Lỗi trong quá trình chạy test tích hợp MySQL: {e}")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     run_mysql_test()

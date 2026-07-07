@@ -22,18 +22,23 @@ from app.models.base import Base
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import BigInteger
 
+
 @compiles(BigInteger, "sqlite")
 def compile_bigint_sqlite(type_, compiler, **kw):
     return "INTEGER"
 
+
 db_file = os.path.join(os.path.dirname(__file__), "test_db.sqlite")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_file}"
 
-engine_sqlite = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine_sqlite = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocalTest = sessionmaker(autocommit=False, autoflush=False, bind=engine_sqlite)
 
 # Override SessionLocal của MySQL bằng SQLite cho việc chạy test này
 import app.services.goal_service as goal_service
+
 # Trỏ SessionLocal trong file repository về SessionLocalTest của SQLite
 import app.repositories.base as repo_base
 import app.database.mysql as db_mysql
@@ -48,14 +53,19 @@ from app.models.quiz import Quiz
 # Tạo tất cả các bảng trong SQLite
 Base.metadata.create_all(bind=engine_sqlite)
 
+
 def run_integration_test():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Bạn chưa điền GEMINI_API_KEY thực tế vào file .env!")
         return
 
     print("--- KHỞI CHẠY KIỂM THỬ TÍCH HỢP AI & DATABASE (SQLITE LOCAL) ---")
-    
+
     db = SessionLocalTest()
     try:
         # 1. Tạo dữ liệu giả lập User (Học sinh) & Subject (Môn học) trước để thỏa mãn khóa ngoại
@@ -66,7 +76,7 @@ def run_integration_test():
                 email="student@test.com",
                 password_hash="mockhash",
                 full_name="Nguyễn Văn A",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
@@ -78,7 +88,7 @@ def run_integration_test():
                 id=1,
                 name="Triết học Mác - Lênin",
                 code="TRIETHOC01",
-                description="Môn học Triết học cơ bản"
+                description="Môn học Triết học cơ bản",
             )
             db.add(subject)
             db.commit()
@@ -99,7 +109,7 @@ def run_integration_test():
             subject_name=subject.name,
             target_score=9.0,
             deadline=test_deadline,
-            current_level="average"
+            current_level="average",
         )
 
         print("\n=======================================================")
@@ -108,19 +118,25 @@ def run_integration_test():
         print(f"1. Đã lưu StudyGoal ID: {result['goal_id']}")
         print(f"2. Mục tiêu điểm: {result['target_score']}")
         print(f"3. Tổng số tuần AI tính toán: {result['total_weeks']} tuần")
-        print(f"4. Tổng số nhiệm vụ ngày đã lưu vào study_plans: {result['total_tasks_scheduled']} tasks")
-        
+        print(
+            f"4. Tổng số nhiệm vụ ngày đã lưu vào study_plans: {result['total_tasks_scheduled']} tasks"
+        )
+
         # 3. Truy vấn trực tiếp từ SQLite xem dữ liệu có thực sự được lưu không
-        db_goal = db.query(StudyGoal).filter(StudyGoal.id == result['goal_id']).first()
+        db_goal = db.query(StudyGoal).filter(StudyGoal.id == result["goal_id"]).first()
         print(f"\n[Database Query] Kiểm tra bảng study_goals:")
         print(f"  - Title: {db_goal.title}")
         print(f"  - Target Score: {db_goal.target_score}")
         print(f"  - Deadline: {db_goal.deadline}")
-        
+
         db_plans = db.query(StudyPlan).filter(StudyPlan.goal_id == db_goal.id).all()
-        print(f"\n[Database Query] Kiểm tra bảng study_plans (Lịch học chi tiết từng ngày):")
+        print(
+            f"\n[Database Query] Kiểm tra bảng study_plans (Lịch học chi tiết từng ngày):"
+        )
         for i, plan in enumerate(db_plans, 1):
-            print(f"  Task {i}: [{plan.study_date}] ({plan.start_time} - {plan.end_time}) -> {plan.title}")
+            print(
+                f"  Task {i}: [{plan.study_date}] ({plan.start_time} - {plan.end_time}) -> {plan.title}"
+            )
             print(f"          Mô tả: {plan.task_description}")
             print(f"          AI sinh: {plan.ai_generated} | Trạng thái: {plan.status}")
             print("-" * 60)
@@ -129,6 +145,7 @@ def run_integration_test():
         print(f"\nERROR: Lỗi tích hợp: {e}")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     run_integration_test()

@@ -34,6 +34,7 @@ from app.models.student_preference import StudentPreference
 
 from app.services.unified_service import generate_unified_draft, confirm_unified_draft
 
+
 async def run_unified_flow_test():
     print("=== KHỞI CHẠY KIỂM THỬ TÍCH HỢP HỢP NHẤT (UNIFIED GOAL PLANNER) ===")
 
@@ -56,13 +57,15 @@ async def run_unified_flow_test():
 
     try:
         # 3. Tạo/lấy học sinh test
-        student = db.query(User).filter(User.email == "unified_student_test@test.com").first()
+        student = (
+            db.query(User).filter(User.email == "unified_student_test@test.com").first()
+        )
         if not student:
             student = User(
                 email="unified_student_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Hợp Nhất",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
@@ -72,7 +75,11 @@ async def run_unified_flow_test():
             print(f"-> Học sinh test đã tồn tại ID={student.id}")
 
         # Cài đặt sở thích rảnh để kiểm định thời khóa biểu
-        pref = db.query(StudentPreference).filter(StudentPreference.student_id == student.id).first()
+        pref = (
+            db.query(StudentPreference)
+            .filter(StudentPreference.student_id == student.id)
+            .first()
+        )
         if not pref:
             pref = StudentPreference(
                 student_id=student.id,
@@ -85,8 +92,8 @@ async def run_unified_flow_test():
                     "thu": {"morning": True, "afternoon": False, "evening": True},
                     "fri": {"morning": True, "afternoon": True, "evening": False},
                     "sat": {"morning": False, "afternoon": False, "evening": False},
-                    "sun": {"morning": False, "afternoon": False, "evening": False}
-                }
+                    "sun": {"morning": False, "afternoon": False, "evening": False},
+                },
             )
             db.add(pref)
             db.commit()
@@ -98,7 +105,7 @@ async def run_unified_flow_test():
             subject = Subject(
                 name="Triết học Mác - Lênin (Unified)",
                 code="MACLENIN_UNIFIED",
-                description="Môn học Triết học phục vụ kiểm thử Unified Flow"
+                description="Môn học Triết học phục vụ kiểm thử Unified Flow",
             )
             db.add(subject)
             db.commit()
@@ -111,23 +118,25 @@ async def run_unified_flow_test():
         coll = db_mongo["study_material_embeddings"]
         count = await coll.count_documents({"subject_id": subject.id})
         if count == 0:
-            await coll.insert_many([
-                {
-                    "subject_id": subject.id,
-                    "topic": "Chương 1: Triết học và vai trò của triết học trong đời sống xã hội",
-                    "content": "Triết học ra đời từ hoạt động thực tiễn, đáp ứng nhu cầu nhận thức thế giới. Đối tượng của triết học thay đổi qua các thời kỳ lịch sử.",
-                    "embedding": [0.0] * 4096  # Mock embedding cho test
-                },
-                {
-                    "subject_id": subject.id,
-                    "topic": "Chương 2: Vật chất và Ý thức",
-                    "content": "Vật chất là phạm trù triết học dùng để chỉ thực tại khách quan. Ý thức là sự phản ánh năng động, sáng tạo thế giới khách quan vào bộ não người.",
-                    "embedding": [0.0] * 4096
-                }
-            ])
+            await coll.insert_many(
+                [
+                    {
+                        "subject_id": subject.id,
+                        "topic": "Chương 1: Triết học và vai trò của triết học trong đời sống xã hội",
+                        "content": "Triết học ra đời từ hoạt động thực tiễn, đáp ứng nhu cầu nhận thức thế giới. Đối tượng của triết học thay đổi qua các thời kỳ lịch sử.",
+                        "embedding": [0.0] * 4096,  # Mock embedding cho test
+                    },
+                    {
+                        "subject_id": subject.id,
+                        "topic": "Chương 2: Vật chất và Ý thức",
+                        "content": "Vật chất là phạm trù triết học dùng để chỉ thực tại khách quan. Ý thức là sự phản ánh năng động, sáng tạo thế giới khách quan vào bộ não người.",
+                        "embedding": [0.0] * 4096,
+                    },
+                ]
+            )
             print("-> Đã seed dữ liệu mẫu giáo trình vào MongoDB để test RAG.")
 
-        test_deadline = (date.today() + timedelta(days=14))
+        test_deadline = date.today() + timedelta(days=14)
 
         # =====================================================================
         # BƯỚC 1: Sinh lộ trình nháp (Unified Draft)
@@ -139,7 +148,7 @@ async def run_unified_flow_test():
             target_score=8.0,
             deadline=test_deadline,
             user_message="Hãy lập cho tôi một lộ trình học hiệu quả.",
-            session_id=None
+            session_id=None,
         )
 
         session_id = draft_result["session_id"]
@@ -158,7 +167,9 @@ async def run_unified_flow_test():
 
         print("\n--- Chi tiết thời khóa biểu (3 ngày đầu): ---")
         for day in plan.daily_schedule[:3]:
-            print(f"  * {day.date} ({day.start_time} - {day.end_time}): {day.task} ({day.description})")
+            print(
+                f"  * {day.date} ({day.start_time} - {day.end_time}): {day.task} ({day.description})"
+            )
 
         print("\n--- Câu hỏi trắc nghiệm đầu tiên (Quiz 1 - Q1): ---")
         first_quiz = plan.quizzes[0]
@@ -181,17 +192,21 @@ async def run_unified_flow_test():
         # =====================================================================
         # BƯỚC 2: Tinh chỉnh lộ trình nháp (Unified Refinement)
         # =====================================================================
-        print("\n[Bước 2] Học sinh phản hồi tinh chỉnh: 'Hãy thêm nhiều câu hỏi trắc nghiệm giải thích chi tiết hơn'...")
+        print(
+            "\n[Bước 2] Học sinh phản hồi tinh chỉnh: 'Hãy thêm nhiều câu hỏi trắc nghiệm giải thích chi tiết hơn'..."
+        )
         refine_result = await generate_unified_draft(
             student=student,
             subject_obj=subject,
             target_score=8.0,
             deadline=test_deadline,
             user_message="Hãy thêm nhiều câu hỏi trắc nghiệm giải thích chi tiết hơn.",
-            session_id=session_id
+            session_id=session_id,
         )
         refined_plan = refine_result["plan"]
-        print(f"✓ Tinh chỉnh thành công! Số câu hỏi của Quiz đầu: {len(refined_plan.quizzes[0].questions)}")
+        print(
+            f"✓ Tinh chỉnh thành công! Số câu hỏi của Quiz đầu: {len(refined_plan.quizzes[0].questions)}"
+        )
 
         # =====================================================================
         # BƯỚC 3: Xác nhận lưu chính thức (Unified Confirm)
@@ -203,7 +218,7 @@ async def run_unified_flow_test():
             subject_obj=subject,
             session_id=session_id,
             target_score=8.0,
-            deadline=test_deadline
+            deadline=test_deadline,
         )
 
         print("✓ Xác nhận thành công!")
@@ -211,12 +226,24 @@ async def run_unified_flow_test():
         print(f"-> Số đề thi trắc nghiệm được tạo: {confirm_result['total_quizzes']}")
 
         # Xác minh trong MySQL DB
-        db_goal = db.query(StudyGoal).filter(StudyGoal.student_id == student.id, StudyGoal.subject_id == subject.id).first()
+        db_goal = (
+            db.query(StudyGoal)
+            .filter(
+                StudyGoal.student_id == student.id, StudyGoal.subject_id == subject.id
+            )
+            .first()
+        )
         assert db_goal is not None, "Mục tiêu học tập chưa được lưu!"
-        print(f"✓ MySQL StudyGoal: ID={db_goal.id}, Target Score={db_goal.target_score}")
+        print(
+            f"✓ MySQL StudyGoal: ID={db_goal.id}, Target Score={db_goal.target_score}"
+        )
 
-        db_plans_count = db.query(StudyPlan).filter(StudyPlan.goal_id == db_goal.id).count()
-        assert db_plans_count == confirm_result["total_plans"], "Số lịch học MySQL không khớp!"
+        db_plans_count = (
+            db.query(StudyPlan).filter(StudyPlan.goal_id == db_goal.id).count()
+        )
+        assert (
+            db_plans_count == confirm_result["total_plans"]
+        ), "Số lịch học MySQL không khớp!"
         print(f"✓ MySQL StudyPlans: Tìm thấy {db_plans_count} nhiệm vụ lịch học.")
 
         db_quiz = db.query(Quiz).filter(Quiz.subject_id == subject.id).first()
@@ -229,13 +256,18 @@ async def run_unified_flow_test():
 
         # Kiểm tra Redis Cache bị xóa sau khi confirm
         cached_data_after = redis_client.get(cache_key)
-        assert cached_data_after is None, "Redis Cache chưa được giải phóng sau khi confirm!"
+        assert (
+            cached_data_after is None
+        ), "Redis Cache chưa được giải phóng sau khi confirm!"
         print("✓ Đã xác minh Redis Cache được xóa sạch sau khi confirm.")
 
-        print("\n🎉🎉 CHÚC MỪNG! TẤT CẢ KIỂM THỬ HỢP NHẤT ĐÃ THÀNH CÔNG VƯỢT TRỘI! 🎉🎉")
+        print(
+            "\n🎉🎉 CHÚC MỪNG! TẤT CẢ KIỂM THỬ HỢP NHẤT ĐÃ THÀNH CÔNG VƯỢT TRỘI! 🎉🎉"
+        )
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     asyncio.run(run_unified_flow_test())

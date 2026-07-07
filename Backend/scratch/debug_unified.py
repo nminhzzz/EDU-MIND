@@ -10,7 +10,8 @@ if os.path.exists(env_path):
             line_str = line.strip()
             if line_str and not line_str.startswith("#") and "=" in line_str:
                 key, val = line_str.split("=", 1)
-                key_clean = key.strip(); val_clean = val.strip()
+                key_clean = key.strip()
+                val_clean = val.strip()
                 if key_clean not in os.environ or not os.environ[key_clean].strip():
                     os.environ[key_clean] = val_clean
 
@@ -39,12 +40,17 @@ print(f"4. Student: {student is not None}, ID={student.id if student else None}"
 subject = db.query(Subject).filter(Subject.code == "MACLENIN_UNIFIED").first()
 print(f"5. Subject: {subject is not None}, ID={subject.id if subject else None}")
 
-pref = db.query(StudentPreference).filter(StudentPreference.student_id == student.id).first()
+pref = (
+    db.query(StudentPreference)
+    .filter(StudentPreference.student_id == student.id)
+    .first()
+)
 print(f"6. Pref: {pref is not None}")
 db.close()
 
 print("7. Calling generate_unified_draft...")
 from app.services.unified_service import generate_unified_draft
+
 
 async def test():
     draft = await generate_unified_draft(
@@ -53,12 +59,13 @@ async def test():
         target_score=8.0,
         deadline=date.today() + timedelta(days=14),
         user_message="Hay lap cho toi mot lo trinh hoc hieu qua.",
-        session_id=None
+        session_id=None,
     )
     print(f"8. Done! Session: {draft['session_id']}")
     print(f"   Weeks: {len(draft['plan'].weeks)}")
     print(f"   Daily tasks: {len(draft['plan'].daily_schedule)}")
     print(f"   Materials: {len(draft['plan'].curriculum_materials)}")
     print(f"   Quizzes: {len(draft['plan'].quizzes)}")
+
 
 asyncio.run(test())

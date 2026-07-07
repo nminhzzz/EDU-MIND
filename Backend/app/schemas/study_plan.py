@@ -16,7 +16,7 @@ class StudyPlanResponse(BaseModel):
     start_time: time
     end_time: time
     ai_generated: bool
-    status: str    # "todo" | "doing" | "done"
+    status: str  # "todo" | "doing" | "done"
     created_at: datetime
 
     class Config:
@@ -25,7 +25,7 @@ class StudyPlanResponse(BaseModel):
 
 # ── Cập nhật trạng thái task ─────────────────────────────────
 class StudyPlanUpdate(BaseModel):
-    status: Optional[str] = None   # "todo" | "doing" | "done"
+    status: Optional[str] = None  # "todo" | "doing" | "done"
     title: Optional[str] = None
     task_description: Optional[str] = None
     rag_content: Optional[str] = None

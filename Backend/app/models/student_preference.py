@@ -1,5 +1,15 @@
 import datetime
-from sqlalchemy import Column, BigInteger, Integer, String, JSON, DateTime, ForeignKey, UniqueConstraint, Enum
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    Integer,
+    String,
+    JSON,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+    Enum,
+)
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -12,7 +22,7 @@ class StudentPreference(Base):
         BigInteger,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True  # 1-1 với users
+        unique=True,  # 1-1 với users
     )
 
     # Số giờ học mỗi ngày mong muốn
@@ -22,7 +32,7 @@ class StudentPreference(Base):
     preferred_study_time = Column(
         Enum("morning", "afternoon", "evening", name="study_times"),
         nullable=True,
-        default="evening"
+        default="evening",
     )
 
     # Lịch rảnh theo ngày trong tuần: {"mon": true, "tue": false, ...}
@@ -31,4 +41,6 @@ class StudentPreference(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationship
-    student = relationship("User", foreign_keys=[student_id], back_populates="preference")
+    student = relationship(
+        "User", foreign_keys=[student_id], back_populates="preference"
+    )

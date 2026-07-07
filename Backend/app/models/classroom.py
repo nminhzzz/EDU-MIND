@@ -9,15 +9,11 @@ class Classroom(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     teacher_id = Column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     subject_id = Column(
-        BigInteger,
-        ForeignKey("subjects.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False
     )
 
     class_name = Column(String(255), nullable=False)
@@ -30,6 +26,10 @@ class Classroom(Base):
 
     # Relationships
     teacher = relationship("User", foreign_keys=[teacher_id])
-    students = relationship("ClassroomStudent", back_populates="classroom", cascade="all, delete-orphan")
-    subject = relationship("Subject", foreign_keys=[subject_id], back_populates="classrooms")
+    students = relationship(
+        "ClassroomStudent", back_populates="classroom", cascade="all, delete-orphan"
+    )
+    subject = relationship(
+        "Subject", foreign_keys=[subject_id], back_populates="classrooms"
+    )
     quizzes = relationship("Quiz", back_populates="classroom")

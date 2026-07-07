@@ -1,6 +1,7 @@
 from app.core.config import settings
 from app.agents.base import get_langchain_nvidia
 
+
 def test_call():
     print("Testing get_langchain_nvidia call...")
     try:
@@ -13,7 +14,9 @@ def test_call():
     except Exception as e:
         print("Error calling LangChain NVIDIA:")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_call()

@@ -9,14 +9,10 @@ class QuizAttempt(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     quiz_id = Column(
-        BigInteger,
-        ForeignKey("quizzes.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False
     )
     student_id = Column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     # Đáp án học sinh chọn: [{"question_index": 0, "answer": "A", "is_correct": true}, ...]

@@ -7,7 +7,7 @@ api_key = "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
 print("=== Test 1: GET /v1/models ===")
 r = requests.get(
     "https://integrate.api.nvidia.com/v1/models",
-    headers={"Authorization": f"Bearer {api_key}"}
+    headers={"Authorization": f"Bearer {api_key}"},
 )
 print(f"Status: {r.status_code}")
 if r.status_code == 200:
@@ -23,8 +23,8 @@ r2 = requests.post(
     json={
         "model": "stepfun-ai/step-3.7-flash",
         "messages": [{"role": "user", "content": "hello"}],
-        "max_tokens": 50
-    }
+        "max_tokens": 50,
+    },
 )
 print(f"Status: {r2.status_code}")
 print(f"Response: {r2.text[:300]}")
@@ -37,8 +37,8 @@ r3 = requests.post(
     json={
         "model": "stepfun-ai/step-3.5-flash",
         "messages": [{"role": "user", "content": "hello"}],
-        "max_tokens": 50
-    }
+        "max_tokens": 50,
+    },
 )
 print(f"Status: {r3.status_code}")
 print(f"Response: {r3.text[:300]}")

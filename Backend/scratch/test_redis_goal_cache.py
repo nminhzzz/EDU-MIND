@@ -32,9 +32,10 @@ from app.models.study_plan import StudyPlan
 
 import app.services.goal_service as goal_service
 
+
 async def run_redis_cache_test():
     print("--- KHỞI CHẠY KIỂM THỬ TÍCH HỢP REDIS CACHE CHO GOAL PLANNER ---")
-    
+
     # Check if redis connection works
     try:
         redis_client.ping()
@@ -45,36 +46,38 @@ async def run_redis_cache_test():
 
     # 1. Đồng bộ cấu trúc MySQL
     Base.metadata.create_all(bind=engine)
-    
+
     db = SessionLocal()
     try:
         # 2. Tạo học sinh giả lập
-        student = db.query(User).filter(User.email == "student_redis_test@test.com").first()
+        student = (
+            db.query(User).filter(User.email == "student_redis_test@test.com").first()
+        )
         if not student:
             student = User(
                 email="student_redis_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Redis",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
             db.refresh(student)
-            
+
         # 3. Tạo môn học giả lập
         subject = db.query(Subject).filter(Subject.code == "TRIETHOC_REDIS").first()
         if not subject:
             subject = Subject(
                 name="Triết học Mác - Lênin (Redis)",
                 code="TRIETHOC_REDIS",
-                description="Môn học Triết học kiểm thử Redis Cache"
+                description="Môn học Triết học kiểm thử Redis Cache",
             )
             db.add(subject)
             db.commit()
             db.refresh(subject)
 
-        test_deadline = (date.today() + timedelta(days=14))
-        
+        test_deadline = date.today() + timedelta(days=14)
+
         # =====================================================================
         # BƯỚC 1: Sinh lộ trình nháp và lưu MongoDB + Redis
         # =====================================================================
@@ -84,12 +87,12 @@ async def run_redis_cache_test():
             subject_obj=subject,
             target_score=8.5,
             deadline=test_deadline,
-            db=db
+            db=db,
         )
-        
+
         session_id = draft_result["session_id"]
         print(f"-> Tạo thành công phiên chat, Session ID: {session_id}")
-        
+
         # =====================================================================
         # BƯỚC 2: Kiểm tra Cache tồn tại và TTL trong Redis
         # =====================================================================
@@ -97,15 +100,15 @@ async def run_redis_cache_test():
         cache_key = f"goal_draft:{session_id}"
         cached_val = redis_client.get(cache_key)
         ttl = redis_client.ttl(cache_key)
-        
+
         if not cached_val:
             print("❌ Thất bại: Không tìm thấy key trong Redis Cache!")
             assert False, "Redis Cache Key does not exist"
-            
+
         print("✓ Key tồn tại trong Redis Cache!")
         print(f"-> TTL của key: {ttl} giây (Mong muốn: ~1800 giây)")
         assert ttl > 1700, f"TTL is not correct: {ttl}"
-        
+
         # Parse và xác minh cấu trúc dữ liệu lưu trong Redis
         cached_data = json.loads(cached_val)
         print("✓ Dữ liệu JSON trong cache hợp lệ!")
@@ -114,7 +117,7 @@ async def run_redis_cache_test():
         print(f"-> Điểm mục tiêu: {cached_data['target_score']}")
         print(f"-> Deadline: {cached_data['deadline']}")
         print(f"-> Số lượng nhiệm vụ học tập: {len(cached_data['plans'])}")
-        
+
         # =====================================================================
         # BƯỚC 3: Xác nhận chốt lưu (Confirm) và đo lường thời gian xử lý nhanh
         # =====================================================================
@@ -126,14 +129,14 @@ async def run_redis_cache_test():
             subject_obj=subject,
             session_id=session_id,
             target_score=8.5,
-            deadline=test_deadline
+            deadline=test_deadline,
         )
         t_end = time.perf_counter()
         duration_ms = (t_end - t_start) * 1000
         print(f"✓ Confirm thành công! Thời gian xử lý: {duration_ms:.2f} ms")
         print(f"-> Đã tạo StudyGoal ID trong MySQL: {confirm_result['goal'].id}")
         print(f"-> Tổng số plans đã lưu MySQL: {confirm_result['total_plans']} tasks")
-        
+
         # =====================================================================
         # BƯỚC 4: Xác minh xóa cache sau khi confirm
         # =====================================================================
@@ -145,30 +148,32 @@ async def run_redis_cache_test():
         print("✓ Xác nhận key cache đã bị xóa hoàn toàn khỏi Redis!")
 
         # Dọn dẹp dữ liệu MySQL của test vừa rồi để test fallback sạch sẽ
-        db.query(StudyPlan).filter(StudyPlan.goal_id == confirm_result['goal'].id).delete()
-        db.query(StudyGoal).filter(StudyGoal.id == confirm_result['goal'].id).delete()
+        db.query(StudyPlan).filter(
+            StudyPlan.goal_id == confirm_result["goal"].id
+        ).delete()
+        db.query(StudyGoal).filter(StudyGoal.id == confirm_result["goal"].id).delete()
         db.commit()
 
         # =====================================================================
         # BƯỚC 5: Kiểm tra cơ chế Fallback (Xóa cache Redis và gọi Confirm)
         # =====================================================================
         print("\n[Bước 5] Kiểm tra cơ chế Fallback sang MongoDB...")
-        
+
         # Sinh nháp mới để tạo cache mới
         draft_result_fallback = await goal_service.generate_goal_plan_draft(
             student=student,
             subject_obj=subject,
             target_score=8.5,
             deadline=test_deadline,
-            db=db
+            db=db,
         )
         session_id_fallback = draft_result_fallback["session_id"]
         cache_key_fallback = f"goal_draft:{session_id_fallback}"
-        
+
         # Giả lập cache bị xóa/hết hạn bằng cách delete key khỏi Redis
         print("-> Tiến hành xóa key cache khỏi Redis để giả lập hết hạn...")
         redis_client.delete(cache_key_fallback)
-        
+
         # Gọi confirm và kiểm tra xem có fallback sang MongoDB thành công không
         print("-> Tiến hành gọi Confirm...")
         t_start_fallback = time.perf_counter()
@@ -178,28 +183,40 @@ async def run_redis_cache_test():
             subject_obj=subject,
             session_id=session_id_fallback,
             target_score=8.5,
-            deadline=test_deadline
+            deadline=test_deadline,
         )
         t_end_fallback = time.perf_counter()
         duration_ms_fallback = (t_end_fallback - t_start_fallback) * 1000
-        
-        print(f"✓ Confirm fallback thành công! Thời gian xử lý: {duration_ms_fallback:.2f} ms")
-        print(f"-> Đã tạo StudyGoal ID mới trong MySQL (qua fallback): {confirm_result_fallback['goal'].id}")
-        print(f"-> Tổng số plans đã lưu MySQL (qua fallback): {confirm_result_fallback['total_plans']} tasks")
-        
+
+        print(
+            f"✓ Confirm fallback thành công! Thời gian xử lý: {duration_ms_fallback:.2f} ms"
+        )
+        print(
+            f"-> Đã tạo StudyGoal ID mới trong MySQL (qua fallback): {confirm_result_fallback['goal'].id}"
+        )
+        print(
+            f"-> Tổng số plans đã lưu MySQL (qua fallback): {confirm_result_fallback['total_plans']} tasks"
+        )
+
         # Dọn dẹp dữ liệu test trong MySQL
-        db.query(StudyPlan).filter(StudyPlan.goal_id == confirm_result_fallback['goal'].id).delete()
-        db.query(StudyGoal).filter(StudyGoal.id == confirm_result_fallback['goal'].id).delete()
+        db.query(StudyPlan).filter(
+            StudyPlan.goal_id == confirm_result_fallback["goal"].id
+        ).delete()
+        db.query(StudyGoal).filter(
+            StudyGoal.id == confirm_result_fallback["goal"].id
+        ).delete()
         db.commit()
-        
+
         print("\n=== KIỂM THỬ THÀNH CÔNG RỰC RỠ! ===")
-        
+
     except Exception as e:
         print(f"\n❌ ERROR: Lỗi trong quá trình chạy test Redis: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     asyncio.run(run_redis_cache_test())

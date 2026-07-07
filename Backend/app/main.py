@@ -1,6 +1,7 @@
 """
 Điểm khởi chạy FastAPI — AI Learning Assistant Platform.
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,7 +12,7 @@ app = FastAPI(
     description="Nền tảng học tập thông minh hỗ trợ bởi AI (Llama 3.1 8B).",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 from app.core.config import settings

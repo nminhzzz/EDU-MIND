@@ -1,6 +1,7 @@
 """
 Pydantic schemas cho Classroom — Giai đoạn 4.
 """
+
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, EmailStr
@@ -45,8 +46,9 @@ class ClassroomResponse(BaseModel):
 
 
 class ClassroomStudentAdd(BaseModel):
-    student_email: EmailStr = Field(..., description="Email của học sinh cần thêm vào lớp")
-
+    student_email: EmailStr = Field(
+        ..., description="Email của học sinh cần thêm vào lớp"
+    )
 
 
 class ClassroomJoin(BaseModel):

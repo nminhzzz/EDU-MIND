@@ -22,53 +22,93 @@ async def generate_progress_events(student_id: int):
     while True:
         db: Session = SessionLocal()
         try:
-            active_goals = db.query(StudyGoal).filter(
-                StudyGoal.student_id == student_id,
-                StudyGoal.status == "active"
-            ).count()
+            active_goals = (
+                db.query(StudyGoal)
+                .filter(
+                    StudyGoal.student_id == student_id, StudyGoal.status == "active"
+                )
+                .count()
+            )
 
             today = date.today()
-            today_plans = db.query(StudyPlan).filter(
-                StudyPlan.student_id == student_id,
-                StudyPlan.study_date == today
-            ).all()
+            today_plans = (
+                db.query(StudyPlan)
+                .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
+                .filter(
+                    StudyPlan.student_id == student_id,
+                    StudyPlan.study_date == today,
+                    StudyGoal.status == "active",
+                )
+                .all()
+            )
             today_total = len(today_plans)
             today_done = sum(1 for p in today_plans if p.status == "done")
             today_doing = sum(1 for p in today_plans if p.status == "doing")
 
-            total_plans_all = db.query(StudyPlan).filter(
-                StudyPlan.student_id == student_id
-            ).count()
-            done_plans_all = db.query(StudyPlan).filter(
-                StudyPlan.student_id == student_id,
-                StudyPlan.status == "done"
-            ).count()
+            total_plans_all = (
+                db.query(StudyPlan)
+                .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
+                .filter(
+                    StudyPlan.student_id == student_id, StudyGoal.status == "active"
+                )
+                .count()
+            )
+            done_plans_all = (
+                db.query(StudyPlan)
+                .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
+                .filter(
+                    StudyPlan.student_id == student_id,
+                    StudyPlan.status == "done",
+                    StudyGoal.status == "active",
+                )
+                .count()
+            )
 
-            total_attempts = db.query(QuizAttempt).filter(
-                QuizAttempt.student_id == student_id
-            ).count()
-            avg_score = db.query(func.avg(QuizAttempt.score)).filter(
-                QuizAttempt.student_id == student_id
-            ).scalar() or 0.0
+            total_attempts = (
+                db.query(QuizAttempt)
+                .filter(QuizAttempt.student_id == student_id)
+                .count()
+            )
+            avg_score = (
+                db.query(func.avg(QuizAttempt.score))
+                .filter(QuizAttempt.student_id == student_id)
+                .scalar()
+                or 0.0
+            )
 
-            unread_notifications = db.query(Notification).filter(
-                Notification.user_id == student_id,
-                Notification.is_read == False
-            ).count()
+            unread_notifications = (
+                db.query(Notification)
+                .filter(
+                    Notification.user_id == student_id, Notification.is_read == False
+                )
+                .count()
+            )
 
-            next_plan = db.query(StudyPlan).filter(
-                StudyPlan.student_id == student_id,
-                StudyPlan.study_date >= today,
-                StudyPlan.status == "todo"
-            ).order_by(StudyPlan.study_date, StudyPlan.start_time).first()
+            next_plan = (
+                db.query(StudyPlan)
+                .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
+                .filter(
+                    StudyPlan.student_id == student_id,
+                    StudyPlan.study_date >= today,
+                    StudyPlan.status == "todo",
+                    StudyGoal.status == "active",
+                )
+                .order_by(StudyPlan.study_date, StudyPlan.start_time)
+                .first()
+            )
 
-            weak_areas = db.query(LearningAnalytic).filter(
-                LearningAnalytic.student_id == student_id
-            ).all()
+            weak_areas = (
+                db.query(LearningAnalytic)
+                .filter(LearningAnalytic.student_id == student_id)
+                .all()
+            )
             weak_summary = []
             for wa in weak_areas:
                 if wa.weak_topics:
-                    weak_topics_list = [t.get("topic", str(t)) if isinstance(t, dict) else str(t) for t in wa.weak_topics]
+                    weak_topics_list = [
+                        t.get("topic", str(t)) if isinstance(t, dict) else str(t)
+                        for t in wa.weak_topics
+                    ]
                     weak_summary.extend(weak_topics_list[:2])
 
             progress_pct = 0
@@ -93,21 +133,30 @@ async def generate_progress_events(student_id: int):
                     "total_attempts": total_attempts,
                     "avg_score": round(float(avg_score), 1),
                 },
-                "next_task": {
-                    "title": next_plan.title if next_plan else None,
-                    "date": next_plan.study_date.isoformat() if next_plan else None,
-                    "time": f"{next_plan.start_time.strftime('%H:%M')} - {next_plan.end_time.strftime('%H:%M')}" if next_plan else None,
-                } if next_plan else None,
+                "next_task": (
+                    {
+                        "title": next_plan.title if next_plan else None,
+                        "date": next_plan.study_date.isoformat() if next_plan else None,
+                        "time": (
+                            f"{next_plan.start_time.strftime('%H:%M')} - {next_plan.end_time.strftime('%H:%M')}"
+                            if next_plan
+                            else None
+                        ),
+                    }
+                    if next_plan
+                    else None
+                ),
                 "weak_areas": weak_summary[:3],
                 "unread_notifications": unread_notifications,
             }
 
             import json
+
             yield f"data: {json.dumps(event_data, ensure_ascii=False)}\n\n"
         except Exception as e:
-            yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+            yield f'data: {{"error": "{str(e)}"}}\n\n'
         finally:
-            db.close() # Giải phóng connection về pool
+            db.close()  # Giải phóng connection về pool
 
         await asyncio.sleep(5)
 
@@ -115,11 +164,9 @@ async def generate_progress_events(student_id: int):
 @router.get(
     "/stream",
     summary="Realtime Dashboard Stream (SSE)",
-    description="Stream tiến độ học tập realtime: tasks hôm nay, tổng quan lộ trình, quiz stats, weak areas."
+    description="Stream tiến độ học tập realtime: tasks hôm nay, tổng quan lộ trình, quiz stats, weak areas.",
 )
-async def dashboard_stream(
-    current_user: User = Depends(get_current_student)
-):
+async def dashboard_stream(current_user: User = Depends(get_current_student)):
     return StreamingResponse(
         generate_progress_events(current_user.id),
         media_type="text/event-stream",
@@ -127,5 +174,5 @@ async def dashboard_stream(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-        }
+        },
     )

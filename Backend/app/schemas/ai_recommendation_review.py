@@ -1,6 +1,7 @@
 """
 Pydantic schemas cho AI Recommendation Review (HITL) — Giai đoạn 4.
 """
+
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -22,5 +23,11 @@ class AIRecommendationReviewResponse(BaseModel):
 
 
 class AIRecommendationReviewUpdate(BaseModel):
-    status: str = Field(..., pattern="^(approved|rejected)$", description="Trạng thái mới: approved hoặc rejected")
-    teacher_feedback: Optional[str] = Field(None, description="Ý kiến phản hồi từ giáo viên")
+    status: str = Field(
+        ...,
+        pattern="^(approved|rejected)$",
+        description="Trạng thái mới: approved hoặc rejected",
+    )
+    teacher_feedback: Optional[str] = Field(
+        None, description="Ý kiến phản hồi từ giáo viên"
+    )

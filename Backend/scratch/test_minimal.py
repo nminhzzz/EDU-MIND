@@ -1,4 +1,5 @@
 import sys, os, asyncio
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
@@ -15,6 +16,7 @@ print("A", flush=True)
 from app.database.mysql import SessionLocal
 from app.models.user import User
 from app.models.subject import Subject
+
 print("B", flush=True)
 db = SessionLocal()
 student = db.query(User).filter(User.email == "unified_student_test@test.com").first()
@@ -22,10 +24,12 @@ subject = db.query(Subject).filter(Subject.code == "MACLENIN_UNIFIED").first()
 db.close()
 print(f"C {student.id} {subject.id}", flush=True)
 
+
 async def test():
     print("D", flush=True)
     await asyncio.sleep(0.1)
     print("E", flush=True)
+
 
 asyncio.run(test())
 print("F", flush=True)

@@ -1,6 +1,7 @@
 """
 FastAPI Router cho các API Môn học (Subjects) — Giai đoạn 4.
 """
+
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from app.services.subject_service import (
     get_subject,
     get_all_subjects,
     update_subject,
-    delete_subject
+    delete_subject,
 )
 
 router = APIRouter()
@@ -25,12 +26,12 @@ router = APIRouter()
     response_model=SubjectResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Giáo viên / Admin tạo môn học mới",
-    description="Chỉ giáo viên hoặc admin mới có quyền tạo môn học. Mã môn học (code) phải là duy nhất."
+    description="Chỉ giáo viên hoặc admin mới có quyền tạo môn học. Mã môn học (code) phải là duy nhất.",
 )
 def api_create_subject(
     body: SubjectCreate,
     db: Session = Depends(get_db),
-    current_teacher: User = Depends(get_current_teacher)
+    current_teacher: User = Depends(get_current_teacher),
 ):
     try:
         return create_subject(db=db, obj_in=body)
@@ -42,13 +43,13 @@ def api_create_subject(
 @router.get(
     "/",
     response_model=List[SubjectResponse],
-    summary="Lấy danh sách tất cả các môn học"
+    summary="Lấy danh sách tất cả các môn học",
 )
 def api_get_subjects(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     return get_all_subjects(db=db, skip=skip, limit=limit)
 
@@ -57,12 +58,12 @@ def api_get_subjects(
 @router.get(
     "/{subject_id}",
     response_model=SubjectResponse,
-    summary="Xem chi tiết thông tin một môn học"
+    summary="Xem chi tiết thông tin một môn học",
 )
 def api_get_subject_detail(
     subject_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         return get_subject(db=db, subject_id=subject_id)
@@ -74,13 +75,13 @@ def api_get_subject_detail(
 @router.patch(
     "/{subject_id}",
     response_model=SubjectResponse,
-    summary="Cập nhật thông tin một môn học"
+    summary="Cập nhật thông tin một môn học",
 )
 def api_update_subject(
     subject_id: int,
     body: SubjectUpdate,
     db: Session = Depends(get_db),
-    current_teacher: User = Depends(get_current_teacher)
+    current_teacher: User = Depends(get_current_teacher),
 ):
     try:
         return update_subject(db=db, subject_id=subject_id, obj_in=body)
@@ -92,12 +93,12 @@ def api_update_subject(
 @router.delete(
     "/{subject_id}",
     response_model=SubjectResponse,
-    summary="Xóa một môn học khỏi hệ thống"
+    summary="Xóa một môn học khỏi hệ thống",
 )
 def api_delete_subject(
     subject_id: int,
     db: Session = Depends(get_db),
-    current_teacher: User = Depends(get_current_teacher)
+    current_teacher: User = Depends(get_current_teacher),
 ):
     try:
         return delete_subject(db=db, subject_id=subject_id)

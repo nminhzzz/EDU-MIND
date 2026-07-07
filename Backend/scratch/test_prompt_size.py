@@ -1,4 +1,5 @@
 import sys, os, time, asyncio, json
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
@@ -33,12 +34,16 @@ days_left = 14
 
 print("1. RAG search...", flush=True)
 db_mongo = get_mongodb_db()
-materials = asyncio.run(vector_search_materials(db_mongo=db_mongo, query_text=subject, subject_id=subject_id, top_k=3))
+materials = asyncio.run(
+    vector_search_materials(
+        db_mongo=db_mongo, query_text=subject, subject_id=subject_id, top_k=3
+    )
+)
 print(f"   Found {len(materials)} materials", flush=True)
 
 context_parts = []
 for i, m in enumerate(materials):
-    content = m['content']
+    content = m["content"]
     if len(content) > 500:
         content = content[:500] + "..."
     context_parts.append(f"--- Tài liệu {i+1} (Chủ đề: {m['topic']}) ---\n{content}")
@@ -74,8 +79,10 @@ t0 = time.time()
 resp = generate_content_nvidia(
     messages=messages,
     system_instruction=system_instruction,
-    response_schema=None, temperature=0.2, tools=None,
-    max_tokens=2048
+    response_schema=None,
+    temperature=0.2,
+    tools=None,
+    max_tokens=2048,
 )
 elapsed = time.time() - t0
 print(f"   OK {elapsed:.1f}s, {len(resp)} chars", flush=True)

@@ -28,12 +28,18 @@ for model in models_to_test:
         r = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "Bạn là chuyên gia giáo dục. Lập lộ trình học JSON: weeks (week, tasks), daily_schedule (date, start_time, end_time, task). Chỉ JSON."},
-                {"role": "user", "content": "Lập lộ trình học Toán 8/10 trong 7 ngày, 2h/ngày buổi tối."}
+                {
+                    "role": "system",
+                    "content": "Bạn là chuyên gia giáo dục. Lập lộ trình học JSON: weeks (week, tasks), daily_schedule (date, start_time, end_time, task). Chỉ JSON.",
+                },
+                {
+                    "role": "user",
+                    "content": "Lập lộ trình học Toán 8/10 trong 7 ngày, 2h/ngày buổi tối.",
+                },
             ],
             max_tokens=1024,
             temperature=0.2,
-            timeout=60
+            timeout=60,
         )
         elapsed = time.time() - t0
         resp = r.choices[0].message.content

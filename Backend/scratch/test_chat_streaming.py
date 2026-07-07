@@ -27,6 +27,7 @@ from app.models.subject import Subject
 import app.agents.chat_tutor.memory as tutor_memory
 from app.agents.chat_tutor.agent import chat_with_tutor_stream
 
+
 async def run_chat_streaming_test():
     print("=== KHỞI CHẠY KIỂM THỬ REALTIME STREAMING (CHAT TUTOR) ===")
 
@@ -37,13 +38,17 @@ async def run_chat_streaming_test():
 
     try:
         # 2. Tạo/lấy học sinh test
-        student = db.query(User).filter(User.email == "streaming_student_test@test.com").first()
+        student = (
+            db.query(User)
+            .filter(User.email == "streaming_student_test@test.com")
+            .first()
+        )
         if not student:
             student = User(
                 email="streaming_student_test@test.com",
                 password_hash="hashedpassword123",
                 full_name="Học Sinh Test Streaming",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
@@ -58,7 +63,7 @@ async def run_chat_streaming_test():
             subject = Subject(
                 name="Triết học Mác - Lênin (Streaming)",
                 code="MACLENIN_STREAM",
-                description="Môn học Triết học phục vụ kiểm thử Chat Streaming"
+                description="Môn học Triết học phục vụ kiểm thử Chat Streaming",
             )
             db.add(subject)
             db.commit()
@@ -71,7 +76,7 @@ async def run_chat_streaming_test():
         session_id = await tutor_memory.create_tutor_session(
             student_id=student.id,
             subject_id=subject.id,
-            title="Học Triết học Marx Realtime Streaming"
+            title="Học Triết học Marx Realtime Streaming",
         )
         print(f"-> Đã tạo phiên chat mới trong MongoDB, Session ID: {session_id}")
 
@@ -83,9 +88,7 @@ async def run_chat_streaming_test():
         full_reply = []
         # Gọi chat_with_tutor_stream nhận từng token
         async for token in chat_with_tutor_stream(
-            user_message=prompt,
-            student_id=student.id,
-            session_id=session_id
+            user_message=prompt, student_id=student.id, session_id=session_id
         ):
             print(token, end="", flush=True)
             full_reply.append(token)
@@ -99,12 +102,17 @@ async def run_chat_streaming_test():
         chat_summary, messages = await tutor_memory.get_tutor_history(session_id)
         assert len(messages) >= 2, "Hội thoại không được lưu vào MongoDB!"
         print(f"✓ MongoDB History: Tìm thấy {len(messages)} tin nhắn trong phiên chat.")
-        print(f"  * Tin nhắn cuối của Gia sư lưu trong MongoDB: {messages[-1]['content'][:80]}...")
+        print(
+            f"  * Tin nhắn cuối của Gia sư lưu trong MongoDB: {messages[-1]['content'][:80]}..."
+        )
 
-        print("\n🎉🎉 CHÚC MỪNG! THỬ NGHIỆM CHAT SSE STREAMING ĐÃ HOÀN TOÀN THÀNH CÔNG! 🎉🎉")
+        print(
+            "\n🎉🎉 CHÚC MỪNG! THỬ NGHIỆM CHAT SSE STREAMING ĐÃ HOÀN TOÀN THÀNH CÔNG! 🎉🎉"
+        )
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     asyncio.run(run_chat_streaming_test())

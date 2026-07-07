@@ -1,11 +1,9 @@
 from app.agents.base import generate_content_nvidia
 from typing import Optional
 
+
 def generate_recommendation(
-    subject_name: str,
-    topic_name: str,
-    score: float,
-    weak_topics: Optional[list] = None
+    subject_name: str, topic_name: str, score: float, weak_topics: Optional[list] = None
 ) -> str:
     """
     AI Agent đóng vai trò Gia sư phân tích lỗi sai và đề xuất nội dung ôn tập cụ thể
@@ -35,12 +33,12 @@ Yêu cầu: Viết bằng tiếng Việt, giọng điệu chuyên nghiệp, tíc
 """
 
     messages = [{"role": "user", "content": prompt}]
-    
+
     # Gọi NVIDIA NIM API
     response_text = generate_content_nvidia(
         messages=messages,
         system_instruction="Bạn là trợ lý AI chuyên nghiệp phân tích kết quả học tập và đề xuất ôn tập.",
-        temperature=0.3
+        temperature=0.3,
     )
 
     return response_text.strip()

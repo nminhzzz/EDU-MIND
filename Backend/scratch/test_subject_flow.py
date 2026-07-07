@@ -26,15 +26,15 @@ from app.services.subject_service import (
     get_subject,
     get_all_subjects,
     update_subject,
-    delete_subject
+    delete_subject,
 )
 
 
 def run_subject_flow_test():
     print("=== BẮT ĐẦU CHẠY THỬ NGHIỆM TÍCH HỢP 4 TẦNG (APIS MÔN HỌC) ===")
-    
+
     db: Session = SessionLocal()
-    
+
     try:
         # Xóa môn học test cũ nếu có
         test_code = "PYTHON_TEST"
@@ -46,10 +46,12 @@ def run_subject_flow_test():
         subj_in = SubjectCreate(
             name="Lập trình Python cơ bản",
             code=test_code,
-            description="Môn học lập trình cơ bản bằng Python"
+            description="Môn học lập trình cơ bản bằng Python",
         )
         subj = create_subject(db=db, obj_in=subj_in)
-        print(f"  -> Tạo môn học thành công! ID: {subj.id}, Name: {subj.name}, Code: {subj.code}")
+        print(
+            f"  -> Tạo môn học thành công! ID: {subj.id}, Name: {subj.name}, Code: {subj.code}"
+        )
         assert subj.id is not None
         assert subj.code == test_code
 
@@ -65,7 +67,9 @@ def run_subject_flow_test():
         # 3. Truy xuất chi tiết môn học
         print("\nStep 3: Xem chi tiết môn học vừa tạo...")
         fetched_subj = get_subject(db=db, subject_id=subj.id)
-        print(f"  -> Lấy thành công! Name: {fetched_subj.name}, Desc: {fetched_subj.description}")
+        print(
+            f"  -> Lấy thành công! Name: {fetched_subj.name}, Desc: {fetched_subj.description}"
+        )
         assert fetched_subj.name == "Lập trình Python cơ bản"
 
         # 4. Lấy tất cả môn học
@@ -79,17 +83,19 @@ def run_subject_flow_test():
         print("\nStep 5: Cập nhật môn học...")
         update_in = SubjectUpdate(
             name="Lập trình Python nâng cao",
-            description="Môn học lập trình nâng cao bằng Python 3.13"
+            description="Môn học lập trình nâng cao bằng Python 3.13",
         )
         updated = update_subject(db=db, subject_id=subj.id, obj_in=update_in)
-        print(f"  -> Cập nhật thành công! Name: {updated.name}, Desc: {updated.description}")
+        print(
+            f"  -> Cập nhật thành công! Name: {updated.name}, Desc: {updated.description}"
+        )
         assert updated.name == "Lập trình Python nâng cao"
 
         # 6. Xóa môn học
         print("\nStep 6: Xóa môn học...")
         deleted = delete_subject(db=db, subject_id=subj.id)
         print(f"  -> Xóa thành công môn học ID: {deleted.id}")
-        
+
         # Thử lấy lại để xác nhận đã xóa
         try:
             get_subject(db=db, subject_id=subj.id)
@@ -105,6 +111,7 @@ def run_subject_flow_test():
     except Exception as e:
         print(f"\n❌ Lỗi trong quá trình chạy test: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         db.close()

@@ -2,9 +2,9 @@ import json
 from app.agents.base import generate_content_nvidia
 from app.agents.analytics_agent.schemas import LearningAnalyticsResponse
 
+
 def evaluate_learning_performance(
-    subject_name: str,
-    attempts_history: list
+    subject_name: str, attempts_history: list
 ) -> LearningAnalyticsResponse:
     """
     Agent phân tích kết quả lịch sử làm bài thi để tự động đánh giá học lực của học sinh.
@@ -32,17 +32,19 @@ Yêu cầu đánh giá:
 """
 
     messages = [{"role": "user", "content": prompt}]
-    
+
     # Gọi NVIDIA NIM API
     response_text = generate_content_nvidia(
         messages=messages,
         system_instruction="Bạn là trợ lý AI chuyên gia giáo dục phân tích học thuật cao cấp.",
         response_schema=LearningAnalyticsResponse,
-        temperature=0.2
+        temperature=0.2,
     )
 
     try:
         data = json.loads(response_text)
         return LearningAnalyticsResponse(**data)
     except Exception as e:
-        raise RuntimeError(f"Lỗi phân tích cú pháp đánh giá học lực từ AI: {e}. Kết quả gốc: {response_text}")
+        raise RuntimeError(
+            f"Lỗi phân tích cú pháp đánh giá học lực từ AI: {e}. Kết quả gốc: {response_text}"
+        )

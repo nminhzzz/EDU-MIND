@@ -2,6 +2,7 @@
 Service xử lý các nghiệp vụ đánh giá học lực (Learning Analytics)
 và tự động sinh đề xuất học tập AI (Recommendation Reviews) — Giai đoạn 4.
 """
+
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from typing import Optional
@@ -19,11 +20,7 @@ from app.agents.recommender.agent import generate_recommendation
 
 
 async def update_student_analytics_and_recommend(
-    db: Session,
-    student_id: int,
-    subject_id: int,
-    quiz_id: int,
-    score: float
+    db: Session, student_id: int, subject_id: int, quiz_id: int, score: float
 ):
     """
     Background Task:
@@ -48,7 +45,7 @@ async def update_student_analytics_and_recommend(
         db.query(LearningAnalytic)
         .filter(
             LearningAnalytic.student_id == student_id,
-            LearningAnalytic.subject_id == subject_id
+            LearningAnalytic.subject_id == subject_id,
         )
         .first()
     )
@@ -59,7 +56,7 @@ async def update_student_analytics_and_recommend(
             average_score=0.0,
             quizzes_completed=0,
             weak_topics=[],
-            strong_topics=[]
+            strong_topics=[],
         )
         db.add(analytic)
         db.flush()
@@ -68,16 +65,17 @@ async def update_student_analytics_and_recommend(
     attempts = (
         db.query(QuizAttempt)
         .join(Quiz, Quiz.id == QuizAttempt.quiz_id)
-        .filter(
-            QuizAttempt.student_id == student_id,
-            Quiz.subject_id == subject_id
-        )
+        .filter(QuizAttempt.student_id == student_id, Quiz.subject_id == subject_id)
         .all()
     )
 
     # ── 4. Tính toán lại số đề hoàn thành & điểm trung bình ──
     quizzes_completed = len(attempts)
-    average_score = sum(float(a.score) for a in attempts) / quizzes_completed if quizzes_completed > 0 else 0.0
+    average_score = (
+        sum(float(a.score) for a in attempts) / quizzes_completed
+        if quizzes_completed > 0
+        else 0.0
+    )
 
     analytic.quizzes_completed = quizzes_completed
     analytic.average_score = average_score
@@ -88,17 +86,18 @@ async def update_student_analytics_and_recommend(
         # Tìm chủ đề đề thi
         a_quiz = db.query(Quiz).filter(Quiz.id == a.quiz_id).first()
         topic_name = a_quiz.title if a_quiz else f"Bài kiểm tra {subject.name}"
-        attempts_history.append({
-            "topic": topic_name,
-            "score": float(a.score),
-            "is_passed": float(a.score) >= 5.0
-        })
+        attempts_history.append(
+            {
+                "topic": topic_name,
+                "score": float(a.score),
+                "is_passed": float(a.score) >= 5.0,
+            }
+        )
 
     # ── 6. Gọi AI Analytics Agent đánh giá lại ──
     try:
         ai_evaluation = evaluate_learning_performance(
-            subject_name=subject.name,
-            attempts_history=attempts_history
+            subject_name=subject.name, attempts_history=attempts_history
         )
         # Chuyển đổi Pydantic schemas sang JSON dicts để lưu vào MySQL
         analytic.weak_topics = [t.model_dump() for t in ai_evaluation.weak_topics]
@@ -116,18 +115,22 @@ async def update_student_analytics_and_recommend(
                 subject_name=subject.name,
                 topic_name=quiz.title,
                 score=score,
-                weak_topics=analytic.weak_topics
+                weak_topics=analytic.weak_topics,
             )
 
             # Giáo viên phụ trách lớp học (ghi nhận để log/history)
-            teacher_id = quiz.classroom.teacher_id if (quiz.classroom and quiz.classroom.teacher_id) else None
+            teacher_id = (
+                quiz.classroom.teacher_id
+                if (quiz.classroom and quiz.classroom.teacher_id)
+                else None
+            )
 
             # Tạo bản ghi đề xuất ôn tập ở trạng thái approved (tự động duyệt)
             db_review = AIRecommendationReview(
                 student_id=student_id,
                 teacher_id=teacher_id,
                 recommendation=ai_recommendation_text,
-                status="approved"
+                status="approved",
             )
             db.add(db_review)
             db.flush()
@@ -140,7 +143,10 @@ async def update_student_analytics_and_recommend(
             # Tìm mục tiêu học tập active cho môn học này trước, nếu không có thì tìm mục tiêu bất kỳ của học sinh
             goal = (
                 db.query(StudyGoal)
-                .filter(StudyGoal.student_id == student_id, StudyGoal.subject_id == subject_id)
+                .filter(
+                    StudyGoal.student_id == student_id,
+                    StudyGoal.subject_id == subject_id,
+                )
                 .order_by(StudyGoal.created_at.desc())
                 .first()
             )
@@ -157,7 +163,11 @@ async def update_student_analytics_and_recommend(
                 start_time = time(19, 0, 0)
                 end_time = time(20, 0, 0)
 
-                title_text = f"[Ôn tập AI] {ai_recommendation_text[:50]}..." if len(ai_recommendation_text) > 50 else f"[Ôn tập AI] {ai_recommendation_text}"
+                title_text = (
+                    f"[Ôn tập AI] {ai_recommendation_text[:50]}..."
+                    if len(ai_recommendation_text) > 50
+                    else f"[Ôn tập AI] {ai_recommendation_text}"
+                )
 
                 db_plan = StudyPlan(
                     student_id=student_id,
@@ -168,7 +178,7 @@ async def update_student_analytics_and_recommend(
                     start_time=start_time,
                     end_time=end_time,
                     ai_generated=True,
-                    status="todo"
+                    status="todo",
                 )
                 db.add(db_plan)
 
@@ -178,7 +188,7 @@ async def update_student_analytics_and_recommend(
                 title="Lịch ôn tập AI bổ sung đã được tạo",
                 content=f"Dựa trên kết quả bài '{quiz.title}' ({score}/10), AI đã tự động tạo lịch ôn tập mới cho bạn.",
                 type="plan",
-                is_read=False
+                is_read=False,
             )
             db.add(db_student_rec_notif)
 
@@ -187,22 +197,34 @@ async def update_student_analytics_and_recommend(
 
     # ── 8. Adaptive Plan: Nếu học sinh có lộ trình active và điểm yếu, tự động refine ──
     try:
-        from app.services.unified_service import get_active_goal_for_subject, generate_unified_draft
+        from app.services.unified_service import (
+            get_active_goal_for_subject,
+            generate_unified_draft,
+        )
         from app.database.mongodb import get_mongodb_db
         from app.repositories import chat_repository
 
         active_goal = get_active_goal_for_subject(db, student_id, subject_id)
         if active_goal and analytic.weak_topics and len(analytic.weak_topics) > 0:
-            weak_topics_str = "; ".join(
-                [t.get("topic", str(t)) if isinstance(t, dict) else str(t) for t in analytic.weak_topics]
-            ) if analytic.weak_topics else ""
+            weak_topics_str = (
+                "; ".join(
+                    [
+                        t.get("topic", str(t)) if isinstance(t, dict) else str(t)
+                        for t in analytic.weak_topics
+                    ]
+                )
+                if analytic.weak_topics
+                else ""
+            )
 
             if weak_topics_str and score < 7.0:
-                print(f"-> Adaptive Plan: Refining plan for student {student_id} due to weak topics: {weak_topics_str}")
+                print(
+                    f"-> Adaptive Plan: Refining plan for student {student_id} due to weak topics: {weak_topics_str}"
+                )
 
                 topic_chat_session = await chat_repository.create_chat_session(
                     student_id=student_id,
-                    title=f"Tự động điều chỉnh lộ trình - {subject.name} (Điểm yếu)"
+                    title=f"Tự động điều chỉnh lộ trình - {subject.name} (Điểm yếu)",
                 )
 
                 db_mongo = get_mongodb_db()
@@ -212,7 +234,7 @@ async def update_student_analytics_and_recommend(
                         "user",
                         f"Tôi vừa làm bài '{quiz.title}' được {score}/10. "
                         f"Các phần yếu cần cải thiện: {weak_topics_str}. "
-                        f"Hãy điều chỉnh lộ trình học tập của tôi để tập trung ôn các phần này."
+                        f"Hãy điều chỉnh lộ trình học tập của tôi để tập trung ôn các phần này.",
                     )
 
                 db_student_notif_adaptive = Notification(
@@ -220,7 +242,7 @@ async def update_student_analytics_and_recommend(
                     title="Lộ trình học được điều chỉnh tự động",
                     content=f"Dựa trên kết quả bài thi '{quiz.title}' ({score}/10), AI đã phân tích điểm yếu và điều chỉnh lộ trình học tập môn {subject.name}. Vui lòng kiểm tra lại lộ trình.",
                     type="plan",
-                    is_read=False
+                    is_read=False,
                 )
                 db.add(db_student_notif_adaptive)
     except Exception as adaptive_err:
@@ -232,7 +254,7 @@ async def update_student_analytics_and_recommend(
         title="Hồ sơ học tập được cập nhật",
         content=f"Kết quả bài thi '{quiz.title}' đạt {score}/10 đã được lưu và đánh giá vào profile học sinh môn {subject.name}.",
         type="score",
-        is_read=False
+        is_read=False,
     )
     db.add(db_student_notif)
 
@@ -251,10 +273,12 @@ def get_system_analytics(db: Session) -> dict:
     total_teachers = db.query(DBUser).filter(DBUser.role == "teacher").count()
     total_admins = db.query(DBUser).filter(DBUser.role == "admin").count()
     total_classrooms = db.query(Classroom).count()
-    total_active_goals = db.query(StudyGoal).filter(StudyGoal.status == "active").count()
+    total_active_goals = (
+        db.query(StudyGoal).filter(StudyGoal.status == "active").count()
+    )
     total_study_plans = db.query(StudyPlan).count()
     total_quizzes = db.query(Quiz).count()
-    
+
     return {
         "total_students": total_students,
         "total_teachers": total_teachers,
@@ -262,5 +286,5 @@ def get_system_analytics(db: Session) -> dict:
         "total_classrooms": total_classrooms,
         "total_active_goals": total_active_goals,
         "total_study_plans": total_study_plans,
-        "total_quizzes": total_quizzes
+        "total_quizzes": total_quizzes,
     }

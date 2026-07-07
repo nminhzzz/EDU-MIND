@@ -1,6 +1,7 @@
 """
 Repository cho User — Giai đoạn 4.
 """
+
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ class UserRepository(BaseRepository[User, AdminUserCreate, AdminUserUpdate]):
     """
     Repository truy xuất dữ liệu cho bảng users.
     """
+
     def get_by_email(self, db: Session, email: str) -> Optional[User]:
         """Tìm người dùng theo email (chuẩn hóa chữ thường)."""
         return db.query(User).filter(User.email == email.lower().strip()).first()

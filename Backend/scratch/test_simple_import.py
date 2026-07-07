@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
@@ -13,6 +14,7 @@ if os.path.exists(env_path):
 
 print("1. Starting...")
 from app.database.redis import get_redis_client
+
 print("2. Redis imported")
 redis_client = get_redis_client()
 print("3. Redis client got")
@@ -22,5 +24,6 @@ from app.database.mysql import engine, SessionLocal
 from app.models.base import Base
 from app.models.user import User
 from app.models.subject import Subject
+
 print("5. Models imported")
 print("DONE")

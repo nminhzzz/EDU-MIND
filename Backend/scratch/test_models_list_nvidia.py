@@ -14,10 +14,7 @@ if os.path.exists(env_path):
 api_key = os.environ.get("NVIDIA_API_KEY")
 print(f"API Key: {api_key[:10]}...{api_key[-10:] if len(api_key) > 20 else ''}")
 
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=api_key
-)
+client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
 
 try:
     print("\n--- Listing NVIDIA NIM Models ---")

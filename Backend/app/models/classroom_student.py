@@ -6,6 +6,7 @@ from app.models.base import Base
 
 class ClassroomStudent(Base):
     """Bảng trung gian nhiều-nhiều giữa Classroom và User (học sinh)."""
+
     __tablename__ = "classroom_students"
 
     # Đảm bảo mỗi học sinh chỉ tham gia 1 lần vào mỗi lớp
@@ -15,14 +16,10 @@ class ClassroomStudent(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     classroom_id = Column(
-        BigInteger,
-        ForeignKey("classrooms.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("classrooms.id", ondelete="CASCADE"), nullable=False
     )
     student_id = Column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     joined_at = Column(DateTime, default=datetime.datetime.utcnow)
 

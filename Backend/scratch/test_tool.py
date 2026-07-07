@@ -14,7 +14,11 @@ if os.path.exists(env_path):
                 os.environ[key.strip()] = val.strip()
 
 from app.database.mysql import Base, engine, SessionLocal
-from app.agents.tools.db_tools import get_student_analytics_db, get_student_study_plans_db
+from app.agents.tools.db_tools import (
+    get_student_analytics_db,
+    get_student_study_plans_db,
+)
+
 
 def test():
     Base.metadata.create_all(bind=engine)
@@ -26,6 +30,7 @@ def test():
         print("Plans Success! Result:", plans)
     except Exception as e:
         print("Error:", e)
+
 
 if __name__ == "__main__":
     test()

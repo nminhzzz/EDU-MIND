@@ -19,6 +19,8 @@ class Subject(Base):
     # Relationships
     classrooms = relationship("Classroom", back_populates="subject")
     study_goals = relationship("StudyGoal", back_populates="subject")
-    documents = relationship("StudyDocument", back_populates="subject", cascade="all, delete-orphan")
+    documents = relationship(
+        "StudyDocument", back_populates="subject", cascade="all, delete-orphan"
+    )
     quizzes = relationship("Quiz", back_populates="subject")
     learning_analytics = relationship("LearningAnalytic", back_populates="subject")

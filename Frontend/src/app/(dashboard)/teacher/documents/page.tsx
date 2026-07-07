@@ -5,6 +5,7 @@ import { apiClient } from "@/services/api-client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X, FolderOpen } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { DocumentRow } from "@/components/teacher/document-row";
 import { EmptyState } from "@/components/teacher/empty-state";
 
@@ -25,10 +26,12 @@ interface Subject {
 }
 
 export default function TeacherDocumentsPage() {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [filterType, setFilterType] = useState<"mine" | "all">("mine");
   const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -53,6 +56,13 @@ export default function TeacherDocumentsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const filteredDocuments = documents.filter((doc) => {
+    if (filterType === "mine") {
+      return doc.created_by === user?.id;
+    }
+    return true;
+  });
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,16 +131,56 @@ export default function TeacherDocumentsPage() {
         </button>
       </div>
 
+      {/* Tabs Filter */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-6">
+        <button
+          onClick={() => setFilterType("mine")}
+          className={`pb-3 text-sm font-bold relative transition-colors ${
+            filterType === "mine"
+              ? "text-violet-600 dark:text-violet-400 font-extrabold"
+              : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+          }`}
+        >
+          Tài liệu của tôi
+          {filterType === "mine" && (
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400"
+            />
+          )}
+        </button>
+        <button
+          onClick={() => setFilterType("all")}
+          className={`pb-3 text-sm font-bold relative transition-colors ${
+            filterType === "all"
+              ? "text-violet-600 dark:text-violet-400 font-extrabold"
+              : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+          }`}
+        >
+          Tất cả tài liệu
+          {filterType === "all" && (
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 dark:bg-violet-400"
+            />
+          )}
+        </button>
+      </div>
+
       {/* Documents list */}
-      {documents.length === 0 ? (
+      {filteredDocuments.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="Chưa có tài liệu nào"
-          description="Hãy tải lên tài liệu giảng dạy đầu tiên để AI có thể hỗ trợ soạn đề thi."
+          title={filterType === "mine" ? "Bạn chưa có tài liệu nào" : "Chưa có tài liệu nào"}
+          description={
+            filterType === "mine"
+              ? "Hãy tải lên tài liệu giảng dạy đầu tiên của bạn để AI hỗ trợ soạn đề thi."
+              : "Không tìm thấy tài liệu nào từ tất cả các giáo viên."
+          }
         />
       ) : (
         <div className="space-y-3">
-          {documents.map((doc, idx) => (
+          {filteredDocuments.map((doc, idx) => (
             <DocumentRow
               key={doc.id}
               id={doc.id}

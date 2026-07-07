@@ -20,19 +20,24 @@ if os.path.exists(env_path):
 
 from app.agents.daily_planner.agent import generate_daily_plan
 
+
 def test_daily_planner():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Bạn chưa điền GEMINI_API_KEY thực tế vào file .env!")
         return
 
     print("--- Khởi chạy Daily Study Planner Agent (Gemini) ---")
-    
+
     # Giả lập tham số lập lịch
     weekly_tasks = [
         "Học chương 1: Khái luận về Triết học Mác - Lênin",
         "Làm Quiz trắc nghiệm ôn tập chương 1",
-        "Đọc trước chương 2: Bản chất của thế giới quan và phương pháp luận"
+        "Đọc trước chương 2: Bản chất của thế giới quan và phương pháp luận",
     ]
     subject = "Triết học Mác - Lênin"
     target_score = 8.5
@@ -58,13 +63,16 @@ def test_daily_planner():
             study_hours_per_day=study_hours_per_day,
             preferred_time=preferred_time,
             off_days=off_days,
-            current_date=current_date
+            current_date=current_date,
         )
         print("\n=== THỜI KHÓA BIỂU CHI TIẾT TỪNG NGÀY (JSON THỰC TẾ) ===")
         print(json.dumps(plan.model_dump(), indent=2, ensure_ascii=False))
-        print("\nSUCCESS: Thời khóa biểu đã được lập và validate thành công với Pydantic schema!")
+        print(
+            "\nSUCCESS: Thời khóa biểu đã được lập và validate thành công với Pydantic schema!"
+        )
     except Exception as e:
         print(f"\nERROR: Đã xảy ra lỗi khi chạy Agent: {e}")
+
 
 if __name__ == "__main__":
     test_daily_planner()

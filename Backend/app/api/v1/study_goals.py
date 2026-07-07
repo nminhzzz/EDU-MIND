@@ -7,6 +7,7 @@ Endpoints:
     PATCH /api/v1/goals/{goal_id}    — Cập nhật trạng thái goal
     GET  /api/v1/goals/{goal_id}/plans — Lấy danh sách study_plans của goal
 """
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,10 +17,7 @@ from app.api.deps import get_db, get_current_student
 from app.models.user import User
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
-from app.schemas.study_goal import (
-    StudyGoalUpdate,
-    StudyGoalResponse
-)
+from app.schemas.study_goal import StudyGoalUpdate, StudyGoalResponse
 from app.schemas.study_plan import StudyPlanResponse
 
 router = APIRouter()
@@ -29,11 +27,10 @@ router = APIRouter()
 @router.get(
     "/",
     response_model=List[StudyGoalResponse],
-    summary="Lấy danh sách mục tiêu học tập của học sinh"
+    summary="Lấy danh sách mục tiêu học tập của học sinh",
 )
 def get_my_goals(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_student)
 ):
     goals = (
         db.query(StudyGoal)
@@ -48,12 +45,12 @@ def get_my_goals(
 @router.get(
     "/{goal_id}",
     response_model=StudyGoalResponse,
-    summary="Xem chi tiết một mục tiêu học tập"
+    summary="Xem chi tiết một mục tiêu học tập",
 )
 def get_goal(
     goal_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     goal = (
         db.query(StudyGoal)
@@ -63,7 +60,7 @@ def get_goal(
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy mục tiêu học tập."
+            detail="Không tìm thấy mục tiêu học tập.",
         )
     return goal
 
@@ -72,13 +69,13 @@ def get_goal(
 @router.patch(
     "/{goal_id}",
     response_model=StudyGoalResponse,
-    summary="Cập nhật trạng thái mục tiêu học tập"
+    summary="Cập nhật trạng thái mục tiêu học tập",
 )
 def update_goal(
     goal_id: int,
     body: StudyGoalUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     goal = (
         db.query(StudyGoal)
@@ -88,7 +85,7 @@ def update_goal(
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy mục tiêu học tập."
+            detail="Không tìm thấy mục tiêu học tập.",
         )
 
     update_data = body.model_dump(exclude_unset=True)
@@ -104,12 +101,12 @@ def update_goal(
 @router.get(
     "/{goal_id}/plans",
     response_model=List[StudyPlanResponse],
-    summary="Xem lịch học chi tiết của một mục tiêu"
+    summary="Xem lịch học chi tiết của một mục tiêu",
 )
 def get_goal_plans(
     goal_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     # Kiểm tra goal thuộc về học sinh này
     goal = (
@@ -120,7 +117,7 @@ def get_goal_plans(
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy mục tiêu học tập."
+            detail="Không tìm thấy mục tiêu học tập.",
         )
 
     plans = (
@@ -136,12 +133,12 @@ def get_goal_plans(
 @router.delete(
     "/{goal_id}",
     status_code=status.HTTP_200_OK,
-    summary="Xóa mục tiêu học tập và toàn bộ lịch học, đề thi liên quan"
+    summary="Xóa mục tiêu học tập và toàn bộ lịch học, đề thi liên quan",
 )
 def delete_goal(
     goal_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_student)
+    current_user: User = Depends(get_current_student),
 ):
     goal = (
         db.query(StudyGoal)
@@ -151,13 +148,13 @@ def delete_goal(
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy lộ trình học tập để xóa."
+            detail="Không tìm thấy lộ trình học tập để xóa.",
         )
 
     try:
         from app.models.quiz import Quiz
         from app.models.quiz_attempt import QuizAttempt
-        
+
         # 1. Tìm các study_plan_ids liên kết với goal này
         plan_ids = [p.id for p in goal.study_plans]
         if plan_ids:
@@ -166,17 +163,23 @@ def delete_goal(
             quiz_ids = [q.id for q in quizzes]
             if quiz_ids:
                 # Xóa các quiz attempts trước để tránh lỗi khóa ngoại
-                db.query(QuizAttempt).filter(QuizAttempt.quiz_id.in_(quiz_ids)).delete(synchronize_session=False)
+                db.query(QuizAttempt).filter(QuizAttempt.quiz_id.in_(quiz_ids)).delete(
+                    synchronize_session=False
+                )
                 # Xóa các quizzes
-                db.query(Quiz).filter(Quiz.id.in_(quiz_ids)).delete(synchronize_session=False)
+                db.query(Quiz).filter(Quiz.id.in_(quiz_ids)).delete(
+                    synchronize_session=False
+                )
 
         # 2. Xóa study_goal (SQLAlchemy cascade sẽ tự động xóa study_plans)
         db.delete(goal)
         db.commit()
-        return {"message": "Đã xóa lộ trình học tập và toàn bộ dữ liệu liên quan thành công!"}
+        return {
+            "message": "Đã xóa lộ trình học tập và toàn bộ dữ liệu liên quan thành công!"
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xóa lộ trình: {str(e)}"
+            detail=f"Lỗi khi xóa lộ trình: {str(e)}",
         )

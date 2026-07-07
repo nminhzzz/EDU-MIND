@@ -35,11 +35,12 @@ class ChatSession(BaseModel):
     Phiên hội thoại giữa học sinh và AI Chat Tutor.
     Một học sinh có thể mở nhiều phiên khác nhau theo từng môn học.
     """
+
     id: Optional[str] = Field(default=None, alias="_id")
 
     # ID học sinh (tham chiếu sang MySQL users.id)
     student_id: int
-    
+
     # Lớp học liên quan (tùy chọn, giúp AI hiểu ngữ cảnh)
     classroom_id: Optional[int] = None
 
@@ -60,6 +61,7 @@ class ChatMessage(BaseModel):
     Một tin nhắn đơn lẻ trong phiên chat.
     Lưu trữ theo chuỗi để AI đọc làm bộ nhớ ngữ cảnh hội thoại.
     """
+
     id: Optional[str] = Field(default=None, alias="_id")
 
     # Tham chiếu đến ChatSession._id
@@ -83,6 +85,7 @@ class StudyMaterialEmbedding(BaseModel):
     """
     Mảnh tài liệu học tập cùng Vector Embedding tương ứng phục vụ RAG.
     """
+
     id: Optional[str] = Field(default=None, alias="_id")
 
     # Tham chiếu sang MySQL subjects.id

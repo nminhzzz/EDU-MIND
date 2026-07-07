@@ -11,7 +11,7 @@ try:
             password_hash=hash_password("adminpassword"),
             full_name="System Admin",
             role="admin",
-            is_active=True
+            is_active=True,
         )
         db.add(admin)
         db.commit()

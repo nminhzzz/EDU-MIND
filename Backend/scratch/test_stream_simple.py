@@ -26,17 +26,21 @@ print(f"2. Student={student.id}, Subject={subject.id}")
 
 from app.services.unified_service import generate_unified_draft_stream
 
+
 async def test():
     print("3. Starting stream...")
     i = 0
     async for msg_type, msg_data in generate_unified_draft_stream(
-        student=student, subject_obj=subject,
+        student=student,
+        subject_obj=subject,
         target_score=7.0,
         deadline=date.today() + timedelta(days=7),
-        user_message="test plan", session_id=None
+        user_message="test plan",
+        session_id=None,
     ):
         print(f"[{i}] {msg_type}: {str(msg_data)[:80]}")
         i += 1
     print("4. DONE")
+
 
 asyncio.run(test())

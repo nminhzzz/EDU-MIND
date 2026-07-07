@@ -1,15 +1,19 @@
 """
 Bảo mật: Hash mật khẩu (bcrypt) + tạo/verify JWT token.
 """
+
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 # --- Bản vá lỗi tương thích giữa passlib và bcrypt 4.x/5.x ---
 import bcrypt
+
 if not hasattr(bcrypt, "__about__"):
+
     class BcryptAboutPatch:
         __version__ = getattr(bcrypt, "__version__", "4.0.0")
+
     bcrypt.__about__ = BcryptAboutPatch()
 
 from jose import JWTError, jwt
@@ -26,8 +30,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Kiểm tra mật khẩu plain với hash đã lưu trong DB."""
     try:
         return bcrypt.checkpw(
-            plain_password.encode("utf-8"),
-            hashed_password.encode("utf-8")
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
         )
     except Exception:
         return False
@@ -42,6 +45,7 @@ def hash_password(password: str) -> str:
 
 import uuid
 from app.database.redis import redis_client
+
 
 def is_token_blacklisted(jti: str) -> bool:
     """Kiểm tra JTI (JWT ID) có trong danh sách đen của Redis hay không."""
@@ -74,12 +78,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
     # Tạo jti (JWT ID) ngẫu nhiên nếu chưa có để nhận dạng token độc lập
     if "jti" not in to_encode:
         to_encode["jti"] = uuid.uuid4().hex
-        
+
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -102,11 +108,13 @@ def decode_access_token(token: str) -> Optional[dict]:
 def create_refresh_token(data: dict) -> str:
     """Tạo JWT refresh token với hạn dùng dài (mặc định 7 ngày)."""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+
     if "jti" not in to_encode:
         to_encode["jti"] = uuid.uuid4().hex
-        
+
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 

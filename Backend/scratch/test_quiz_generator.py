@@ -20,9 +20,14 @@ if os.path.exists(env_path):
 
 from app.agents.quiz_generator.agent import generate_quiz
 
+
 def test_quiz_generator():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Bạn chưa điền GEMINI_API_KEY thực tế vào file .env!")
         return
 
@@ -46,13 +51,16 @@ def test_quiz_generator():
             topic=topic,
             difficulty=difficulty,
             total_questions=total_questions,
-            question_type=question_type
+            question_type=question_type,
         )
         print("\n=== ĐỀ THI DO AI SOẠN THẢO (JSON THỰC TẾ) ===")
         print(json.dumps(quiz.model_dump(), indent=2, ensure_ascii=False))
-        print("\nSUCCESS: Đề thi đã được tạo và validate thành công với Pydantic schema!")
+        print(
+            "\nSUCCESS: Đề thi đã được tạo và validate thành công với Pydantic schema!"
+        )
     except Exception as e:
         print(f"\nERROR: Đã xảy ra lỗi khi chạy Agent: {e}")
+
 
 if __name__ == "__main__":
     test_quiz_generator()

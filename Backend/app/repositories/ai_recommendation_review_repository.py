@@ -1,6 +1,7 @@
 """
 Repository cho AIRecommendationReview — Giai đoạn 4.
 """
+
 from typing import List
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
@@ -18,7 +19,10 @@ class AIRecommendationReviewRepository(
     """
     Repository truy xuất dữ liệu cho bảng ai_recommendation_reviews.
     """
-    def get_pending_by_teacher(self, db: Session, teacher_id: int) -> List[AIRecommendationReview]:
+
+    def get_pending_by_teacher(
+        self, db: Session, teacher_id: int
+    ) -> List[AIRecommendationReview]:
         """
         Lấy danh sách các đề xuất học tập ở trạng thái pending (chờ duyệt)
         của các học sinh nằm trong các lớp học do giáo viên này phụ trách.
@@ -32,10 +36,12 @@ class AIRecommendationReviewRepository(
                     db.query(ClassroomStudent.student_id)
                     .join(Classroom, Classroom.id == ClassroomStudent.classroom_id)
                     .filter(Classroom.teacher_id == teacher_id)
-                )
+                ),
             )
             .all()
         )
 
 
-ai_recommendation_review_repository = AIRecommendationReviewRepository(AIRecommendationReview)
+ai_recommendation_review_repository = AIRecommendationReviewRepository(
+    AIRecommendationReview
+)

@@ -8,6 +8,7 @@ export const ROUTES = {
   STUDENT_GOALS: "/student/goals",
   STUDENT_QUIZ: (id: string | number) => `/student/quizzes/${id}`,
   STUDENT_CHAT: "/student/chat",
+  STUDENT_RECOMMENDATIONS: "/student/recommendations",
   
   // Teacher Workspace
   TEACHER_DASHBOARD: "/teacher",

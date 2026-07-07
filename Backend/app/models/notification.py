@@ -1,5 +1,14 @@
 import datetime
-from sqlalchemy import Column, BigInteger, String, Text, Enum, Boolean, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    String,
+    Text,
+    Enum,
+    Boolean,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -9,9 +18,7 @@ class Notification(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(
-        BigInteger,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     title = Column(String(255), nullable=False)
@@ -20,7 +27,7 @@ class Notification(Base):
     type = Column(
         Enum("quiz", "plan", "score", "system", name="notification_types"),
         nullable=False,
-        default="system"
+        default="system",
     )
 
     is_read = Column(Boolean, default=False)

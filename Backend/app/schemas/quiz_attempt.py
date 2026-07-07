@@ -1,6 +1,7 @@
 """
 Pydantic schemas cho Quiz Attempt (Lượt làm bài) — Giai đoạn 3 & 4.
 """
+
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -8,7 +9,9 @@ from pydantic import BaseModel, Field
 
 class QuizAttemptAnswer(BaseModel):
     question_index: int = Field(description="Chỉ mục câu hỏi trong đề (0-indexed)")
-    answer: str = Field(description="Đáp án học sinh chọn, vd: A, B, C, D hoặc True, False")
+    answer: str = Field(
+        description="Đáp án học sinh chọn, vd: A, B, C, D hoặc True, False"
+    )
 
 
 class QuizAttemptAnswerResponse(QuizAttemptAnswer):
@@ -16,7 +19,9 @@ class QuizAttemptAnswerResponse(QuizAttemptAnswer):
 
 
 class QuizAttemptCreate(BaseModel):
-    answers: List[QuizAttemptAnswer] = Field(description="Danh sách đáp án học sinh đã làm")
+    answers: List[QuizAttemptAnswer] = Field(
+        description="Danh sách đáp án học sinh đã làm"
+    )
     duration_seconds: int = Field(description="Thời gian làm bài tính bằng giây")
 
 

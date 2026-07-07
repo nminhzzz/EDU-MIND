@@ -2,6 +2,7 @@
 FastAPI Dependency Injection.
 Cung cấp: get_db (MySQL session) + get_current_user (JWT auth).
 """
+
 from typing import Generator, Optional
 
 from fastapi import Depends, HTTPException, status, Request
@@ -33,7 +34,7 @@ from app.core.config import settings
 
 def get_token_from_request(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> str:
     """
     Trích xuất access token từ:
@@ -51,10 +52,10 @@ def get_token_from_request(
         if request.method in ("POST", "PUT", "DELETE", "PATCH"):
             origin = request.headers.get("origin")
             referer = request.headers.get("referer")
-            
+
             allowed = settings.BACKEND_CORS_ORIGINS
             is_trusted = False
-            
+
             if origin and origin in allowed:
                 is_trusted = True
             elif referer:
@@ -62,11 +63,11 @@ def get_token_from_request(
                     if referer.startswith(allowed_origin):
                         is_trusted = True
                         break
-            
+
             if not is_trusted:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Cảnh báo CSRF: Request bị từ chối do không trùng khớp Origin được tin tưởng."
+                    detail="Cảnh báo CSRF: Request bị từ chối do không trùng khớp Origin được tin tưởng.",
                 )
         return token
 
@@ -79,8 +80,7 @@ def get_token_from_request(
 
 
 def get_current_user(
-    token: str = Depends(get_token_from_request),
-    db: Session = Depends(get_db)
+    token: str = Depends(get_token_from_request), db: Session = Depends(get_db)
 ) -> User:
     """
     Dependency xác thực access token từ Cookie hoặc Header và trả về User hiện tại.
@@ -105,8 +105,7 @@ def get_current_user(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tài khoản đã bị vô hiệu hóa."
+            status_code=status.HTTP_403_FORBIDDEN, detail="Tài khoản đã bị vô hiệu hóa."
         )
 
     return user
@@ -117,7 +116,7 @@ def get_current_student(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in ("student", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ học sinh mới có quyền truy cập endpoint này."
+            detail="Chỉ học sinh mới có quyền truy cập endpoint này.",
         )
     return current_user
 
@@ -127,7 +126,7 @@ def get_current_teacher(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in ("teacher", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ giáo viên mới có quyền truy cập endpoint này."
+            detail="Chỉ giáo viên mới có quyền truy cập endpoint này.",
         )
     return current_user
 
@@ -137,7 +136,39 @@ def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ quản trị viên mới có quyền truy cập hệ thống quản trị này."
+            detail="Chỉ quản trị viên mới có quyền truy cập hệ thống quản trị này.",
         )
     return current_user
 
+
+from app.database.redis import get_redis_client
+
+
+def rate_limiter(limit: int, period_seconds: int):
+    """
+    Dependency giới hạn tần suất gọi API của học sinh sử dụng Redis.
+    limit: số lượng request tối đa trong khoảng thời gian.
+    period_seconds: khoảng thời gian giới hạn (giây).
+    """
+
+    async def dependency(current_user: User = Depends(get_current_student)):
+        redis_client = get_redis_client()
+        key = f"rate_limit:draft:{current_user.id}"
+
+        current_requests = redis_client.get(key)
+        if current_requests and int(current_requests) >= limit:
+            ttl = redis_client.ttl(key)
+            if ttl < 0:
+                ttl = period_seconds
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Tần suất tạo lộ trình quá nhanh! Vui lòng thử lại sau {ttl} giây.",
+            )
+
+        pipeline = redis_client.pipeline()
+        pipeline.incr(key)
+        if not current_requests:
+            pipeline.expire(key, period_seconds)
+        pipeline.execute()
+
+    return dependency

@@ -16,12 +16,16 @@ models = [
 for model in models:
     try:
         t0 = time.time()
-        r = requests.post(url, headers=headers, json={
-            "model": model,
-            "messages": prompt,
-            "max_tokens": 100,
-            "temperature": 0.5
-        })
+        r = requests.post(
+            url,
+            headers=headers,
+            json={
+                "model": model,
+                "messages": prompt,
+                "max_tokens": 100,
+                "temperature": 0.5,
+            },
+        )
         elapsed = time.time() - t0
         if r.status_code == 200:
             data = r.json()

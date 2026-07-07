@@ -2,11 +2,15 @@ from typing import Optional, List, Dict, Any, AsyncGenerator
 from app.agents.base import generate_content_nvidia, generate_content_nvidia_stream
 from app.agents.prompts import CHAT_TUTOR_SYSTEM_PROMPT
 from app.agents.tools.datetime_tool import get_current_date
-from app.agents.tools.db_tools import get_student_study_plans_db, get_student_analytics_db, get_last_attempt_details_db
+from app.agents.tools.db_tools import (
+    get_student_study_plans_db,
+    get_student_analytics_db,
+    get_last_attempt_details_db,
+)
 from app.agents.chat_tutor.memory import (
     get_tutor_history,
     add_tutor_message,
-    summarize_session_if_needed
+    summarize_session_if_needed,
 )
 from app.agents.chat_tutor.intent import detect_intent, extract_subject
 from app.database.mysql import SessionLocal
@@ -18,15 +22,16 @@ from app.services.unified_service import (
     generate_unified_draft_stream,
     confirm_unified_draft,
     format_plan_as_text,
-    get_active_goal_for_subject
+    get_active_goal_for_subject,
 )
 from app.database.redis import get_redis_client
+
 
 async def _build_chat_context(
     user_message: str,
     history: Optional[List[Dict[str, str]]],
     student_id: int,
-    session_id: Optional[str]
+    session_id: Optional[str],
 ) -> tuple:
     today = get_current_date()
     try:
@@ -68,14 +73,14 @@ async def normal_chat_with_tutor(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     student_id: int = 1,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
 ) -> tuple:
-    sys_inst, msgs, recent, _ = await _build_chat_context(user_message, history, student_id, session_id)
+    sys_inst, msgs, recent, _ = await _build_chat_context(
+        user_message, history, student_id, session_id
+    )
 
     reply_text = generate_content_nvidia(
-        messages=msgs,
-        system_instruction=sys_inst,
-        temperature=0.7
+        messages=msgs, system_instruction=sys_inst, temperature=0.7
     )
 
     if session_id:
@@ -95,15 +100,15 @@ async def stream_chat_with_tutor(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     student_id: int = 1,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
 ):
-    sys_inst, msgs, recent, _ = await _build_chat_context(user_message, history, student_id, session_id)
+    sys_inst, msgs, recent, _ = await _build_chat_context(
+        user_message, history, student_id, session_id
+    )
 
     reply_tokens = []
     for token in generate_content_nvidia_stream(
-        messages=msgs,
-        system_instruction=sys_inst,
-        temperature=0.7
+        messages=msgs, system_instruction=sys_inst, temperature=0.7
     ):
         reply_tokens.append(token)
         yield token
@@ -117,10 +122,7 @@ async def stream_chat_with_tutor(
 
 
 async def chat_with_plan(
-    intent: dict,
-    student_id: int,
-    session_id: Optional[str],
-    db=None
+    intent: dict, student_id: int, session_id: Optional[str], db=None
 ) -> tuple:
     data = intent["data"]
 
@@ -131,7 +133,7 @@ async def chat_with_plan(
         deadline_hint = f" hạn {data['deadline']}" if data.get("deadline") else ""
         reply = (
             f"Để lập lộ trình học tập, anh/chị vui lòng cung cấp thêm: {', '.join(missing)}.\n"
-            f"Ví dụ: \"Tôi muốn học{subject_hint} đạt{score_hint} trong{deadline_hint} 2 tuần\""
+            f'Ví dụ: "Tôi muốn học{subject_hint} đạt{score_hint} trong{deadline_hint} 2 tuần"'
         )
         return reply, []
 
@@ -141,16 +143,23 @@ async def chat_with_plan(
             return "Vui lòng đăng nhập để lập lộ trình.", []
 
         subject_name = data.get("subject", "")
-        subject = db.query(Subject).filter(
-            Subject.name.ilike(f"%{subject_name}%")
-        ).first() if db else None
+        subject = (
+            db.query(Subject).filter(Subject.name.ilike(f"%{subject_name}%")).first()
+            if db
+            else None
+        )
         if not subject:
             return f"Không tìm thấy môn học '{subject_name}' trong hệ thống.", []
 
         target_score = float(data.get("target_score", 7.0))
         from datetime import date
+
         deadline_str = data.get("deadline")
-        deadline = date.fromisoformat(deadline_str) if deadline_str else date.today().replace(month=date.today().month + 1)
+        deadline = (
+            date.fromisoformat(deadline_str)
+            if deadline_str
+            else date.today().replace(month=date.today().month + 1)
+        )
 
         user_msg = data.get("user_message", "Hãy lập lộ trình học tập cho tôi.")
 
@@ -162,7 +171,7 @@ async def chat_with_plan(
             target_score=target_score,
             deadline=deadline,
             user_message=user_msg,
-            session_id=session_id_to_use
+            session_id=session_id_to_use,
         )
 
         plan = result["plan"]
@@ -175,8 +184,8 @@ async def chat_with_plan(
             f"---\n"
             f"🆔 Mã phiên: {new_session_id}\n\n"
             f"Anh/chị có thể:\n"
-            f"- Nói **\"sửa/tinh chỉnh\"** để điều chỉnh lộ trình\n"
-            f"- Nói **\"lưu lại\"** hoặc **\"OK\"** để chốt lưu vào hệ thống"
+            f'- Nói **"sửa/tinh chỉnh"** để điều chỉnh lộ trình\n'
+            f'- Nói **"lưu lại"** hoặc **"OK"** để chốt lưu vào hệ thống'
         )
         return reply, []
 
@@ -192,35 +201,53 @@ async def chat_with_plan(
 
         import json
         from datetime import date
+
         cached = redis_client.get(cached_key)
         plan_data = json.loads(cached)
 
         subject_id = plan_data.get("_subject_id")
         if not subject_id:
-            first_material = (plan_data.get("curriculum_materials") or [None])
+            first_material = plan_data.get("curriculum_materials") or [None]
             if first_material:
-                subject = db.query(Subject).filter(
-                    Subject.name.ilike(f"%{first_material[0].get('topic', '')}%")
-                ).first() if db else None
+                subject = (
+                    db.query(Subject)
+                    .filter(
+                        Subject.name.ilike(f"%{first_material[0].get('topic', '')}%")
+                    )
+                    .first()
+                    if db
+                    else None
+                )
                 subject_id = subject.id if subject else None
 
         if not subject_id:
             subject = db.query(Subject).first()
             subject_id = subject.id if subject else None
 
-        subject_obj = db.query(Subject).filter(Subject.id == subject_id).first() if subject_id else None
+        subject_obj = (
+            db.query(Subject).filter(Subject.id == subject_id).first()
+            if subject_id
+            else None
+        )
         if not subject_obj:
             return "Không tìm thấy môn học. Vui lòng tạo lại lộ trình.", []
 
-        last_date = plan_data.get("daily_schedule", [{}])[-1].get("date", str(date.today()))
+        last_date = plan_data.get("daily_schedule", [{}])[-1].get(
+            "date", str(date.today())
+        )
         from datetime import date as dt_date
+
         confirm = await confirm_unified_draft(
             db=db,
             student=student,
             subject_obj=subject_obj,
             session_id=session_id,
             target_score=plan_data.get("_target_score", 7.0),
-            deadline=dt_date.fromisoformat(last_date) if isinstance(last_date, str) else dt_date.today()
+            deadline=(
+                dt_date.fromisoformat(last_date)
+                if isinstance(last_date, str)
+                else dt_date.today()
+            ),
         )
 
         reply = (
@@ -238,7 +265,7 @@ async def chat_with_tutor(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     student_id: int = 1,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
 ) -> tuple:
     intent = await detect_intent(user_message, session_id, student_id)
 
@@ -255,19 +282,24 @@ async def chat_with_tutor(
         # Lấy thông tin bài quiz gần nhất của học sinh từ MySQL
         quiz_data = get_last_attempt_details_db(student_id)
         if not quiz_data:
-            return "Bạn chưa hoàn thành bài quiz nào gần đây để mình có thể phân tích lỗi sai giúp bạn.", []
-        
+            return (
+                "Bạn chưa hoàn thành bài quiz nào gần đây để mình có thể phân tích lỗi sai giúp bạn.",
+                [],
+            )
+
         # Tạo prompt cho AI dựa trên chi tiết câu trả lời sai
         analysis_context = f"Đề thi: {quiz_data['quiz_title']}\n"
         analysis_context += f"Kết quả: {quiz_data['correct_count']} câu đúng, {quiz_data['wrong_count']} câu sai (Điểm: {quiz_data['score']}/10)\n\n"
         analysis_context += "Chi tiết các câu hỏi trong đề thi:\n"
-        
+
         for idx, q in enumerate(quiz_data["questions"]):
             status_text = "Đúng" if q["is_correct"] else "SAI"
             analysis_context += f"Câu {idx+1}: {q['question_text']}\n"
             analysis_context += f"  - Lựa chọn: {q['options']}\n"
             analysis_context += f"  - Học sinh trả lời: {q['chosen_answer']}\n"
-            analysis_context += f"  - Đáp án đúng: {q['correct_answer']} (Trạng thái: {status_text})\n"
+            analysis_context += (
+                f"  - Đáp án đúng: {q['correct_answer']} (Trạng thái: {status_text})\n"
+            )
             analysis_context += f"  - Giải thích lý thuyết: {q['explanation']}\n\n"
 
         system_instruction = (
@@ -277,13 +309,14 @@ async def chat_with_tutor(
         )
 
         messages = [
-            {"role": "user", "content": f"Hãy phân tích chi tiết kết quả làm bài của tôi và giải thích các câu sai.\n\nDữ liệu bài làm:\n{analysis_context}"}
+            {
+                "role": "user",
+                "content": f"Hãy phân tích chi tiết kết quả làm bài của tôi và giải thích các câu sai.\n\nDữ liệu bài làm:\n{analysis_context}",
+            }
         ]
 
         reply_text = generate_content_nvidia(
-            messages=messages,
-            system_instruction=system_instruction,
-            temperature=0.4
+            messages=messages, system_instruction=system_instruction, temperature=0.4
         )
 
         if session_id:
@@ -294,17 +327,14 @@ async def chat_with_tutor(
         else:
             return reply_text, []
 
-    return await normal_chat_with_tutor(
-        user_message, history, student_id, session_id
-    )
-
+    return await normal_chat_with_tutor(user_message, history, student_id, session_id)
 
 
 async def chat_with_tutor_stream(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     student_id: int = 1,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     intent = await detect_intent(user_message, session_id, student_id)
 
@@ -315,6 +345,7 @@ async def chat_with_tutor_stream(
             for token in reply.split(" "):
                 yield token + " "
                 import asyncio
+
                 await asyncio.sleep(0.01)
         except Exception as e:
             yield f"[Lỗi: {str(e)}]"
@@ -331,25 +362,37 @@ async def chat_with_tutor_stream(
                 return
 
             subject_name = intent["data"].get("subject", "")
-            subject = db.query(Subject).filter(
-                Subject.name.ilike(f"%{subject_name}%")
-            ).first() if db else None
+            subject = (
+                db.query(Subject)
+                .filter(Subject.name.ilike(f"%{subject_name}%"))
+                .first()
+                if db
+                else None
+            )
             if not subject:
                 yield f"Không tìm thấy môn học '{subject_name}'."
                 return
 
             target_score = float(intent["data"].get("target_score", 7.0))
             from datetime import date
+
             deadline_str = intent["data"].get("deadline")
-            deadline = date.fromisoformat(deadline_str) if deadline_str else date.today().replace(month=date.today().month + 1)
+            deadline = (
+                date.fromisoformat(deadline_str)
+                if deadline_str
+                else date.today().replace(month=date.today().month + 1)
+            )
             user_msg = intent["data"].get("user_message", "")
             sid_to_use = session_id if intent["type"] == "refine_plan" else None
 
             is_first_token = True
             async for msg_type, msg_data in generate_unified_draft_stream(
-                student=student, subject_obj=subject,
-                target_score=target_score, deadline=deadline,
-                user_message=user_msg, session_id=sid_to_use
+                student=student,
+                subject_obj=subject,
+                target_score=target_score,
+                deadline=deadline,
+                user_message=user_msg,
+                session_id=sid_to_use,
             ):
                 if msg_type == "progress":
                     yield f"\n{msg_data}\n"
@@ -377,6 +420,7 @@ async def chat_with_tutor_stream(
             for token in reply.split(" "):
                 yield token + " "
                 import asyncio
+
                 await asyncio.sleep(0.01)
         except Exception as e:
             yield f"[Lỗi: {str(e)}]"
@@ -386,15 +430,17 @@ async def chat_with_tutor_stream(
 
     if intent["type"] == "explain_quiz":
         try:
-            reply, _ = await chat_with_tutor(user_message, history, student_id, session_id)
+            reply, _ = await chat_with_tutor(
+                user_message, history, student_id, session_id
+            )
             for token in reply.split(" "):
                 yield token + " "
                 import asyncio
+
                 await asyncio.sleep(0.01)
         except Exception as e:
             yield f"[Lỗi: {str(e)}]"
         return
-
 
     async for token in stream_chat_with_tutor(
         user_message, history, student_id, session_id

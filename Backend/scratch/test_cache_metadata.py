@@ -9,7 +9,8 @@ if os.path.exists(env_path):
             line_str = line.strip()
             if line_str and not line_str.startswith("#") and "=" in line_str:
                 key, val = line_str.split("=", 1)
-                key_clean = key.strip(); val_clean = val.strip()
+                key_clean = key.strip()
+                val_clean = val.strip()
                 if key_clean not in os.environ or not os.environ[key_clean].strip():
                     os.environ[key_clean] = val_clean
 
@@ -35,17 +36,22 @@ print(f"3. Student={student.id}, Subject={subject.id}")
 
 from app.services.unified_service import generate_unified_draft
 
+
 async def test():
     print("4. Calling generate_unified_draft...")
     result = await generate_unified_draft(
-        student=student, subject_obj=subject,
+        student=student,
+        subject_obj=subject,
         target_score=8.0,
         deadline=date.today() + timedelta(days=14),
-        user_message="test", session_id=None
+        user_message="test",
+        session_id=None,
     )
     sid = result["session_id"]
     print(f"5. Done! Session={sid}")
-    print(f"   Weeks={len(result['plan'].weeks)} Daily={len(result['plan'].daily_schedule)}")
+    print(
+        f"   Weeks={len(result['plan'].weeks)} Daily={len(result['plan'].daily_schedule)}"
+    )
     print(f"   Quizzes={len(result['plan'].quizzes)}")
 
     cached = redis_client.get(f"unified_draft:{sid}")
@@ -53,5 +59,6 @@ async def test():
     print(f"6. Redis has _subject_id: {'_subject_id' in data}")
     print(f"   _target_score={data.get('_target_score')}")
     print("ALL OK")
+
 
 asyncio.run(test())

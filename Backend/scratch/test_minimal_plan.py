@@ -1,4 +1,5 @@
 import sys, os, time, json
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
@@ -29,8 +30,10 @@ t0 = time.time()
 resp = generate_content_nvidia(
     messages=[{"role": "user", "content": prompt}],
     system_instruction=system_instruction,
-    response_schema=None, temperature=0.2, tools=None,
-    max_tokens=2048
+    response_schema=None,
+    temperature=0.2,
+    tools=None,
+    max_tokens=2048,
 )
 elapsed = time.time() - t0
 print(f"Time: {elapsed:.1f}s, Response: {len(resp)} chars", flush=True)
@@ -38,7 +41,11 @@ print(f"First 200: {resp[:200]}", flush=True)
 
 try:
     data = json.loads(resp)
-    print(f"Has weeks: {len(data.get('weeks', []))}, daily: {len(data.get('daily_schedule', []))}")
-    print(f"Has materials: {len(data.get('curriculum_materials', []))}, quizzes: {len(data.get('quizzes', []))}")
+    print(
+        f"Has weeks: {len(data.get('weeks', []))}, daily: {len(data.get('daily_schedule', []))}"
+    )
+    print(
+        f"Has materials: {len(data.get('curriculum_materials', []))}, quizzes: {len(data.get('quizzes', []))}"
+    )
 except Exception as e:
     print(f"JSON parse error: {e}")

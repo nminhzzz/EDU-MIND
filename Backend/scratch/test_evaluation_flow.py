@@ -33,36 +33,45 @@ from app.models.notification import Notification
 import app.services.quiz_service as quiz_service
 import app.services.analytic_service as analytic_service
 
+
 async def run_evaluation_test():
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    if not gemini_key or gemini_key == "your_gemini_api_key_here" or gemini_key.strip() == "":
+    if (
+        not gemini_key
+        or gemini_key == "your_gemini_api_key_here"
+        or gemini_key.strip() == ""
+    ):
         print("WARNING: Bạn chưa điền GEMINI_API_KEY thực tế vào file .env!")
         return
 
     print("--- KHỞI CHẠY KIỂM THỬ LUỒNG ĐÁNH GIÁ HỌC LỰC & ĐỀ XUẤT AI ---")
-    
+
     db = SessionLocal()
     try:
         # 1. Lấy hoặc tạo dữ liệu Học sinh, Giáo viên, Môn học, Lớp học
-        student = db.query(User).filter(User.email == "student_test_eval@test.com").first()
+        student = (
+            db.query(User).filter(User.email == "student_test_eval@test.com").first()
+        )
         if not student:
             student = User(
                 email="student_test_eval@test.com",
                 password_hash="mockpassword",
                 full_name="Nguyễn Văn Học Sinh (Test Eval)",
-                role="student"
+                role="student",
             )
             db.add(student)
             db.commit()
             db.refresh(student)
 
-        teacher = db.query(User).filter(User.email == "teacher_test_eval@test.com").first()
+        teacher = (
+            db.query(User).filter(User.email == "teacher_test_eval@test.com").first()
+        )
         if not teacher:
             teacher = User(
                 email="teacher_test_eval@test.com",
                 password_hash="mockpassword",
                 full_name="Thầy Cô Giáo Viên (Test Eval)",
-                role="teacher"
+                role="teacher",
             )
             db.add(teacher)
             db.commit()
@@ -73,52 +82,72 @@ async def run_evaluation_test():
             subject = Subject(
                 name="Triết học Mác - Lênin (Kiểm thử)",
                 code="TRIETHOC_EVAL",
-                description="Môn học Triết học cơ bản phục vụ kiểm thử"
+                description="Môn học Triết học cơ bản phục vụ kiểm thử",
             )
             db.add(subject)
             db.commit()
             db.refresh(subject)
 
-        classroom = db.query(Classroom).filter(Classroom.class_code == "CLASS_EVAL").first()
+        classroom = (
+            db.query(Classroom).filter(Classroom.class_code == "CLASS_EVAL").first()
+        )
         if not classroom:
             classroom = Classroom(
                 teacher_id=teacher.id,
                 subject_id=subject.id,
                 class_name="Lớp Triết học Eval",
                 class_code="CLASS_EVAL",
-                description="Lớp học kiểm thử tự đánh giá"
+                description="Lớp học kiểm thử tự đánh giá",
             )
             db.add(classroom)
             db.commit()
             db.refresh(classroom)
 
             # Gán học sinh vào lớp học
-            class_student = ClassroomStudent(classroom_id=classroom.id, student_id=student.id)
+            class_student = ClassroomStudent(
+                classroom_id=classroom.id, student_id=student.id
+            )
             db.add(class_student)
             db.commit()
 
         # 2. Tạo một Đề thi mẫu (Quiz)
-        quiz = db.query(Quiz).filter(Quiz.student_id == student.id, Quiz.title == "Bài thi mẫu chủ đề Vật chất").first()
+        quiz = (
+            db.query(Quiz)
+            .filter(
+                Quiz.student_id == student.id,
+                Quiz.title == "Bài thi mẫu chủ đề Vật chất",
+            )
+            .first()
+        )
         if not quiz:
             questions_data = [
                 {
                     "question_text": "Theo triết học Mác - Lênin, vật chất là gì?",
-                    "options": [{"key": "A", "value": "Thực tại khách quan"}, {"key": "B", "value": "Ý thức chủ quan"}],
+                    "options": [
+                        {"key": "A", "value": "Thực tại khách quan"},
+                        {"key": "B", "value": "Ý thức chủ quan"},
+                    ],
                     "correct_answer": "A",
-                    "explanation": "Vật chất là thực tại khách quan tồn tại độc lập với cảm giác con người."
+                    "explanation": "Vật chất là thực tại khách quan tồn tại độc lập với cảm giác con người.",
                 },
                 {
                     "question_text": "Ý thức phản ánh cái gì?",
-                    "options": [{"key": "A", "value": "Thế giới khách quan"}, {"key": "B", "value": "Ý muốn của thần linh"}],
+                    "options": [
+                        {"key": "A", "value": "Thế giới khách quan"},
+                        {"key": "B", "value": "Ý muốn của thần linh"},
+                    ],
                     "correct_answer": "A",
-                    "explanation": "Ý thức phản ánh năng động thế giới khách quan."
+                    "explanation": "Ý thức phản ánh năng động thế giới khách quan.",
                 },
                 {
                     "question_text": "Mối quan hệ giữa vật chất và ý thức?",
-                    "options": [{"key": "A", "value": "Vật chất quyết định ý thức"}, {"key": "B", "value": "Ý thức quyết định vật chất"}],
+                    "options": [
+                        {"key": "A", "value": "Vật chất quyết định ý thức"},
+                        {"key": "B", "value": "Ý thức quyết định vật chất"},
+                    ],
                     "correct_answer": "A",
-                    "explanation": "Vật chất có trước, quyết định ý thức; ý thức có tính độc lập tương đối."
-                }
+                    "explanation": "Vật chất có trước, quyết định ý thức; ý thức có tính độc lập tương đối.",
+                },
             ]
             quiz = Quiz(
                 student_id=student.id,
@@ -127,7 +156,7 @@ async def run_evaluation_test():
                 difficulty="medium",
                 total_questions=3,
                 questions=questions_data,
-                generated_by_ai=True
+                generated_by_ai=True,
             )
             db.add(quiz)
             db.commit()
@@ -139,10 +168,11 @@ async def run_evaluation_test():
         submitted_answers = [
             {"question_index": 0, "answer": "A"},
             {"question_index": 1, "answer": "B"},
-            {"question_index": 2, "answer": "B"}
+            {"question_index": 2, "answer": "B"},
         ]
-        
+
         from app.schemas.quiz_attempt import QuizAttemptAnswer
+
         answers_schemas = [QuizAttemptAnswer(**ans) for ans in submitted_answers]
 
         print("\nTiến hành chấm thi tự động...")
@@ -151,9 +181,11 @@ async def run_evaluation_test():
             quiz_id=quiz.id,
             student_id=student.id,
             submitted_answers=answers_schemas,
-            duration_seconds=120
+            duration_seconds=120,
         )
-        print(f"  -> Kết quả: {attempt.correct_count} câu đúng | Score: {attempt.score}/10")
+        print(
+            f"  -> Kết quả: {attempt.correct_count} câu đúng | Score: {attempt.score}/10"
+        )
 
         # 4. Kích hoạt logic phân tích học lực và đề xuất học tập ôn luyện (đồng bộ để lấy kết quả)
         print("\nAI đang tiến hành phân tích học lực và lập đề xuất ôn tập (RAG)...")
@@ -162,20 +194,24 @@ async def run_evaluation_test():
             student_id=student.id,
             subject_id=subject.id,
             quiz_id=quiz.id,
-            score=float(attempt.score)
+            score=float(attempt.score),
         )
 
         # 5. Truy vấn dữ liệu thực tế từ MySQL để kiểm tra
         print("\n=======================================================")
         print("         🎉 KẾT QUẢ PHÂN TÍCH VÀ ĐỀ XUẤT AI            ")
         print("=======================================================")
-        
+
         # Kiểm tra LearningAnalytics
-        analytic = db.query(LearningAnalytic).filter(
-            LearningAnalytic.student_id == student.id,
-            LearningAnalytic.subject_id == subject.id
-        ).first()
-        
+        analytic = (
+            db.query(LearningAnalytic)
+            .filter(
+                LearningAnalytic.student_id == student.id,
+                LearningAnalytic.subject_id == subject.id,
+            )
+            .first()
+        )
+
         print("\n1. Bảng learning_analytics (Hồ sơ học lực học sinh):")
         print(f"  - Số đề đã hoàn thành: {analytic.quizzes_completed}")
         print(f"  - Điểm số trung bình môn: {analytic.average_score:.2f}")
@@ -184,18 +220,28 @@ async def run_evaluation_test():
         print(f"  - Các chủ đề nắm vững (strong_topics): {analytic.strong_topics}")
 
         # Kiểm tra AIRecommendationReview
-        recommendations = db.query(AIRecommendationReview).filter(
-            AIRecommendationReview.student_id == student.id
-        ).all()
-        print(f"\n2. Bảng ai_recommendation_reviews (Đề xuất ôn tập AI chờ giáo viên duyệt):")
+        recommendations = (
+            db.query(AIRecommendationReview)
+            .filter(AIRecommendationReview.student_id == student.id)
+            .all()
+        )
+        print(
+            f"\n2. Bảng ai_recommendation_reviews (Đề xuất ôn tập AI chờ giáo viên duyệt):"
+        )
         print(f"  - Tìm thấy: {len(recommendations)} đề xuất.")
         for i, rec in enumerate(recommendations, 1):
-            print(f"  * Đề xuất {i}: [Trạng thái: {rec.status}] | Giáo viên phụ trách ID: {rec.teacher_id}")
+            print(
+                f"  * Đề xuất {i}: [Trạng thái: {rec.status}] | Giáo viên phụ trách ID: {rec.teacher_id}"
+            )
             print(f"    Nội dung đề xuất từ AI:\n{rec.recommendation}")
             print("-" * 60)
 
         # Kiểm tra Notifications
-        notifs = db.query(Notification).filter(Notification.user_id.in_([student.id, teacher.id])).all()
+        notifs = (
+            db.query(Notification)
+            .filter(Notification.user_id.in_([student.id, teacher.id]))
+            .all()
+        )
         print(f"\n3. Thông báo hệ thống (Notifications):")
         for n in notifs:
             user_role = "Học sinh" if n.user_id == student.id else "Giáo viên"
@@ -206,6 +252,8 @@ async def run_evaluation_test():
     finally:
         db.close()
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(run_evaluation_test())

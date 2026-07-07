@@ -23,6 +23,7 @@ export function Sidebar() {
     { label: "Lộ trình học", href: ROUTES.STUDENT_GOALS },
     { label: "Gia sư AI", href: ROUTES.STUDENT_CHAT },
     { label: "Luyện đề", href: "/student/quizzes" },
+    { label: "Khuyến nghị AI", href: ROUTES.STUDENT_RECOMMENDATIONS },
   ];
 
   const teacherItems: SidebarItem[] = [

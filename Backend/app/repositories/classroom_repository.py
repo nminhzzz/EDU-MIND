@@ -1,6 +1,7 @@
 """
 Repository cho Classroom — Giai đoạn 4.
 """
+
 from typing import List
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,7 @@ class ClassroomRepository(BaseRepository[Classroom, ClassroomCreate, ClassroomUp
     """
     Repository truy xuất dữ liệu cho bảng classrooms.
     """
+
     def get_by_teacher(self, db: Session, teacher_id: int) -> List[Classroom]:
         """Lấy danh sách các lớp do giáo viên này dạy."""
         return db.query(Classroom).filter(Classroom.teacher_id == teacher_id).all()

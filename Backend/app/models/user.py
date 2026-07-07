@@ -14,32 +14,46 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     grade = Column(
         Enum(
-            "grade_6", "grade_7", "grade_8", "grade_9",
-            "grade_10", "grade_11", "grade_12",
-            "uni_year_1", "uni_year_2", "uni_year_3", "uni_year_4",
-            name="student_grade"
+            "grade_6",
+            "grade_7",
+            "grade_8",
+            "grade_9",
+            "grade_10",
+            "grade_11",
+            "grade_12",
+            "uni_year_1",
+            "uni_year_2",
+            "uni_year_3",
+            "uni_year_4",
+            name="student_grade",
         ),
-        nullable=True
+        nullable=True,
     )
 
     role = Column(
         Enum("student", "teacher", "admin", name="user_roles"),
         nullable=False,
-        default="student"
+        default="student",
     )
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
 
     # Relationships
     preference = relationship(
         "StudentPreference",
         back_populates="student",
         uselist=False,  # 1-1
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     classrooms_teaching = relationship("Classroom", back_populates="teacher")
     classroom_memberships = relationship("ClassroomStudent", back_populates="student")
-    study_goals = relationship("StudyGoal", foreign_keys="StudyGoal.student_id", back_populates="student")
-    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    study_goals = relationship(
+        "StudyGoal", foreign_keys="StudyGoal.student_id", back_populates="student"
+    )
+    notifications = relationship(
+        "Notification", back_populates="user", cascade="all, delete-orphan"
+    )

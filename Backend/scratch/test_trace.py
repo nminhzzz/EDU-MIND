@@ -1,5 +1,6 @@
 import sys, os, asyncio
 from datetime import date, timedelta
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 if os.path.exists(env_path):
@@ -15,6 +16,7 @@ if os.path.exists(env_path):
 from app.database.mysql import SessionLocal
 from app.models.user import User
 from app.models.subject import Subject
+
 db = SessionLocal()
 student = db.query(User).filter(User.email == "unified_student_test@test.com").first()
 subject = db.query(Subject).filter(Subject.code == "MACLENIN_UNIFIED").first()
@@ -23,13 +25,16 @@ print(f"1. {student.id} {subject.id}", flush=True)
 
 from app.services.unified_service import generate_unified_draft_stream
 
+
 async def test():
     print("2. entering async for", flush=True)
     gen = generate_unified_draft_stream(
-        student=student, subject_obj=subject,
+        student=student,
+        subject_obj=subject,
         target_score=7.0,
         deadline=date.today() + timedelta(days=7),
-        user_message="test", session_id=None
+        user_message="test",
+        session_id=None,
     )
     print("3. got generator", flush=True)
     i = 0
@@ -40,7 +45,9 @@ async def test():
     except Exception as e:
         print(f"ERROR: {e}", flush=True)
         import traceback
+
         traceback.print_exc()
     print("4. DONE", flush=True)
+
 
 asyncio.run(test())
