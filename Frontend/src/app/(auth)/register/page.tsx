@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StudentGrade, UserRole } from "@/types/user";
+import { parseApiError } from "@/utils/api-error";
 
 export default function RegisterPage() {
   const { register, isLoading } = useAuth();
@@ -35,8 +36,8 @@ export default function RegisterPage() {
       toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc.");
       return;
     }
-    if (password.length < 6) {
-      toast.error("Mật khẩu phải dài từ 6 ký tự trở lên.");
+    if (password.length < 8) {
+      toast.error("Mật khẩu phải có ít nhất 8 ký tự.");
       return;
     }
 
@@ -50,13 +51,8 @@ export default function RegisterPage() {
       };
       await register(payload);
       toast.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
-    } catch (err: any) {
-      console.log(err);
-      const msg =
-        err.response?.data?.detail ||
-        err.message ||
-        "Đăng ký thất bại. Vui lòng thử lại.";
-      toast.error(msg);
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Đăng ký thất bại. Vui lòng thử lại."));
     }
   };
 
@@ -192,7 +188,7 @@ export default function RegisterPage() {
                 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block"
                 htmlFor="password"
               >
-                Mật khẩu (tối thiểu 6 ký tự)
+                Mật khẩu (tối thiểu 8 ký tự)
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-400 pointer-events-none">
@@ -202,6 +198,7 @@ export default function RegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   required
+                  minLength={8}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

@@ -2,18 +2,25 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { User, AuthState } from "@/types/user";
+import { User, AuthState, RegisterRequest } from "@/types/user";
 import { userApi } from "@/services/user";
 import { ROUTES } from "@/constants/routes";
+import { getSafeRedirectPath } from "@/lib/safe-redirect";
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (email: string, password: string, redirectTo?: string) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function getDefaultDashboard(role: User["role"]): string {
+  if (role === "admin") return ROUTES.ADMIN;
+  if (role === "teacher") return ROUTES.TEACHER_DASHBOARD;
+  return ROUTES.STUDENT_DASHBOARD;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -23,16 +30,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const router = useRouter();
 
-  // Khôi phục phiên đăng nhập từ cookie access_token (nếu có)
   const checkAuth = async () => {
+    const AUTH_TIMEOUT_MS = 12_000;
+
     try {
-      const response = await userApi.getMe();
+      const response = await Promise.race([
+        userApi.getMe(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Auth timeout")), AUTH_TIMEOUT_MS),
+        ),
+      ]);
       setState({
         user: response.data,
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch (_) {
+    } catch {
       setState({
         user: null,
         isAuthenticated: false,
@@ -45,13 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  // Đăng nhập
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, redirectTo?: string) => {
     setState((prev: AuthState) => ({ ...prev, isLoading: true }));
     try {
       await userApi.login(email, password);
-      
-      // Lấy thông tin user vừa đăng nhập thành công
+
       const userResponse = await userApi.getMe();
       const user = userResponse.data;
 
@@ -61,22 +72,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
       });
 
-      // Chuyển hướng theo vai trò (Role)
-      if (user.role === "admin") {
-        router.push(ROUTES.ADMIN);
-      } else if (user.role === "teacher") {
-        router.push(ROUTES.TEACHER_DASHBOARD);
-      } else {
-        router.push(ROUTES.STUDENT_DASHBOARD);
-      }
+      const destination =
+        getSafeRedirectPath(redirectTo, user.role) ?? getDefaultDashboard(user.role);
+      router.push(destination);
     } catch (error) {
       setState((prev: AuthState) => ({ ...prev, isLoading: false }));
       throw error;
     }
   };
 
-  // Đăng ký tài khoản mới
-  const register = async (data: any) => {
+  const register = async (data: RegisterRequest) => {
     setState((prev: AuthState) => ({ ...prev, isLoading: true }));
     try {
       await userApi.register(data);
@@ -88,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Đăng xuất
   const logout = async () => {
     setState((prev: AuthState) => ({ ...prev, isLoading: true }));
     try {

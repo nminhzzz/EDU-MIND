@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduMind Frontend
 
-## Getting Started
+Next.js 16 frontend for the AI Learning Assistant Platform (FastAPI backend).
 
-First, run the development server:
+## Quick Start
 
 ```bash
+cd Frontend
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+With Docker Compose (from repo root):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up
+```
 
-## Learn More
+The frontend container uses `NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1` and `API_INTERNAL_URL=http://backend:8000/api/v1`.
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Scope | Description |
+|----------|-------|-------------|
+| `NEXT_PUBLIC_API_URL` | Browser | API base for Axios and SSE |
+| `API_INTERNAL_URL` | Server only | API base for SSR fetch (Docker internal network) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [`.env.example`](.env.example) for per-environment values.
 
-## Deploy on Vercel
+## Authentication Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The backend delivers JWT tokens exclusively via **HttpOnly cookies**. The frontend never stores, reads, or sends tokens manually.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### What the frontend does
+
+| Action | Implementation |
+|--------|----------------|
+| Login | `POST /auth/login` → cookies set by browser → `GET /auth/me` |
+| Session restore | `AuthProvider.checkAuth()` calls `/auth/me` on mount |
+| API calls | `apiClient` with `withCredentials: true` |
+| Token refresh | Axios interceptor calls `POST /auth/refresh` on 401 |
+| Logout | `POST /auth/logout` → backend revokes tokens and clears cookies |
+| Route guards | `middleware.ts` (edge) + `dashboard-layout-client.tsx` (client) |
+
+### What the frontend does NOT do
+
+- Store `access_token` or `refresh_token` in `localStorage` / `sessionStorage`
+- Set `Authorization: Bearer` headers from client-side token state
+- Read cookie values in client JavaScript
+
+### CSRF protection
+
+Write requests authenticated via cookies are validated server-side using `Origin` / `Referer` headers against `BACKEND_CORS_ORIGINS`. No CSRF token is required on the frontend.
+
+### Key files
+
+```
+src/
+├── config/api.ts           # API URL configuration
+├── services/api-client.ts # Axios instance + refresh interceptor
+├── services/user.ts        # Auth API wrappers
+├── providers/auth-provider.tsx
+├── middleware.ts           # Edge route guard (UX only)
+├── lib/auth-cookies.ts     # Cookie constants + JWT decode helpers
+├── lib/server-api.ts       # SSR authenticated fetch
+├── lib/safe-redirect.ts    # Post-login redirect validation
+└── utils/api-error.ts      # FastAPI error message parser
+```
+
+## Project Structure
+
+```
+src/app/
+├── (auth)/          # Login, register
+├── (dashboard)/     # Student, teacher, admin workspaces
+src/components/     # Role-scoped UI components
+src/services/         # API abstraction layer
+src/types/            # TypeScript contracts (mirrors backend schemas)
+```
+
+## Scripts
+
+```bash
+npm run dev      # Development server (webpack)
+npm run build    # Production build (use --webpack if Turbopack conflicts)
+npm run start    # Start production server
+npm run lint     # ESLint
+```
+
+## Production (nginx)
+
+When served behind the nginx reverse proxy at `https://localhost`, set:
+
+```
+NEXT_PUBLIC_API_URL=https://localhost/api/v1
+```
+
+Or use a relative path for same-origin requests:
+
+```
+NEXT_PUBLIC_API_URL=/api/v1
+```
+
+## Production Build (Docker)
+
+The production Dockerfile accepts build-time API URLs:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=/api/v1 \
+  --build-arg API_INTERNAL_URL=http://backend:8000/api/v1 \
+  -f Frontend/Dockerfile.prod \
+  Frontend
+```
+
+`npm run build` uses webpack explicitly (required while custom webpack config is present).

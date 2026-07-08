@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { ROUTES } from "@/constants/routes";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, Loader2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -25,11 +26,11 @@ function LoginForm() {
     }
 
     try {
-      await login(email, password);
+      const redirectTo = searchParams.get("redirect") ?? undefined;
+      await login(email, password, redirectTo);
       toast.success("Đăng nhập thành công!");
-    } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại.";
-      toast.error(msg);
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Đăng nhập thất bại. Vui lòng kiểm tra lại."));
     }
 
   };

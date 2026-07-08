@@ -1,11 +1,14 @@
 import datetime
-from sqlalchemy import Column, BigInteger, JSON, Numeric, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, BigInteger, JSON, Numeric, Integer, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 
 class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
+    __table_args__ = (
+        Index("ix_quiz_attempt_student_quiz", "student_id", "quiz_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     quiz_id = Column(

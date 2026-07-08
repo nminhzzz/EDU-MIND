@@ -19,7 +19,7 @@ router = APIRouter()
     summary="Admin lấy báo cáo chỉ số hệ thống",
     description="Chỉ Admin mới có quyền truy cập. Trả về tổng quan số lượng tài khoản, lớp học và lộ trình trên hệ thống.",
 )
-def api_get_system_analytics(
+async def api_get_system_analytics(
     db: Session = Depends(get_db), current_admin: User = Depends(get_current_admin)
 ):
-    return get_system_analytics(db=db)
+    return await get_system_analytics(db=db)

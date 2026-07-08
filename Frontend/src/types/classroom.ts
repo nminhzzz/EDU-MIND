@@ -1,9 +1,13 @@
+/** Matches Backend ClassroomResponse. */
 export interface Classroom {
   id: number;
-  name: string;
-  code: string;
   teacher_id: number;
+  subject_id: number;
+  class_name: string;
+  class_code: string;
+  description: string | null;
   created_at: string;
+  student_count?: number;
 }
 
 export interface ClassroomStudent {
@@ -11,12 +15,4 @@ export interface ClassroomStudent {
   classroom_id: number;
   student_id: number;
   joined_at: string;
-}
-
-export interface Subject {
-  id: number;
-  name: string;
-  code: string;
-  description: string | null;
-  grade: string | null;
 }

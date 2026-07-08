@@ -1,24 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-
-interface Subject {
-  id: number;
-  name: string;
-  code: string;
-  description: string | null;
-  created_at: string;
-}
+import { Subject } from "@/types/subject";
+import { ADMIN_ACCESS_DENIED } from "@/constants/admin";
+import { useAdminAccess } from "@/hooks/use-admin-access";
 
 export default function AdminSubjectsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isLoading, denied } = useAdminAccess();
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,28 +34,25 @@ export default function AdminSubjectsPage() {
     try {
       const res = await apiClient.get<Subject[]>("/subjects/");
       setSubjects(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Lỗi tải môn học:", err);
-      setError("Không thể tải danh sách môn học từ hệ thống.");
+      setError(parseApiError(err, "Không thể tải danh sách môn học từ hệ thống."));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push("/login");
-        return;
-      }
-      if (user?.role !== "admin") {
-        setError("Bạn không có quyền truy cập trang quản trị này.");
-        setLoading(false);
-        return;
-      }
-      fetchSubjects();
+    if (isLoading) return;
+
+    if (denied) {
+      setError(ADMIN_ACCESS_DENIED);
+      setLoading(false);
+      return;
     }
-  }, [isLoading, isAuthenticated, user, router]);
+
+    fetchSubjects();
+  }, [isLoading, denied]);
 
   const handleOpenAddModal = () => {
     setEditingSubject(null);
@@ -100,9 +90,8 @@ export default function AdminSubjectsPage() {
       }
       setIsModalOpen(false);
       fetchSubjects();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail;
-      toast.error(typeof msg === "string" ? msg : "Thao tác thất bại.");
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Thao tác thất bại."));
     } finally {
       setFormLoading(false);
     }
@@ -120,8 +109,8 @@ export default function AdminSubjectsPage() {
       await apiClient.delete(`/subjects/${s.id}`);
       toast.success("Đã xóa môn học thành công.");
       fetchSubjects();
-    } catch (err) {
-      toast.error("Không thể xóa môn học này.");
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Không thể xóa môn học này."));
     }
   };
 

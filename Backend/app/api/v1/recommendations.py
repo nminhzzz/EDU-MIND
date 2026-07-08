@@ -3,7 +3,8 @@ FastAPI Router cho các API Phê duyệt Đề xuất học tập AI (Recommenda
 """
 
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_teacher, get_current_student
@@ -39,10 +40,10 @@ def api_get_pending_reviews(
     response_model=List[AIRecommendationReviewResponse],
     summary="Học sinh xem danh sách các đề xuất học tập AI đã được phê duyệt",
 )
-def api_get_student_recommendations(
+async def api_get_student_recommendations(
     db: Session = Depends(get_db), current_student: User = Depends(get_current_student)
 ):
-    return get_student_recommendations(db=db, student_id=current_student.id)
+    return await get_student_recommendations(db=db, student_id=current_student.id)
 
 
 # ── PATCH /{review_id} — Phê duyệt / Từ chối đề xuất (Chỉ Giáo viên) ─────
@@ -57,15 +58,10 @@ def api_review_recommendation(
     db: Session = Depends(get_db),
     current_teacher: User = Depends(get_current_teacher),
 ):
-    try:
-        return review_recommendation(
-            db=db,
-            review_id=review_id,
-            teacher_id=current_teacher.id,
-            status=body.status,
-            teacher_feedback=body.teacher_feedback,
-        )
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
-    except PermissionError as pe:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
+    return review_recommendation(
+        db=db,
+        review_id=review_id,
+        teacher_id=current_teacher.id,
+        status=body.status,
+        teacher_feedback=body.teacher_feedback,
+    )

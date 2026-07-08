@@ -1,6 +1,21 @@
-from pydantic import BaseModel
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 from typing import Optional
+
+from pydantic import BaseModel
+
+
+# ── Tạo mới study plan (dùng bởi plan_repository & services) ─
+class StudyPlanCreate(BaseModel):
+    student_id: int
+    goal_id: int
+    title: str
+    task_description: Optional[str] = None
+    rag_content: Optional[str] = None
+    study_date: date
+    start_time: time
+    end_time: time
+    ai_generated: bool = False
+    status: str = "todo"
 
 
 # ── Response từng study plan trả về cho client ───────────────

@@ -1,131 +1,121 @@
 """
-Bảo mật: Hash mật khẩu (bcrypt) + tạo/verify JWT token.
+Security utilities: password hashing (bcrypt) + JWT creation/verification
++ token blacklisting via Redis.
 """
 
-import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-# --- Bản vá lỗi tương thích giữa passlib và bcrypt 4.x/5.x ---
 import bcrypt
-
-if not hasattr(bcrypt, "__about__"):
-
-    class BcryptAboutPatch:
-        __version__ = getattr(bcrypt, "__version__", "4.0.0")
-
-    bcrypt.__about__ = BcryptAboutPatch()
-
 from jose import JWTError, jwt
 
 from app.core.config import settings
+from app.core.logging import get_logger
 
-# ── Cấu hình từ config settings ──────────────────────────────────
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+logger = get_logger(__name__)
+
+# passlib 1.7.x expects bcrypt.__about__.__version__, removed in bcrypt 4.x+.
+# We call bcrypt directly (not via passlib), but keep this shim so passlib
+# does not crash on import when other packages pull it in transitively.
+# Pin bcrypt in requirements.txt to match this compatibility range.
+if not hasattr(bcrypt, "__about__"):
+
+    class _BcryptAbout:
+        __version__ = getattr(bcrypt, "__version__", "4.0.0")
+
+    bcrypt.__about__ = _BcryptAbout()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Kiểm tra mật khẩu plain với hash đã lưu trong DB."""
+    """Return True if *plain_password* matches the stored bcrypt hash."""
     try:
         return bcrypt.checkpw(
-            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
         )
     except Exception:
         return False
 
 
 def hash_password(password: str) -> str:
-    """Hash mật khẩu bằng bcrypt trước khi lưu vào DB."""
+    """Hash *password* with bcrypt before persisting to the database."""
     salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
-    return hashed.decode("utf-8")
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
-import uuid
-from app.database.redis import redis_client
+# ---------------------------------------------------------------------------
+# Token blacklist (Redis) — lazy import to avoid startup side-effects
+# ---------------------------------------------------------------------------
+
+def _get_redis():
+    """Lazily import Redis client to avoid import-time connection errors."""
+    from app.database.redis import get_redis  # noqa: PLC0415
+    return get_redis()
 
 
 def is_token_blacklisted(jti: str) -> bool:
-    """Kiểm tra JTI (JWT ID) có trong danh sách đen của Redis hay không."""
+    """
+    Return True if the given JWT ID is on the Redis blacklist.
+    Fail-closed: treats Redis errors as blacklisted to prevent revoked
+    tokens from granting access when Redis is unavailable.
+    """
     if not jti:
         return False
     try:
-        return redis_client.exists(f"blacklist:{jti}") > 0
-    except Exception as e:
-        print(f"Error checking token blacklist in Redis: {e}")
-        return False
+        return _get_redis().exists(f"blacklist:{jti}") > 0
+    except Exception as exc:
+        logger.error("Redis blacklist check failed — treating token as revoked: %s", exc)
+        return True  # fail-closed: deny access when Redis is unreachable
 
 
 def blacklist_token(jti: str, expire_seconds: int) -> None:
-    """Thêm JTI (JWT ID) vào danh sách đen của Redis với thời gian hết hạn cụ thể."""
+    """Add a JWT ID to the Redis blacklist with the given TTL."""
     if not jti or expire_seconds <= 0:
         return
     try:
-        redis_client.setex(f"blacklist:{jti}", expire_seconds, "1")
-    except Exception as e:
-        print(f"Error blacklisting token in Redis: {e}")
+        _get_redis().setex(f"blacklist:{jti}", expire_seconds, "1")
+    except Exception as exc:
+        logger.error("Redis blacklist write failed: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# JWT helpers
+# ---------------------------------------------------------------------------
+
+def _make_token(data: dict, expires_delta: timedelta) -> str:
+    payload = data.copy()
+    payload.setdefault("jti", uuid.uuid4().hex)
+    payload["exp"] = datetime.now(timezone.utc) + expires_delta
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def _decode_token(token: str) -> Optional[dict]:
+    """Decode and verify a JWT; return None if invalid or blacklisted."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        jti = payload.get("jti")
+        if jti and is_token_blacklisted(jti):
+            return None
+        return payload
+    except JWTError:
+        return None
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """
-    Tạo JWT access token.
-    - data: payload muốn encode (thường là {"sub": str(user_id)})
-    - expires_delta: thời gian hết hạn tùy chỉnh (mặc định theo settings)
-    """
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-
-    # Tạo jti (JWT ID) ngẫu nhiên nếu chưa có để nhận dạng token độc lập
-    if "jti" not in to_encode:
-        to_encode["jti"] = uuid.uuid4().hex
-
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    delta = expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return _make_token(data, delta)
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """
-    Giải mã và xác thực JWT token.
-    Trả về payload dict nếu hợp lệ, None nếu hết hạn hoặc sai chữ ký hoặc bị thu hồi (blacklist).
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        jti = payload.get("jti")
-        if jti and is_token_blacklisted(jti):
-            return None
-        return payload
-    except JWTError:
-        return None
+    return _decode_token(token)
 
 
 def create_refresh_token(data: dict) -> str:
-    """Tạo JWT refresh token với hạn dùng dài (mặc định 7 ngày)."""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
-
-    if "jti" not in to_encode:
-        to_encode["jti"] = uuid.uuid4().hex
-
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return _make_token(data, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
 
 
 def decode_refresh_token(token: str) -> Optional[dict]:
-    """Giải mã và xác thực refresh token. Trả về None nếu bị thu hồi (blacklist)."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        jti = payload.get("jti")
-        if jti and is_token_blacklisted(jti):
-            return None
-        return payload
-    except JWTError:
-        return None
+    return _decode_token(token)

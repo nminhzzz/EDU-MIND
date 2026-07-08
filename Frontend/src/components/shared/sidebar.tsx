@@ -20,15 +20,17 @@ export function Sidebar() {
 
   const studentItems: SidebarItem[] = [
     { label: "Tổng quan", href: ROUTES.STUDENT_DASHBOARD },
+    { label: "Nhiệm vụ hôm nay", href: ROUTES.STUDENT_TASKS },
     { label: "Lộ trình học", href: ROUTES.STUDENT_GOALS },
     { label: "Gia sư AI", href: ROUTES.STUDENT_CHAT },
-    { label: "Luyện đề", href: "/student/quizzes" },
+    { label: "Luyện đề", href: ROUTES.STUDENT_QUIZZES },
     { label: "Khuyến nghị AI", href: ROUTES.STUDENT_RECOMMENDATIONS },
   ];
 
   const teacherItems: SidebarItem[] = [
     { label: "Tổng quan", href: ROUTES.TEACHER_DASHBOARD },
     { label: "Quản lý Lớp học", href: ROUTES.TEACHER_CLASSROOMS },
+    { label: "Duyệt đề xuất AI", href: ROUTES.TEACHER_RECOMMENDATIONS },
     { label: "Tài liệu & Đề thi", href: ROUTES.TEACHER_DOCUMENTS },
   ];
 

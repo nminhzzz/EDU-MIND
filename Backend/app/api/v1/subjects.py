@@ -1,45 +1,40 @@
 """
-FastAPI Router cho các API Môn học (Subjects) — Giai đoạn 4.
+Subjects API — CRUD for academic subjects.
 """
 
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user, get_current_teacher
+from app.api.deps import get_current_teacher, get_current_user, get_db
 from app.models.user import User
-from app.schemas.subject import SubjectCreate, SubjectUpdate, SubjectResponse
+from app.schemas.subject import SubjectCreate, SubjectResponse, SubjectUpdate
 from app.services.subject_service import (
     create_subject,
-    get_subject,
-    get_all_subjects,
-    update_subject,
     delete_subject,
+    get_all_subjects,
+    get_subject,
+    update_subject,
 )
 
 router = APIRouter()
 
 
-# ── POST / — Tạo môn học mới (Chỉ Giáo viên / Admin) ─────────────────
 @router.post(
     "/",
     response_model=SubjectResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
     summary="Giáo viên / Admin tạo môn học mới",
-    description="Chỉ giáo viên hoặc admin mới có quyền tạo môn học. Mã môn học (code) phải là duy nhất.",
 )
 def api_create_subject(
     body: SubjectCreate,
     db: Session = Depends(get_db),
     current_teacher: User = Depends(get_current_teacher),
-):
-    try:
-        return create_subject(db=db, obj_in=body)
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+) -> SubjectResponse:
+    return create_subject(db=db, obj_in=body)
 
 
-# ── GET / — Lấy danh sách môn học (Tất cả tài khoản đăng nhập) ─────────
 @router.get(
     "/",
     response_model=List[SubjectResponse],
@@ -50,11 +45,10 @@ def api_get_subjects(
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> List[SubjectResponse]:
     return get_all_subjects(db=db, skip=skip, limit=limit)
 
 
-# ── GET /{subject_id} — Chi tiết môn học ─────────────────────────────
 @router.get(
     "/{subject_id}",
     response_model=SubjectResponse,
@@ -64,14 +58,10 @@ def api_get_subject_detail(
     subject_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
-    try:
-        return get_subject(db=db, subject_id=subject_id)
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+) -> SubjectResponse:
+    return get_subject(db=db, subject_id=subject_id)
 
 
-# ── PATCH /{subject_id} — Cập nhật môn học (Chỉ Giáo viên / Admin) ─────
 @router.patch(
     "/{subject_id}",
     response_model=SubjectResponse,
@@ -82,14 +72,10 @@ def api_update_subject(
     body: SubjectUpdate,
     db: Session = Depends(get_db),
     current_teacher: User = Depends(get_current_teacher),
-):
-    try:
-        return update_subject(db=db, subject_id=subject_id, obj_in=body)
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+) -> SubjectResponse:
+    return update_subject(db=db, subject_id=subject_id, obj_in=body)
 
 
-# ── DELETE /{subject_id} — Xóa môn học (Chỉ Giáo viên / Admin) ─────────
 @router.delete(
     "/{subject_id}",
     response_model=SubjectResponse,
@@ -99,8 +85,5 @@ def api_delete_subject(
     subject_id: int,
     db: Session = Depends(get_db),
     current_teacher: User = Depends(get_current_teacher),
-):
-    try:
-        return delete_subject(db=db, subject_id=subject_id)
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+) -> SubjectResponse:
+    return delete_subject(db=db, subject_id=subject_id)

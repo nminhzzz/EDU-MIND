@@ -1,23 +1,136 @@
 """
-Repository cho Quiz — Giai đoạn 4.
+Repository for Quiz records.
 """
 
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from typing import Dict, List, Optional, Set
 
-from app.repositories.base import BaseRepository
-from app.models.quiz import Quiz
 from pydantic import BaseModel
+from sqlalchemy.orm import Session, joinedload
+
+from app.models.quiz import Quiz
+from app.repositories.base import BaseRepository
 
 
 class QuizRepository(BaseRepository[Quiz, BaseModel, BaseModel]):
-    """
-    Repository truy xuất dữ liệu cho bảng quizzes.
-    """
+    """Data access for the quizzes table."""
 
     def get_by_classroom(self, db: Session, classroom_id: int) -> List[Quiz]:
-        """Lấy toàn bộ đề thi/bài tập thuộc về lớp học."""
+        """Return all quizzes assigned to a classroom."""
         return db.query(Quiz).filter(Quiz.classroom_id == classroom_id).all()
+
+    def get_with_classroom(self, db: Session, quiz_id: int) -> Optional[Quiz]:
+        """Return a quiz with its classroom relationship eagerly loaded."""
+        return (
+            db.query(Quiz)
+            .options(joinedload(Quiz.classroom))
+            .filter(Quiz.id == quiz_id)
+            .first()
+        )
+
+    def get_title_map(self, db: Session, quiz_ids: Set[int]) -> Dict[int, str]:
+        """Return a quiz-id → title mapping for the given ids."""
+        if not quiz_ids:
+            return {}
+        return {
+            quiz.id: quiz.title
+            for quiz in db.query(Quiz).filter(Quiz.id.in_(quiz_ids)).all()
+        }
+
+    def count_all(self, db: Session) -> int:
+        """Return the total number of quizzes on the platform."""
+        return db.query(Quiz).count()
+
+    def get_by_study_plan_id(
+        self, db: Session, study_plan_id: int
+    ) -> Optional[Quiz]:
+        """Return a quiz linked to a study plan, if one exists."""
+        return (
+            db.query(Quiz)
+            .filter(Quiz.study_plan_id == study_plan_id)
+            .first()
+        )
+
+    def get_for_student_by_plan(
+        self, db: Session, study_plan_id: int, student_id: int
+    ) -> Optional[Quiz]:
+        """Return a student's quiz linked to a study plan."""
+        return (
+            db.query(Quiz)
+            .filter(
+                Quiz.study_plan_id == study_plan_id,
+                Quiz.student_id == student_id,
+            )
+            .first()
+        )
+
+    def delete_linked_to_plans(self, db: Session, plan_ids: List[int]) -> None:
+        """Delete quiz attempts and quizzes linked to the given study plans (no commit)."""
+        if not plan_ids:
+            return
+
+        from app.models.quiz_attempt import QuizAttempt
+
+        quiz_ids = [
+            quiz.id
+            for quiz in db.query(Quiz).filter(Quiz.study_plan_id.in_(plan_ids)).all()
+        ]
+        if not quiz_ids:
+            return
+
+        db.query(QuizAttempt).filter(QuizAttempt.quiz_id.in_(quiz_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(Quiz).filter(Quiz.id.in_(quiz_ids)).delete(synchronize_session=False)
+
+    def stage_ai_generated(
+        self,
+        db: Session,
+        *,
+        student_id: int,
+        subject_id: int,
+        study_plan_id: Optional[int],
+        title: str,
+        difficulty: str,
+        questions: list,
+    ) -> Quiz:
+        """Stage an AI-generated quiz in the current session (no commit)."""
+        db_quiz = Quiz(
+            student_id=student_id,
+            subject_id=subject_id,
+            study_plan_id=study_plan_id,
+            title=title,
+            difficulty=difficulty,
+            total_questions=len(questions),
+            questions=questions,
+            generated_by_ai=True,
+        )
+        db.add(db_quiz)
+        return db_quiz
+
+    def stage_teacher_quiz(
+        self,
+        db: Session,
+        *,
+        teacher_id: int,
+        subject_id: int,
+        classroom_id: int,
+        title: str,
+        difficulty: str,
+        questions: list,
+    ) -> Quiz:
+        """Stage a teacher-created quiz in the current session (no commit)."""
+        db_quiz = Quiz(
+            student_id=teacher_id,
+            subject_id=subject_id,
+            classroom_id=classroom_id,
+            title=title,
+            difficulty=difficulty,
+            total_questions=len(questions),
+            questions=questions,
+            generated_by_ai=False,
+        )
+        db.add(db_quiz)
+        return db_quiz
 
 
 quiz_repository = QuizRepository(Quiz)

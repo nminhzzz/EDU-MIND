@@ -1,16 +1,5 @@
-"use client";
-
 import React from "react";
-
-interface AdminUser {
-  id: number;
-  email: string;
-  full_name: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-  grade: string | null;
-}
+import { AdminUser } from "@/types/admin";
 
 interface UserTableProps {
   users: AdminUser[];

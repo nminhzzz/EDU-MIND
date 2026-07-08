@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/shared/sidebar";
 import { Header } from "@/components/shared/header";
 import { X, Loader2 } from "lucide-react";
@@ -15,14 +15,15 @@ export function DashboardLayoutClient({
 }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Chặn truy cập phía Client nếu không được xác thực
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      const params = new URLSearchParams({ redirect: pathname });
+      router.push(`/login?${params.toString()}`);
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, pathname, router]);
 
   // Đóng Mobile menu khi chuyển trang
   useEffect(() => {

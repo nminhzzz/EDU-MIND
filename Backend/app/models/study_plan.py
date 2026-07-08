@@ -10,6 +10,7 @@ from sqlalchemy import (
     Enum,
     DateTime,
     ForeignKey,
+    Index,
 )
 from sqlalchemy.orm import relationship
 from app.models.base import Base
@@ -17,6 +18,10 @@ from app.models.base import Base
 
 class StudyPlan(Base):
     __tablename__ = "study_plans"
+    __table_args__ = (
+        Index("ix_study_plan_student_date", "student_id", "study_date"),
+        Index("ix_study_plan_goal", "goal_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     student_id = Column(

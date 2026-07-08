@@ -1,8 +1,8 @@
 import re
-from typing import Optional, Dict, Any
 from datetime import date
-from app.agents.base import generate_content_nvidia
-from app.database.redis import get_redis_client
+from typing import Any, Dict, Optional
+
+from app.database.redis import get_redis
 
 PATTERN_CREATE_PLAN = re.compile(
     r"(l(ậ|â)p|lên|t(ạ|a)o|làm|v(ẽ|e)|d(ự|u)ng)\s*(l(ộ|o) trình|k(ế|e) ho(ạ|a)ch|k(ế|e) ho(ạ|a)ch h(ọ|o)c t(ậ|a)p)",
@@ -71,7 +71,7 @@ def extract_deadline(message: str) -> Optional[date]:
     if match:
         try:
             num = int(match.group(3))
-            unit = match.group(3).lower()
+            unit = match.group(4).lower()
             if "tuần" in unit or "tu" in unit:
                 return date(
                     today.year + (today.month + num * 4 - 1) // 12,
@@ -94,7 +94,7 @@ def extract_deadline(message: str) -> Optional[date]:
 def has_cached_draft(session_id: str) -> bool:
     if not session_id:
         return False
-    redis_client = get_redis_client()
+    redis_client = get_redis()
     return redis_client.exists(f"unified_draft:{session_id}")
 
 

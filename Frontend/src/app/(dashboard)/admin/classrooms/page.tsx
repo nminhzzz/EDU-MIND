@@ -1,26 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Link from "next/link";
-
-interface Classroom {
-  id: number;
-  teacher_id: number;
-  subject_id: number;
-  class_name: string;
-  class_code: string;
-  description: string | null;
-  created_at: string;
-}
+import { Classroom } from "@/types/classroom";
+import { ADMIN_ACCESS_DENIED } from "@/constants/admin";
+import { useAdminAccess } from "@/hooks/use-admin-access";
 
 export default function AdminClassroomsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isLoading, denied } = useAdminAccess();
 
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,28 +24,25 @@ export default function AdminClassroomsPage() {
     try {
       const res = await apiClient.get<Classroom[]>("/classrooms/admin/all");
       setClassrooms(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Lỗi tải lớp học:", err);
-      setError("Không thể tải danh sách lớp học từ hệ thống.");
+      setError(parseApiError(err, "Không thể tải danh sách lớp học từ hệ thống."));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push("/login");
-        return;
-      }
-      if (user?.role !== "admin") {
-        setError("Bạn không có quyền truy cập trang quản trị này.");
-        setLoading(false);
-        return;
-      }
-      fetchClassrooms();
+    if (isLoading) return;
+
+    if (denied) {
+      setError(ADMIN_ACCESS_DENIED);
+      setLoading(false);
+      return;
     }
-  }, [isLoading, isAuthenticated, user, router]);
+
+    fetchClassrooms();
+  }, [isLoading, denied]);
 
   const handleDeleteClassroom = async (c: Classroom) => {
     if (

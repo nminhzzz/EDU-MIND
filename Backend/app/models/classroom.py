@@ -1,7 +1,13 @@
-import datetime
+from datetime import datetime, timezone
+
 from sqlalchemy import Column, BigInteger, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+
 from app.models.base import Base
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Classroom(Base):
@@ -22,7 +28,7 @@ class Classroom(Base):
     class_code = Column(String(50), unique=True, nullable=False, index=True)
 
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=_now)
 
     # Relationships
     teacher = relationship("User", foreign_keys=[teacher_id])

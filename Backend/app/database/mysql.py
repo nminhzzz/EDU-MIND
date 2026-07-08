@@ -1,31 +1,24 @@
+"""
+MySQL database engine and session factory (SQLAlchemy sync).
+
+Pool settings:
+  pool_pre_ping  — discard stale connections before use (safe behind load balancers)
+  pool_size=10   — baseline connections kept open per worker process
+  max_overflow=20 — burst capacity above pool_size under load
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+
 from app.core.config import settings
 
-DATABASE_URL = settings.DATABASE_URL
-
-# Khởi tạo SQLAlchemy Engine
 engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,  # Tự động ping để kiểm tra kết nối còn sống không
-    pool_size=10,  # Số lượng kết nối tối đa giữ trong pool
-    max_overflow=20,  # Số kết nối vượt mức cho phép khi cao điểm
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
 )
 
-# Khởi tạo SessionLocal để tạo các session giao dịch ngắn hạn
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Định nghĩa Base class dùng chung cho các model
 Base = declarative_base()
-
-
-def get_db():
-    """
-    Dependency helper cung cấp Database Session cho FastAPI routes.
-    Tự động đóng session sau khi xử lý xong request.
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

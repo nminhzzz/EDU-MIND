@@ -1,36 +1,35 @@
-# Dockerfile.prod - Môi trường Production (Multi-stage build)
+# Dockerfile.prod — Production (multi-stage build)
 
-# Stage 1: Build dependencies
+# ── Stage 1: Build dependencies ───────────────────────────────────────────────
 FROM python:3.10-slim AS builder
 
 WORKDIR /app
 
-# Cài đặt build-essential để compile thư viện C nếu cần
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-
-# Cài đặt packages vào thư mục cục bộ của root để copy sang stage sau
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 
-# Stage 2: Runtime image (Giúp giảm dung lượng < 400MB)
+# ── Stage 2: Runtime image ────────────────────────────────────────────────────
 FROM python:3.10-slim AS runner
 
 WORKDIR /app
 
-# Copy các package đã cài từ builder stage
+# Copy installed packages from builder
 COPY --from=builder /root/.local /root/.local
 COPY . .
 
-# Cấu hình Path để gọi được các lệnh uvicorn/gunicorn đã cài
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Expose port chính của backend
 EXPOSE 8000
 
-# Chạy bằng Gunicorn với Uvicorn worker cho Production để tối ưu hiệu năng đa luồng
-CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]
+# entrypoint.sh runs: alembic upgrade head → then start gunicorn
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

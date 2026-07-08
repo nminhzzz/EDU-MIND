@@ -1,55 +1,44 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import Link from "next/link";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { AdminAnalytics } from "@/types/admin";
+import { ADMIN_ACCESS_DENIED } from "@/constants/admin";
+import { useAdminAccess } from "@/hooks/use-admin-access";
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isLoading, denied, user } = useAdminAccess();
 
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── GIẢI THÍCH CHI TIẾT CSR VÀ SSR ──
-  // 1. Tại sao dùng Client-Side Rendering (CSR) ở đây?
-  // - Bảo mật và Phân quyền: Cần kiểm tra vai trò (role) của người dùng hiện tại (useAuth) trên trình duyệt trước khi render dữ liệu nhạy cảm.
-  // - Tránh lỗi phân giải Docker: Nếu gọi API ở Server Component (SSR), `localhost` sẽ trỏ vào chính container frontend thay vì host máy của bạn, dẫn đến lỗi kết nối. Gọi ở Client Component sẽ chạy trên trình duyệt của người dùng nên phân giải localhost chính xác.
-  // - Trải nghiệm tương tác: Hỗ trợ skeleton loading mượt mà, toast báo lỗi thời gian thực và chuyển trang nhanh.
-
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push("/login");
-        return;
-      }
-      if (user?.role !== "admin") {
-        setError("Bạn không có quyền truy cập trang quản trị này.");
-        setAnalyticsLoading(false);
-        return;
-      }
+    if (isLoading) return;
 
-      // Tải báo cáo thống kê từ Backend
-      apiClient
-        .get("/analytics/admin/system")
-        .then((res) => {
-          setAnalytics(res.data);
-          setError(null);
-        })
-        .catch((err) => {
-          console.error("Lỗi tải báo cáo admin:", err);
-          setError("Không thể kết nối đến API thống kê của hệ thống.");
-        })
-        .finally(() => {
-          setAnalyticsLoading(false);
-        });
+    if (denied) {
+      setError(ADMIN_ACCESS_DENIED);
+      setAnalyticsLoading(false);
+      return;
     }
-  }, [isLoading, isAuthenticated, user, router]);
+
+    apiClient
+      .get<AdminAnalytics>("/analytics/admin/system")
+      .then((res) => {
+        setAnalytics(res.data);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        console.error("Lỗi tải báo cáo admin:", err);
+        setError(parseApiError(err, "Không thể kết nối đến API thống kê của hệ thống."));
+      })
+      .finally(() => {
+        setAnalyticsLoading(false);
+      });
+  }, [isLoading, denied]);
 
   if (isLoading || analyticsLoading) {
     return (

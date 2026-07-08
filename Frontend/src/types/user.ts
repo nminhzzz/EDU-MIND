@@ -22,7 +22,19 @@ export interface User {
   grade: StudentGrade | null;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
+}
+
+export interface AuthMessageResponse {
+  message: string;
+  token_type: "bearer";
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  full_name: string;
+  role: UserRole;
+  grade: StudentGrade | null;
 }
 
 export interface AuthState {

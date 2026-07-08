@@ -11,36 +11,22 @@ import {
   Users,
   GraduationCap,
   FolderOpen,
-  FileText,
   Plus,
   ChevronRight,
+  ClipboardCheck,
 } from "lucide-react";
 import { StatCard } from "@/components/teacher/stat-card";
 import { ClassroomCard } from "@/components/teacher/classroom-card";
 import { EmptyState } from "@/components/teacher/empty-state";
-
-interface Classroom {
-  id: number;
-  teacher_id: number;
-  subject_id: number;
-  class_name: string;
-  class_code: string;
-  description: string | null;
-  created_at: string;
-}
-
-interface Document {
-  id: number;
-  title: string;
-  file_path: string;
-  file_type: string;
-  created_at: string;
-}
+import { Classroom } from "@/types/classroom";
+import { StudyDocument } from "@/types/document";
+import { recommendationApi } from "@/services/recommendation";
 
 export default function TeacherDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
+  const [pendingReviews, setPendingReviews] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,12 +34,14 @@ export default function TeacherDashboard() {
 
     const fetchData = async () => {
       try {
-        const [clsRes, docRes] = await Promise.all([
+        const [clsRes, docRes, pendingRes] = await Promise.all([
           apiClient.get<Classroom[]>("/classrooms/"),
-          apiClient.get<Document[]>("/documents/"),
+          apiClient.get<StudyDocument[]>("/documents/"),
+          recommendationApi.getPendingReviews(),
         ]);
         setClassrooms(clsRes.data);
         setDocuments(docRes.data);
+        setPendingReviews(pendingRes.data.length);
       } catch (err) {
         console.error("Lỗi tải dữ liệu dashboard giáo viên:", err);
         toast.error("Không thể tải dữ liệu. Vui lòng thử lại.");
@@ -73,6 +61,11 @@ export default function TeacherDashboard() {
     );
   }
 
+  const totalStudents = classrooms.reduce(
+    (sum, cls) => sum + (cls.student_count ?? 0),
+    0,
+  );
+
   const stats = [
     {
       label: "Lớp học phụ trách",
@@ -88,7 +81,7 @@ export default function TeacherDashboard() {
     },
     {
       label: "Học sinh quản lý",
-      value: "—",
+      value: totalStudents,
       icon: Users,
       color: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30",
     },
@@ -125,11 +118,40 @@ export default function TeacherDashboard() {
       </motion.div>
 
       {/* 2. Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat, idx) => (
           <StatCard key={stat.label} {...stat} index={idx} />
         ))}
+        <StatCard
+          label="Đề xuất chờ duyệt"
+          value={pendingReviews}
+          icon={ClipboardCheck}
+          color="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
+          index={3}
+        />
       </div>
+
+      {pendingReviews > 0 && (
+        <Link
+          href={ROUTES.TEACHER_RECOMMENDATIONS}
+          className="flex items-center justify-between gap-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <ClipboardCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                {pendingReviews} đề xuất ôn tập AI đang chờ duyệt
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                Học sinh cần bạn xem xét trước khi nhận gợi ý ôn tập
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+        </Link>
+      )}
 
       {/* 3. Classrooms & AI Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -160,7 +182,7 @@ export default function TeacherDashboard() {
                     id={cls.id}
                     className_={cls.class_name}
                     classCode={cls.class_code}
-                    studentCount={0}
+                    studentCount={cls.student_count ?? 0}
                     subjectId={cls.subject_id}
                     index={idx}
                   />
@@ -182,7 +204,7 @@ export default function TeacherDashboard() {
           )}
         </div>
 
-        {/* Right: AI Quiz Card */}
+        {/* Right: HITL Recommendations Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -192,18 +214,20 @@ export default function TeacherDashboard() {
           <div className="absolute top-[-30%] right-[-30%] w-48 h-48 rounded-full bg-violet-500/10 blur-2xl pointer-events-none" />
           <div>
             <div className="w-12 h-12 bg-white/5 text-violet-400 border border-zinc-800 flex items-center justify-center mb-6 rounded-xl">
-              <FileText className="w-6 h-6" />
+              <ClipboardCheck className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-extrabold tracking-tight">AI Quiz Generator</h3>
+            <h3 className="text-xl font-extrabold tracking-tight">Duyệt đề xuất AI</h3>
             <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Tạo nhanh bộ đề kiểm tra ngẫu nhiên chất lượng từ giáo trình môn học. AI RAG sẽ tự động truy xuất kiến thức cốt lõi và sinh đề thi chuẩn xác.
+              Học sinh làm bài dưới 8 điểm sẽ nhận gợi ý ôn tập từ AI. Bạn xem xét và phê duyệt trước khi gửi cho học sinh.
             </p>
           </div>
           <Link
-            href={ROUTES.TEACHER_DOCUMENTS}
+            href={ROUTES.TEACHER_RECOMMENDATIONS}
             className="mt-8 px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-sm text-center shadow-lg transition-transform active:scale-[0.98] cursor-pointer rounded-xl"
           >
-            Tạo đề thi bằng AI RAG
+            {pendingReviews > 0
+              ? `Duyệt ${pendingReviews} đề xuất`
+              : "Xem đề xuất ôn tập"}
           </Link>
         </motion.div>
       </div>

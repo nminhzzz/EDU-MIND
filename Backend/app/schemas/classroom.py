@@ -40,6 +40,7 @@ class ClassroomResponse(BaseModel):
     class_code: str
     description: Optional[str] = None
     created_at: datetime
+    student_count: int = 0
 
     class Config:
         from_attributes = True

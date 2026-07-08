@@ -1,7 +1,13 @@
-from datetime import datetime
-from typing import List, Dict, Optional
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
 from bson import ObjectId
+
 from app.database.mongodb import get_mongodb_db
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 async def create_chat_session(student_id: int, title: str) -> str:
@@ -12,8 +18,8 @@ async def create_chat_session(student_id: int, title: str) -> str:
     session = {
         "student_id": student_id,
         "title": title,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": _now(),
+        "updated_at": _now(),
     }
     result = await db["chat_sessions"].insert_one(session)
     return str(result.inserted_id)
@@ -46,13 +52,13 @@ async def add_chat_message(session_id: str, role: str, content: str) -> None:
         "session_id": ObjectId(session_id),
         "role": role,
         "content": content,
-        "created_at": datetime.utcnow(),
+        "created_at": _now(),
     }
     await db["chat_messages"].insert_one(message)
 
     # 2. Cập nhật thời gian updated_at của session
     await db["chat_sessions"].update_one(
-        {"_id": ObjectId(session_id)}, {"$set": {"updated_at": datetime.utcnow()}}
+        {"_id": ObjectId(session_id)}, {"$set": {"updated_at": _now()}}
     )
 
 

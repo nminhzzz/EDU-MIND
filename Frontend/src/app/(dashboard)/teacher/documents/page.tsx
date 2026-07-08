@@ -2,32 +2,19 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, X, FolderOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { DocumentRow } from "@/components/teacher/document-row";
 import { EmptyState } from "@/components/teacher/empty-state";
-
-interface Document {
-  id: number;
-  title: string;
-  file_path: string;
-  file_type: string;
-  subject_id: number;
-  created_by: number;
-  created_at: string;
-}
-
-interface Subject {
-  id: number;
-  name: string;
-  code: string;
-}
+import { StudyDocument } from "@/types/document";
+import { Subject } from "@/types/subject";
 
 export default function TeacherDocumentsPage() {
   const { user } = useAuth();
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +28,7 @@ export default function TeacherDocumentsPage() {
   const fetchData = async () => {
     try {
       const [docRes, subjRes] = await Promise.all([
-        apiClient.get<Document[]>("/documents/"),
+        apiClient.get<StudyDocument[]>("/documents/"),
         apiClient.get<Subject[]>("/subjects/"),
       ]);
       setDocuments(docRes.data);
@@ -86,7 +73,7 @@ export default function TeacherDocumentsPage() {
       setFile(null);
       fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Tải tài liệu thất bại.");
+      toast.error(parseApiError(err, "Tải tài liệu thất bại."));
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +86,7 @@ export default function TeacherDocumentsPage() {
       toast.success("Đã xóa tài liệu thành công.");
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Xóa tài liệu thất bại.");
+      toast.error(parseApiError(err, "Xóa tài liệu thất bại."));
     }
   };
 

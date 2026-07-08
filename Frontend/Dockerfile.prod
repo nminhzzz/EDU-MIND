@@ -11,7 +11,13 @@ RUN npm ci
 # Sao chép toàn bộ mã nguồn
 COPY . .
 
-# Build ứng dụng Next.js (sẽ tạo ra bản build dạng standalone nhờ config output: "standalone")
+# Build-time API URLs (override in CI / docker build --build-arg)
+ARG NEXT_PUBLIC_API_URL=/api/v1
+ARG API_INTERNAL_URL=http://backend:8000/api/v1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
+
+# Build ứng dụng Next.js (standalone output)
 RUN npm run build
 
 # Stage 2: Runtime image (Chỉ chứa code chạy thực tế để tối ưu dung lượng < 200MB)

@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime, timezone
+
 from sqlalchemy import (
     Column,
     BigInteger,
@@ -9,13 +10,21 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     JSON,
+    Index,
 )
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
+    __table_args__ = (
+        Index("ix_quiz_student_subject", "student_id", "subject_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
@@ -47,7 +56,7 @@ class Quiz(Base):
     questions = Column(JSON, nullable=False)
 
     generated_by_ai = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=_now)
 
     # Relationships
     student = relationship("User", foreign_keys=[student_id])

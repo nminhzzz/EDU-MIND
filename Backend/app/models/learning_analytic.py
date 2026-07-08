@@ -8,6 +8,8 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
+    Index,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from app.models.base import Base
@@ -15,6 +17,10 @@ from app.models.base import Base
 
 class LearningAnalytic(Base):
     __tablename__ = "learning_analytics"
+    __table_args__ = (
+        UniqueConstraint("student_id", "subject_id", name="uq_analytic_student_subject"),
+        Index("ix_learning_analytic_student_subject", "student_id", "subject_id"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     student_id = Column(

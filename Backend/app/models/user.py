@@ -1,7 +1,13 @@
-import datetime
-from sqlalchemy import Column, BigInteger, String, Enum, Boolean, DateTime
+from datetime import datetime, timezone
+
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Enum, String
 from sqlalchemy.orm import relationship
+
 from app.models.base import Base
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -14,46 +20,37 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     grade = Column(
         Enum(
-            "grade_6",
-            "grade_7",
-            "grade_8",
-            "grade_9",
-            "grade_10",
-            "grade_11",
-            "grade_12",
-            "uni_year_1",
-            "uni_year_2",
-            "uni_year_3",
-            "uni_year_4",
+            "grade_6", "grade_7", "grade_8", "grade_9",
+            "grade_10", "grade_11", "grade_12",
+            "uni_year_1", "uni_year_2", "uni_year_3", "uni_year_4",
             name="student_grade",
         ),
         nullable=True,
     )
-
     role = Column(
         Enum("student", "teacher", "admin", name="user_roles"),
         nullable=False,
         default="student",
     )
-
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), default=_now)
+    updated_at = Column(DateTime(timezone=True), default=_now, onupdate=_now)
 
-    # Relationships
     preference = relationship(
         "StudentPreference",
         back_populates="student",
-        uselist=False,  # 1-1
+        uselist=False,
         cascade="all, delete-orphan",
     )
     classrooms_teaching = relationship("Classroom", back_populates="teacher")
     classroom_memberships = relationship("ClassroomStudent", back_populates="student")
     study_goals = relationship(
-        "StudyGoal", foreign_keys="StudyGoal.student_id", back_populates="student"
+        "StudyGoal",
+        foreign_keys="StudyGoal.student_id",
+        back_populates="student",
     )
     notifications = relationship(
-        "Notification", back_populates="user", cascade="all, delete-orphan"
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )

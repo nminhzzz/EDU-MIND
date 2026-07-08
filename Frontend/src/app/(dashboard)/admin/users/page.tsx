@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -11,19 +10,12 @@ import { UserFilterBar } from "@/components/admin/user-filter-bar";
 import { UserTable } from "@/components/admin/user-table";
 import { UserModal } from "@/components/admin/user-modal";
 
-interface AdminUser {
-  id: number;
-  email: string;
-  full_name: string | null;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-  grade: string | null;
-}
+import { ADMIN_ACCESS_DENIED } from "@/constants/admin";
+import { useAdminAccess } from "@/hooks/use-admin-access";
+import { AdminUser } from "@/types/admin";
 
 export default function AdminUsersPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isLoading, denied } = useAdminAccess();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,28 +40,25 @@ export default function AdminUsersPage() {
       
       const res = await apiClient.get<AdminUser[]>("/users/admin/users", { params });
       setUsers(res.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Lỗi tải danh sách người dùng:", err);
-      setError("Không thể kết nối đến máy chủ.");
+      setError(parseApiError(err, "Không thể kết nối đến máy chủ."));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        router.push("/login");
-        return;
-      }
-      if (user?.role !== "admin") {
-        setError("Bạn không có quyền truy cập trang quản trị này.");
-        setLoading(false);
-        return;
-      }
-      fetchUsers();
+    if (isLoading) return;
+
+    if (denied) {
+      setError(ADMIN_ACCESS_DENIED);
+      setLoading(false);
+      return;
     }
-  }, [isLoading, isAuthenticated, user, router, roleFilter, statusFilter]);
+
+    fetchUsers();
+  }, [isLoading, denied, roleFilter, statusFilter]);
 
   const handleOpenAddModal = () => {
     setEditingUser(null);
@@ -93,9 +82,8 @@ export default function AdminUsersPage() {
       }
       setIsModalOpen(false);
       fetchUsers();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail;
-      toast.error(typeof msg === "string" ? msg : "Thao tác thất bại.");
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Thao tác thất bại."));
     } finally {
       setFormLoading(false);
     }
@@ -108,9 +96,8 @@ export default function AdminUsersPage() {
       });
       toast.success(`Đã cập nhật trạng thái hoạt động của tài khoản.`);
       fetchUsers();
-    } catch (err: any) {
-      const msg = err.response?.data?.detail;
-      toast.error(typeof msg === "string" ? msg : "Không thể thay đổi trạng thái hoạt động.");
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Không thể thay đổi trạng thái hoạt động."));
     }
   };
 
@@ -121,8 +108,8 @@ export default function AdminUsersPage() {
       await apiClient.delete(`/users/admin/users/${u.id}`);
       toast.success("Đã xóa tài khoản khỏi cơ sở dữ liệu.");
       fetchUsers();
-    } catch (err) {
-      toast.error("Xóa tài khoản thất bại.");
+    } catch (err: unknown) {
+      toast.error(parseApiError(err, "Xóa tài khoản thất bại."));
     }
   };
 

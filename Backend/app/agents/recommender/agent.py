@@ -1,4 +1,4 @@
-from app.agents.base import generate_content_nvidia
+from app.infrastructure.ai import generate_content_nvidia
 from typing import Optional
 
 

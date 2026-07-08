@@ -1,5 +1,6 @@
+import asyncio
 from typing import Optional, List, Dict, Any, AsyncGenerator
-from app.agents.base import generate_content_nvidia, generate_content_nvidia_stream
+from app.infrastructure.ai import generate_content_nvidia, generate_content_nvidia_stream
 from app.agents.prompts import CHAT_TUTOR_SYSTEM_PROMPT
 from app.agents.tools.datetime_tool import get_current_date
 from app.agents.tools.db_tools import (
@@ -16,15 +17,13 @@ from app.agents.chat_tutor.intent import detect_intent, extract_subject
 from app.database.mysql import SessionLocal
 from app.models.user import User
 from app.models.subject import Subject
-from app.models.study_goal import StudyGoal
 from app.services.unified_service import (
     generate_unified_draft,
     generate_unified_draft_stream,
     confirm_unified_draft,
     format_plan_as_text,
-    get_active_goal_for_subject,
 )
-from app.database.redis import get_redis_client
+from app.database.redis import get_redis
 
 
 async def _build_chat_context(
@@ -79,8 +78,8 @@ async def normal_chat_with_tutor(
         user_message, history, student_id, session_id
     )
 
-    reply_text = generate_content_nvidia(
-        messages=msgs, system_instruction=sys_inst, temperature=0.7
+    reply_text = await asyncio.to_thread(
+        generate_content_nvidia, messages=msgs, system_instruction=sys_inst, temperature=0.7
     )
 
     if session_id:
@@ -106,13 +105,35 @@ async def stream_chat_with_tutor(
         user_message, history, student_id, session_id
     )
 
-    reply_tokens = []
-    for token in generate_content_nvidia_stream(
-        messages=msgs, system_instruction=sys_inst, temperature=0.7
-    ):
-        reply_tokens.append(token)
-        yield token
+    # Run the sync streaming generator in a thread to avoid blocking the event loop.
+    # Tokens are collected into a list and yielded progressively.
+    import queue as _queue
 
+    token_queue: _queue.Queue = _queue.Queue()
+
+    def _stream_to_queue() -> None:
+        for tok in generate_content_nvidia_stream(
+            messages=msgs, system_instruction=sys_inst, temperature=0.7
+        ):
+            token_queue.put(tok)
+        token_queue.put(None)  # sentinel
+
+    loop = asyncio.get_event_loop()
+    stream_future = loop.run_in_executor(None, _stream_to_queue)
+
+    reply_tokens = []
+    while True:
+        try:
+            tok = token_queue.get_nowait()
+        except _queue.Empty:
+            await asyncio.sleep(0.01)
+            continue
+        if tok is None:
+            break
+        reply_tokens.append(tok)
+        yield tok
+
+    await stream_future  # ensure thread completed cleanly
     reply_text = "".join(reply_tokens)
 
     if session_id:
@@ -152,13 +173,13 @@ async def chat_with_plan(
             return f"Không tìm thấy môn học '{subject_name}' trong hệ thống.", []
 
         target_score = float(data.get("target_score", 7.0))
-        from datetime import date
+        from datetime import date, timedelta
 
         deadline_str = data.get("deadline")
         deadline = (
             date.fromisoformat(deadline_str)
             if deadline_str
-            else date.today().replace(month=date.today().month + 1)
+            else date.today() + timedelta(days=30)
         )
 
         user_msg = data.get("user_message", "Hãy lập lộ trình học tập cho tôi.")
@@ -195,7 +216,7 @@ async def chat_with_plan(
             return "Không tìm thấy phiên lộ trình nào để lưu.", []
 
         cached_key = f"unified_draft:{session_id}"
-        redis_client = get_redis_client()
+        redis_client = get_redis()
         if not redis_client.exists(cached_key):
             return "Không tìm thấy lộ trình nháp. Vui lòng tạo lộ trình trước.", []
 
@@ -315,8 +336,11 @@ async def chat_with_tutor(
             }
         ]
 
-        reply_text = generate_content_nvidia(
-            messages=messages, system_instruction=system_instruction, temperature=0.4
+        reply_text = await asyncio.to_thread(
+            generate_content_nvidia,
+            messages=messages,
+            system_instruction=system_instruction,
+            temperature=0.4,
         )
 
         if session_id:
@@ -374,13 +398,13 @@ async def chat_with_tutor_stream(
                 return
 
             target_score = float(intent["data"].get("target_score", 7.0))
-            from datetime import date
+            from datetime import date, timedelta
 
             deadline_str = intent["data"].get("deadline")
             deadline = (
                 date.fromisoformat(deadline_str)
                 if deadline_str
-                else date.today().replace(month=date.today().month + 1)
+                else date.today() + timedelta(days=30)
             )
             user_msg = intent["data"].get("user_message", "")
             sid_to_use = session_id if intent["type"] == "refine_plan" else None

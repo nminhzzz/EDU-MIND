@@ -2,27 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { apiClient } from "@/services/api-client";
+import { parseApiError } from "@/utils/api-error";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, GraduationCap } from "lucide-react";
 import { ClassroomCard } from "@/components/teacher/classroom-card";
 import { EmptyState } from "@/components/teacher/empty-state";
-
-interface Classroom {
-  id: number;
-  teacher_id: number;
-  subject_id: number;
-  class_name: string;
-  class_code: string;
-  description: string | null;
-  created_at: string;
-}
-
-interface Subject {
-  id: number;
-  name: string;
-  code: string;
-}
+import { Classroom } from "@/types/classroom";
+import { Subject } from "@/types/subject";
 
 export default function TeacherClassroomsPage() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -73,7 +60,7 @@ export default function TeacherClassroomsPage() {
       setFormData({ subject_id: "", class_name: "", class_code: "", description: "" });
       fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Tạo lớp học thất bại.");
+      toast.error(parseApiError(err, "Tạo lớp học thất bại."));
     } finally {
       setSubmitting(false);
     }
@@ -122,7 +109,7 @@ export default function TeacherClassroomsPage() {
               id={cls.id}
               className_={cls.class_name}
               classCode={cls.class_code}
-              studentCount={0}
+              studentCount={cls.student_count ?? 0}
               subjectId={cls.subject_id}
               index={idx}
             />

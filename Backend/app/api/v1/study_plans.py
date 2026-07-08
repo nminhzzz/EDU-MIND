@@ -1,23 +1,25 @@
 """
-API quản lý kế hoạch học tập chi tiết hàng ngày (Study Plans) — Giai đoạn 2.
+API quản lý kế hoạch học tập chi tiết hàng ngày (Study Plans).
 """
 
+from datetime import date
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import date, datetime
 
-from app.api.deps import get_db, get_current_student
+from app.api.deps import get_current_student, get_db
 from app.models.user import User
-from app.models.study_goal import StudyGoal
-from app.models.study_plan import StudyPlan
-from app.models.study_plan_progress import StudyPlanProgress
 from app.schemas.study_plan import StudyPlanResponse, StudyPlanUpdate
+from app.services.plan_service import (
+    get_student_plan,
+    list_student_plans,
+    update_student_plan,
+)
 
 router = APIRouter()
 
 
-# ── GET /plans/ — Lấy danh sách plans của học sinh ───────────
 @router.get(
     "/",
     response_model=List[StudyPlanResponse],
@@ -31,31 +33,16 @@ def get_my_plans(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ):
-    if goal_id:
-        query = db.query(StudyPlan).filter(
-            StudyPlan.student_id == current_user.id, StudyPlan.goal_id == goal_id
-        )
-    else:
-        query = (
-            db.query(StudyPlan)
-            .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
-            .filter(
-                StudyPlan.student_id == current_user.id, StudyGoal.status == "active"
-            )
-        )
-
-    if status_filter:
-        query = query.filter(StudyPlan.status == status_filter)
-    if start_date:
-        query = query.filter(StudyPlan.study_date >= start_date)
-    if end_date:
-        query = query.filter(StudyPlan.study_date <= end_date)
-
-    plans = query.order_by(StudyPlan.study_date.asc(), StudyPlan.start_time.asc()).all()
-    return plans
+    return list_student_plans(
+        db,
+        current_user.id,
+        goal_id=goal_id,
+        status_filter=status_filter,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
-# ── GET /plans/{plan_id} — Chi tiết 1 plan ────────────────────
 @router.get(
     "/{plan_id}",
     response_model=StudyPlanResponse,
@@ -66,19 +53,12 @@ def get_plan_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ):
-    plan = (
-        db.query(StudyPlan)
-        .filter(StudyPlan.id == plan_id, StudyPlan.student_id == current_user.id)
-        .first()
-    )
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lịch học này."
-        )
-    return plan
+    try:
+        return get_student_plan(db, plan_id, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
-# ── PATCH /plans/{plan_id} — Cập nhật trạng thái task ──────────
 @router.patch(
     "/{plan_id}",
     response_model=StudyPlanResponse,
@@ -90,61 +70,12 @@ def update_plan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ):
-    plan = (
-        db.query(StudyPlan)
-        .filter(StudyPlan.id == plan_id, StudyPlan.student_id == current_user.id)
-        .first()
-    )
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy lịch học này."
-        )
-
-    update_data = body.model_dump(exclude_unset=True)
-
-    # Chặn không cho học sinh tự tích hoàn thành ("done") thủ công
-    if "status" in update_data and update_data["status"] == "done":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bạn không thể tự tích hoàn thành nhiệm vụ này. Hãy hoàn thành bài kiểm tra nhanh đạt từ 8 điểm trở lên để hệ thống tự động xác nhận.",
-        )
-
-    # Cập nhật các trường
-    for field, value in update_data.items():
-        setattr(plan, field, value)
-
-    # Nếu cập nhật status, kiểm tra và cập nhật tiến độ học tập (StudyPlanProgress)
-    if "status" in update_data:
-        status_val = update_data["status"]
-        # Lấy hoặc tạo bản ghi tiến độ cho plan này
-        progress = (
-            db.query(StudyPlanProgress)
-            .filter(StudyPlanProgress.study_plan_id == plan.id)
-            .first()
-        )
-
-        # Phần trăm hoàn thành tương ứng
-        percent = 0.0
-        if status_val == "doing":
-            percent = 50.0
-        elif status_val == "done":
-            percent = 100.0
-
-        if not progress:
-            progress = StudyPlanProgress(
-                study_plan_id=plan.id,
-                student_id=current_user.id,
-                completion_percent=percent,
-                completed_at=datetime.utcnow() if status_val == "done" else None,
-            )
-            db.add(progress)
-        else:
-            progress.completion_percent = percent
-            if status_val == "done":
-                progress.completed_at = datetime.utcnow()
-            else:
-                progress.completed_at = None
-
-    db.commit()
-    db.refresh(plan)
-    return plan
+    try:
+        return update_student_plan(db, plan_id, current_user.id, body)
+    except ValueError as exc:
+        detail = str(exc)
+        if "tự tích hoàn thành" in detail:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=detail
+            ) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail) from exc

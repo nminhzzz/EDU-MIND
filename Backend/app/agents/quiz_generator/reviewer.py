@@ -1,7 +1,12 @@
 import json
-from pydantic import BaseModel, Field
 from typing import List, Optional
-from app.agents.base import generate_content_nvidia
+
+from pydantic import BaseModel, Field
+
+from app.infrastructure.ai import generate_content_nvidia
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class QuizReviewResponse(BaseModel):
@@ -65,12 +70,11 @@ Nếu phát hiện bất kỳ câu hỏi nào vi phạm 4 quy tắc trên, hãy 
         data = json.loads(response_text)
         return QuizReviewResponse(**data)
     except Exception as e:
-        # Dự phòng: Nếu parse lỗi, mặc định duyệt qua để tránh treo tiến trình
-        print(
-            f"[QC Reviewer] Lỗi parse kết quả thẩm định: {e}. Kết quả gốc: {response_text}"
-        )
+        # Fallback: nếu parse lỗi, đánh dấu is_valid=False để trigger quiz generator
+        # làm lại thay vì bỏ qua QC hoàn toàn.
+        logger.warning("QC Reviewer: lỗi parse kết quả thẩm định: %s. Raw: %s", e, response_text[:200])
         return QuizReviewResponse(
-            is_valid=True,
-            feedback="Lỗi parse thẩm định chéo, bỏ qua duyệt.",
+            is_valid=False,
+            feedback="Lỗi parse kết quả thẩm định — quiz cần được sinh lại.",
             error_question_indices=[],
         )

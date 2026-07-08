@@ -24,7 +24,7 @@ from app.models.ai_recommendation_review import AIRecommendationReview
 from app.models.notification import Notification
 
 # ── MongoDB Models (Pydantic — không dùng SQLAlchemy) ────────
-from app.models.mongodb_models import (
+from app.models.mongo import (
     ChatSession,
     ChatMessage,
     StudyMaterialEmbedding,
