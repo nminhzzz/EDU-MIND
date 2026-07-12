@@ -10,7 +10,6 @@ from app.api.v1.chat import router as chat_router
 from app.api.v1.classrooms import router as classrooms_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.quizzes import router as quizzes_router
-from app.api.v1.recommendations import router as recommendations_router
 from app.api.v1.study_documents import router as documents_router
 from app.api.v1.study_goals import router as goals_router
 from app.api.v1.study_plans import router as plans_router
@@ -29,7 +28,6 @@ api_router.include_router(uploads_router, prefix="/uploads", tags=["Shared Uploa
 api_router.include_router(documents_router, prefix="/documents", tags=["Document Bank"])
 api_router.include_router(quizzes_router, prefix="/quizzes", tags=["AI Quiz Generator"])
 api_router.include_router(classrooms_router, prefix="/classrooms", tags=["Classrooms"])
-api_router.include_router(recommendations_router, prefix="/recommendations", tags=["AI Recommendation Reviews"])
 api_router.include_router(subjects_router, prefix="/subjects", tags=["Subjects"])
 api_router.include_router(chat_router, prefix="/chat", tags=["AI Tutor Chat"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])

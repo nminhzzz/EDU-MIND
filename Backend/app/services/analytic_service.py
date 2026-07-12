@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.agents.analytics.agent import evaluate_learning_performance
-from app.agents.recommender.agent import generate_recommendation
 from app.core.cache import get_cached, set_cached, system_analytics_key
 from app.core.enums import NotificationType
 from app.core.logging import get_logger
@@ -19,10 +18,6 @@ from app.models.learning_analytic import LearningAnalytic
 from app.models.quiz import Quiz
 from app.models.subject import Subject
 from app.models.user import User
-from app.repositories import chat_repository
-from app.repositories.ai_recommendation_review_repository import (
-    ai_recommendation_review_repository,
-)
 from app.repositories.analytic_repository import analytic_repository
 from app.repositories.attempt_repository import attempt_repository
 from app.repositories.classroom_repository import classroom_repository
@@ -37,7 +32,6 @@ logger = get_logger(__name__)
 
 # Business thresholds — kept as module constants for clarity and testability.
 SCORE_RECOMMENDATION_THRESHOLD = 8.0
-SCORE_ADAPTIVE_PLAN_THRESHOLD = 7.0
 PASS_SCORE_THRESHOLD = 5.0
 
 
@@ -125,105 +119,7 @@ async def _apply_ai_analytics(
         logger.warning("AI Analytics Agent error: %s", exc)
 
 
-async def _create_pending_recommendation(
-    db: Session,
-    ctx: QuizSubmissionContext,
-    student_id: int,
-    score: float,
-    weak_topics: list,
-) -> None:
-    """Generate an AI recommendation and stage a pending teacher review."""
-    try:
-        ai_recommendation_text = await asyncio.to_thread(
-            generate_recommendation,
-            subject_name=ctx.subject.name,
-            topic_name=ctx.quiz.title,
-            score=score,
-            weak_topics=weak_topics,
-        )
-
-        teacher_id: Optional[int] = (
-            ctx.quiz.classroom.teacher_id
-            if ctx.quiz.classroom and ctx.quiz.classroom.teacher_id
-            else None
-        )
-
-        ai_recommendation_review_repository.add_pending(
-            db,
-            student_id=student_id,
-            teacher_id=teacher_id,
-            recommendation=ai_recommendation_text,
-        )
-
-        notification_repository.create(
-            db,
-            user_id=student_id,
-            title="Đề xuất ôn tập AI đang chờ giáo viên duyệt",
-            content=(
-                f"Dựa trên kết quả bài '{ctx.quiz.title}' ({score}/10), "
-                "AI đã tạo đề xuất ôn tập và gửi cho giáo viên phê duyệt."
-            ),
-            notification_type=NotificationType.PLAN,
-        )
-    except Exception as exc:
-        logger.warning("AI Recommender Agent error: %s", exc)
-
-
-async def _trigger_adaptive_plan(
-    db: Session,
-    ctx: QuizSubmissionContext,
-    student_id: int,
-    subject_id: int,
-    score: float,
-    weak_topics: list,
-) -> None:
-    """Create a chat session and notification when the student needs plan refinement."""
-    try:
-        active_goal = goal_repository.get_active_for_subject(
-            db, student_id, subject_id
-        )
-        if not active_goal or not weak_topics or score >= SCORE_ADAPTIVE_PLAN_THRESHOLD:
-            return
-
-        weak_topics_str = "; ".join(
-            t.get("topic", str(t)) if isinstance(t, dict) else str(t)
-            for t in weak_topics
-        )
-        if not weak_topics_str:
-            return
-
-        logger.info(
-            "Adaptive Plan: refining for student %d — weak topics: %s",
-            student_id,
-            weak_topics_str,
-        )
-
-        topic_session = await chat_repository.create_chat_session(
-            student_id=student_id,
-            title=f"Tự động điều chỉnh lộ trình - {ctx.subject.name} (Điểm yếu)",
-        )
-
-        await chat_repository.add_chat_message(
-            topic_session,
-            "user",
-            f"Tôi vừa làm bài '{ctx.quiz.title}' được {score}/10. "
-            f"Các phần yếu cần cải thiện: {weak_topics_str}. "
-            "Hãy điều chỉnh lộ trình học tập của tôi để tập trung ôn các phần này.",
-        )
-
-        notification_repository.create(
-            db,
-            user_id=student_id,
-            title="Lộ trình học được điều chỉnh tự động",
-            content=(
-                f"Dựa trên kết quả bài thi '{ctx.quiz.title}' ({score}/10), "
-                f"AI đã phân tích điểm yếu và điều chỉnh lộ trình học tập môn {ctx.subject.name}. "
-                "Vui lòng kiểm tra lại lộ trình."
-            ),
-            notification_type=NotificationType.PLAN,
-        )
-    except Exception as exc:
-        logger.warning("Adaptive Plan error: %s", exc)
+# _create_pending_recommendation removed to disable AI recommendations
 
 
 def _add_progress_notification(
@@ -257,8 +153,7 @@ async def update_student_analytics_and_recommend(
     1. Recalculate LearningAnalytic (avg score, completed quizzes).
     2. Call AI Analytics Agent to identify weak/strong topics.
     3. If score < 8.0, generate an AI study recommendation and schedule a review plan.
-    4. If score < 7.0 and the student has an active goal, trigger adaptive plan refinement.
-    5. Send notification to the student.
+    4. Send notification to the student.
     """
     ctx = _load_submission_context(db, student_id, subject_id, quiz_id)
     if ctx is None:
@@ -269,15 +164,6 @@ async def update_student_analytics_and_recommend(
     )
 
     await _apply_ai_analytics(analytic, ctx.subject.name, attempts_history)
-
-    if score < SCORE_RECOMMENDATION_THRESHOLD:
-        await _create_pending_recommendation(
-            db, ctx, student_id, score, analytic.weak_topics or []
-        )
-
-    await _trigger_adaptive_plan(
-        db, ctx, student_id, subject_id, score, analytic.weak_topics or []
-    )
 
     _add_progress_notification(db, ctx, student_id, score)
 

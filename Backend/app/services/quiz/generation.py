@@ -104,7 +104,7 @@ async def generate_and_save_quiz(
         difficulty=difficulty,
         total_questions=total_questions,
         context=context,
-        skip_qc=study_plan_id is not None,
+        skip_qc=False,
     )
 
     questions_json = normalize_ai_questions(ai_quiz)

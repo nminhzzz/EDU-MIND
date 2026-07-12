@@ -13,20 +13,17 @@ import {
   FolderOpen,
   Plus,
   ChevronRight,
-  ClipboardCheck,
 } from "lucide-react";
 import { StatCard } from "@/components/teacher/stat-card";
 import { ClassroomCard } from "@/components/teacher/classroom-card";
 import { EmptyState } from "@/components/teacher/empty-state";
 import { Classroom } from "@/types/classroom";
 import { StudyDocument } from "@/types/document";
-import { recommendationApi } from "@/services/recommendation";
 
 export default function TeacherDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [documents, setDocuments] = useState<StudyDocument[]>([]);
-  const [pendingReviews, setPendingReviews] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,14 +31,12 @@ export default function TeacherDashboard() {
 
     const fetchData = async () => {
       try {
-        const [clsRes, docRes, pendingRes] = await Promise.all([
+        const [clsRes, docRes] = await Promise.all([
           apiClient.get<Classroom[]>("/classrooms/"),
           apiClient.get<StudyDocument[]>("/documents/"),
-          recommendationApi.getPendingReviews(),
         ]);
         setClassrooms(clsRes.data);
         setDocuments(docRes.data);
-        setPendingReviews(pendingRes.data.length);
       } catch (err) {
         console.error("Lỗi tải dữ liệu dashboard giáo viên:", err);
         toast.error("Không thể tải dữ liệu. Vui lòng thử lại.");
@@ -118,45 +113,16 @@ export default function TeacherDashboard() {
       </motion.div>
 
       {/* 2. Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {stats.map((stat, idx) => (
           <StatCard key={stat.label} {...stat} index={idx} />
         ))}
-        <StatCard
-          label="Đề xuất chờ duyệt"
-          value={pendingReviews}
-          icon={ClipboardCheck}
-          color="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
-          index={3}
-        />
       </div>
 
-      {pendingReviews > 0 && (
-        <Link
-          href={ROUTES.TEACHER_RECOMMENDATIONS}
-          className="flex items-center justify-between gap-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <ClipboardCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                {pendingReviews} đề xuất ôn tập AI đang chờ duyệt
-              </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
-                Học sinh cần bạn xem xét trước khi nhận gợi ý ôn tập
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-        </Link>
-      )}
-
-      {/* 3. Classrooms & AI Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Classrooms */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm rounded-xl flex flex-col justify-between">
+      {/* 3. Classrooms */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Classrooms List */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm rounded-xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-4">
               <h2 className="font-extrabold text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
@@ -203,33 +169,6 @@ export default function TeacherDashboard() {
             </div>
           )}
         </div>
-
-        {/* Right: HITL Recommendations Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 text-white p-8 shadow-sm flex flex-col justify-between relative overflow-hidden rounded-xl"
-        >
-          <div className="absolute top-[-30%] right-[-30%] w-48 h-48 rounded-full bg-violet-500/10 blur-2xl pointer-events-none" />
-          <div>
-            <div className="w-12 h-12 bg-white/5 text-violet-400 border border-zinc-800 flex items-center justify-center mb-6 rounded-xl">
-              <ClipboardCheck className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-extrabold tracking-tight">Duyệt đề xuất AI</h3>
-            <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-              Học sinh làm bài dưới 8 điểm sẽ nhận gợi ý ôn tập từ AI. Bạn xem xét và phê duyệt trước khi gửi cho học sinh.
-            </p>
-          </div>
-          <Link
-            href={ROUTES.TEACHER_RECOMMENDATIONS}
-            className="mt-8 px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-sm text-center shadow-lg transition-transform active:scale-[0.98] cursor-pointer rounded-xl"
-          >
-            {pendingReviews > 0
-              ? `Duyệt ${pendingReviews} đề xuất`
-              : "Xem đề xuất ôn tập"}
-          </Link>
-        </motion.div>
       </div>
     </div>
   );

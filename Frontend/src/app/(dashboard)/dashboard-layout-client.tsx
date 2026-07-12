@@ -7,13 +7,14 @@ import { Sidebar } from "@/components/shared/sidebar";
 import { Header } from "@/components/shared/header";
 import { X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FloatingTutorChat } from "@/components/student/floating-tutor-chat";
 
 export function DashboardLayoutClient({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -101,6 +102,9 @@ export function DashboardLayoutClient({
           {children}
         </main>
       </div>
+
+      {/* Floating Tutor Chat widget (Student only) */}
+      {user?.role === "student" && <FloatingTutorChat />}
     </div>
   );
 }

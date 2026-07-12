@@ -10,6 +10,7 @@ from app.agents.roadmap_planner.agent import (
     format_available_schedule,
     generate_unified_plan,
 )
+from app.schemas.unified_goal import UnifiedGoalPlanResponse
 from app.services.unified.validators import prune_roadmap_history
 
 # ── 1. UNIT TESTS: NORMALIZE ROADMAP KEYS ──────────────────────────────────

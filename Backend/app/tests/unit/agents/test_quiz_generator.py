@@ -148,9 +148,9 @@ def test_review_generated_quiz_fallback(mock_generate):
     quiz_data = {"title": "Java Test", "questions": []}
     result = review_generated_quiz(quiz_data=quiz_data, context="Tài liệu Java...")
 
-    # Phải tự động fallback duyệt qua để tránh nghẽn luồng
-    assert result.is_valid is True
-    assert "Lỗi parse thẩm định chéo" in result.feedback
+    # Phải tự động fallback đánh dấu không hợp lệ để sinh lại đề
+    assert result.is_valid is False
+    assert "Lỗi parse kết quả thẩm định" in result.feedback
     assert result.error_question_indices == []
 
 
@@ -550,3 +550,73 @@ async def test_vector_search_materials_similarity_threshold(mock_get_embedding):
     assert len(results) == 1
     assert results[0]["id"] == "doc1"
     assert results[0]["topic"] == "Java Inheritance"
+
+
+def test_normalize_ai_questions_filters_duplicates_and_remaps():
+    from app.services.quiz.grading import normalize_ai_questions
+
+    class MockOption:
+        def __init__(self, key, value):
+            self.key = key
+            self.value = value
+
+    class MockQuestion:
+        def __init__(self, question_text, question_type, options, correct_answer, explanation):
+            self.question_text = question_text
+            self.question_type = question_type
+            self.options = options
+            self.correct_answer = correct_answer
+            self.explanation = explanation
+
+    class MockQuiz:
+        def __init__(self, questions):
+            self.questions = questions
+
+    # Câu 1: MCQ có tùy chọn trùng nhau ("Inheritance" trùng lặp)
+    q1 = MockQuestion(
+        question_text="Java OOP là gì?",
+        question_type="mcq",
+        options=[
+            MockOption("A", "Inheritance"),
+            MockOption("B", "Polymorphism"),
+            MockOption("C", "Inheritance"),  # Trùng lặp
+            MockOption("D", "Encapsulation"),
+        ],
+        correct_answer="C",  # Đáp án đúng ban đầu trỏ vào "Inheritance" ở vị trí C
+        explanation="OOP có 4 tính chất..."
+    )
+
+    # Câu 2: True/False câu hỏi (Không re-map A, B, C, D)
+    q2 = MockQuestion(
+        question_text="Java là ngôn ngữ hướng đối tượng phải không?",
+        question_type="true_false",
+        options=[
+            MockOption("True", "Đúng"),
+            MockOption("False", "Sai"),
+        ],
+        correct_answer="True",
+        explanation="Đúng vậy"
+    )
+
+    quiz = MockQuiz([q1, q2])
+    res = normalize_ai_questions(quiz)
+
+    assert len(res) == 2
+
+    # Verify q1:
+    # 1. Trùng lặp "Inheritance" phải bị loại bỏ
+    # 2. Số options còn 3: "Inheritance", "Polymorphism", "Encapsulation"
+    # 3. Phải re-map keys thành A, B, C
+    # 4. correct_answer ban đầu là "C" (Inheritance) phải map sang key mới của Inheritance là "A"
+    assert len(res[0]["options"]) == 3
+    assert res[0]["options"][0] == {"key": "A", "value": "Inheritance"}
+    assert res[0]["options"][1] == {"key": "B", "value": "Polymorphism"}
+    assert res[0]["options"][2] == {"key": "C", "value": "Encapsulation"}
+    assert res[0]["correct_answer"] == "A"
+
+    # Verify q2: True/False giữ nguyên keys
+    assert len(res[1]["options"]) == 2
+    assert res[1]["options"][0]["key"] == "True"
+    assert res[1]["options"][1]["key"] == "False"
+    assert res[1]["correct_answer"] == "True"
+

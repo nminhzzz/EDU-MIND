@@ -41,7 +41,7 @@ def test_rate_limiting_on_draft_api(
 
     response = test_client.post("/api/v1/goals/unified/draft", json=request_payload)
     assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-    assert "Tần suất tạo lộ trình quá nhanh" in response.json()["detail"]
+    assert "Tần suất gọi quá nhanh" in response.json()["detail"]
 
 
 # ── 2. TEST IDEMPOTENCY LOCK ───────────────────────────────────────────────
