@@ -65,8 +65,9 @@ export default function TeacherDocumentsPage() {
       fd.append("file", file);
       await apiClient.post("/documents/", fd, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60_000,
       });
-      toast.success("Tải tài liệu lên thành công!");
+      toast.success("Tải tài liệu lên thành công! AI đang phân tích nội dung trong nền.");
       setShowModal(false);
       setTitle("");
       setSubjectId("");

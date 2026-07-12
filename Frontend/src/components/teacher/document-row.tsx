@@ -49,18 +49,27 @@ export function DocumentRow({ id, title, fileType, filePath, createdAt, onDelete
         <FileText className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{title}</h4>
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-          {fileType.toUpperCase()} • {new Date(createdAt).toLocaleDateString("vi-VN")}
-        </span>
+        <button
+          type="button"
+          onClick={handleView}
+          disabled={opening}
+          className="text-left w-full group/title cursor-pointer disabled:cursor-wait"
+        >
+          <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover/title:text-violet-600 dark:group-hover/title:text-violet-400 transition-colors">
+            {title}
+          </h4>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            {fileType.toUpperCase()} • {new Date(createdAt).toLocaleDateString("vi-VN")}
+          </span>
+        </button>
       </div>
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={handleView}
           disabled={opening}
           className="p-2 rounded-lg text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer disabled:opacity-50"
-          title={filePath}
+          title="Xem tài liệu"
         >
           {opening ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
         </button>

@@ -41,6 +41,32 @@ def _extract_content(
     return f"Tài liệu giảng dạy môn {subject_name}: {title}. Định dạng: {file_type}."
 
 
+async def _index_document_embedding(
+    db_mongo: Any,
+    *,
+    subject_id: int,
+    title: str,
+    content: str,
+    document_id: int,
+    file_name: str,
+) -> None:
+    """Background task — NVIDIA embedding can take 30–90s; must not block upload response."""
+    try:
+        await save_study_material(
+            db_mongo=db_mongo,
+            subject_id=subject_id,
+            topic=title,
+            content=content,
+            metadata={"document_id": document_id, "file_name": file_name},
+        )
+    except Exception as exc:
+        logger.warning(
+            "Failed to generate/save embedding for document %s: %s",
+            document_id,
+            exc,
+        )
+
+
 async def upload_study_document(
     db: Session,
     db_mongo: Any,
@@ -49,9 +75,15 @@ async def upload_study_document(
     subject_id: int,
     title: str,
     file: UploadFile,
+    index_in_background: bool = False,
+    on_index_ready=None,
 ) -> StudyDocument:
-    """Upload a teaching document and optionally index it for RAG."""
+    """Upload a teaching document; RAG indexing runs inline or in a background task."""
     subject = get_subject(db, subject_id)
+
+    file.file.seek(0)
+    file_bytes = await file.read()
+    file.file.seek(0)
 
     file_url = upload_file_helper(file)
     file_type = (
@@ -70,21 +102,20 @@ async def upload_study_document(
     commit_or_rollback(db)
     db.refresh(db_doc)
 
-    try:
-        file.file.seek(0)
-        file_bytes = await file.read()
+    if db_mongo is not None:
         content = _extract_content(file_bytes, file_type, subject.name, title)
-
-        if db_mongo is not None:
-            await save_study_material(
-                db_mongo=db_mongo,
-                subject_id=subject_id,
-                topic=title,
-                content=content,
-                metadata={"document_id": db_doc.id, "file_name": file.filename},
-            )
-    except Exception as exc:
-        logger.warning("Failed to generate/save embedding in MongoDB: %s", exc)
+        index_kwargs = {
+            "db_mongo": db_mongo,
+            "subject_id": subject_id,
+            "title": title,
+            "content": content,
+            "document_id": db_doc.id,
+            "file_name": file.filename or "upload",
+        }
+        if index_in_background and on_index_ready is not None:
+            on_index_ready(**index_kwargs)
+        else:
+            await _index_document_embedding(**index_kwargs)
 
     return db_doc
 
@@ -131,11 +162,6 @@ def _cloudinary_public_id(file_url: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def _cloudinary_version(file_url: str) -> Optional[int]:
-    match = re.search(r"/upload/(?:s--[^/]+--/)?v(\d+)/", file_url)
-    return int(match.group(1)) if match else None
-
-
 def _configure_cloudinary() -> None:
     import cloudinary
 
@@ -145,6 +171,38 @@ def _configure_cloudinary() -> None:
         api_secret=settings.CLOUDINARY_API_SECRET,
         secure=True,
     )
+
+
+def _ensure_cloudinary_extension(file_url: str, file_type: str) -> str:
+    """Raw Cloudinary public_ids omit extensions — append for public delivery."""
+    ft = (file_type or "").lower().lstrip(".")
+    if not ft or not file_url.startswith("http"):
+        return file_url
+
+    base, _, query = file_url.partition("?")
+    last_segment = base.rsplit("/", 1)[-1]
+    if "." in last_segment:
+        return file_url
+
+    suffix = f".{ft}"
+    if query:
+        return f"{base}{suffix}?{query}"
+    return f"{base}{suffix}"
+
+
+def get_document_view_url(doc: StudyDocument) -> str:
+    """Return the Cloudinary (or local static) URL to open in the browser."""
+    file_path = doc.file_path
+
+    # Use Cloudinary secure_url as stored — appending .pdf breaks some raw assets (404).
+    if file_path.startswith("http"):
+        return file_path
+
+    if file_path.startswith("/static/"):
+        base = settings.API_V1_STR.replace("/api/v1", "")
+        return f"{base}{file_path}"
+
+    return file_path
 
 
 def _media_type_for(file_type: str) -> str:
@@ -167,29 +225,8 @@ def _local_disk_path(doc: StudyDocument) -> str:
     return os.path.join(_uploads_root(), rel)
 
 
-def get_document_view_url(doc: StudyDocument) -> str:
-    """
-    Return a browser-openable URL for a stored document.
-
-    Cloudinary: return the stored delivery URL as-is (requires
-    "Allow delivery of PDF and ZIP files" in Cloudinary Security settings).
-    Local files are served via /static (mounted in main.py).
-    """
-    file_path = doc.file_path
-
-    if file_path.startswith("http"):
-        return file_path
-
-    if file_path.startswith("/static/"):
-        base = settings.API_V1_STR.replace("/api/v1", "")
-        return f"{base}{file_path}"
-
-    return file_path
-
-
 def _fetch_cloudinary_bytes(doc: StudyDocument) -> bytes:
     """Download raw file bytes from Cloudinary using authenticated URLs."""
-    import urllib.error
     import urllib.request
 
     import cloudinary.utils
@@ -207,9 +244,9 @@ def _fetch_cloudinary_bytes(doc: StudyDocument) -> bytes:
                 base_id, format=fmt, resource_type="raw"
             )
         )
-    candidates.append(get_document_view_url(doc))
     if file_path.startswith("http"):
         candidates.append(file_path)
+        candidates.append(_ensure_cloudinary_extension(file_path, fmt))
 
     last_error: Exception | None = None
     for url in dict.fromkeys(candidates):

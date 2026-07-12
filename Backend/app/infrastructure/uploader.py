@@ -3,6 +3,7 @@ File upload adapter — Cloudinary (preferred) or local disk (fallback).
 """
 
 import os
+import re
 import shutil
 
 from fastapi import HTTPException, UploadFile, status
@@ -28,6 +29,12 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"}
 def _sanitize_filename(raw: str) -> str:
     """Strip directory traversal and keep only the base filename."""
     return os.path.basename(raw).strip() or "upload"
+
+
+def _slugify_public_id(name: str) -> str:
+    """Cloudinary public_id safe segment — no spaces or special chars."""
+    slug = re.sub(r"[^\w\-]+", "_", name, flags=re.UNICODE).strip("_")
+    return slug or "upload"
 
 
 def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
@@ -74,7 +81,7 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
                 secure=True,
             )
             # Strip extension for raw files — Cloudinary appends it in the delivery URL.
-            base_name = os.path.splitext(filename)[0]
+            base_name = _slugify_public_id(os.path.splitext(filename)[0])
             public_id = f"{folder}/{base_name}" if resource_type == "raw" else f"{folder}/{filename}"
             res = cloudinary.uploader.upload(
                 file.file,

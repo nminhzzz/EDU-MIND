@@ -23,6 +23,10 @@ export type { Subject } from "@/types/subject";
 /** @deprecated Use StudyGoal */
 export type StudyGoalResponse = StudyGoal;
 
+/** AI roadmap generation can take 30–90s (LLM + RAG). Default axios timeout is 30s. */
+const AI_DRAFT_TIMEOUT_MS = 120_000;
+const AI_CONFIRM_TIMEOUT_MS = 60_000;
+
 export const goalApi = {
   getPreferences: () =>
     apiClient.get<StudentPreference>("/users/preferences"),
@@ -41,10 +45,14 @@ export const goalApi = {
     apiClient.delete<ApiMessageResponse>(`/goals/${id}`),
 
   createDraft: (data: DraftRequest) =>
-    apiClient.post<DraftResponse>("/goals/unified/draft", data),
+    apiClient.post<DraftResponse>("/goals/unified/draft", data, {
+      timeout: AI_DRAFT_TIMEOUT_MS,
+    }),
 
   confirmDraft: (data: ConfirmRequest) =>
-    apiClient.post<ConfirmDraftResponse>("/goals/unified/confirm", data),
+    apiClient.post<ConfirmDraftResponse>("/goals/unified/confirm", data, {
+      timeout: AI_CONFIRM_TIMEOUT_MS,
+    }),
 };
 
 export default goalApi;
