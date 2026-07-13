@@ -4,9 +4,12 @@ Provides: get_db (MySQL session), get_current_user (JWT auth),
 role-based guards, and rate_limiter.
 """
 
+import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Generator, Optional
 from urllib.parse import urlparse
+from app.core.cache import get_cached, set_cached
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -152,11 +155,11 @@ def get_current_student_from_token(
     return user
 
 
-def get_current_user(
+async def get_current_user(
     token: str = Depends(get_token_from_request),
     db: Session = Depends(get_db),
 ) -> User:
-    """Validate the access token and return the authenticated User."""
+    """Validate the access token and return the authenticated User (cached)."""
     payload = decode_access_token(token)
     if payload is None:
         raise _invalid_credentials()
@@ -165,9 +168,43 @@ def get_current_user(
     if user_id is None:
         raise _invalid_credentials()
 
-    user = user_repository.get(db, int(user_id))
-    if user is None:
-        raise _invalid_credentials()
+    # Thử đọc thông tin user từ Redis cache
+    cache_key = f"user_profile:{user_id}"
+    cached_user = await get_cached(cache_key)
+
+    if cached_user:
+        user = User(
+            id=cached_user["id"],
+            email=cached_user["email"],
+            password_hash=cached_user["password_hash"],
+            full_name=cached_user["full_name"],
+            avatar_url=cached_user.get("avatar_url"),
+            grade=cached_user.get("grade"),
+            role=UserRole(cached_user["role"]),
+            is_active=cached_user["is_active"],
+            created_at=datetime.fromisoformat(cached_user["created_at"]) if cached_user.get("created_at") else None,
+            updated_at=datetime.fromisoformat(cached_user["updated_at"]) if cached_user.get("updated_at") else None,
+        )
+    else:
+        # Nếu cache miss, query MySQL (chạy trong threadpool để tránh chặn event loop)
+        user = await asyncio.to_thread(user_repository.get, db, int(user_id))
+        if user is None:
+            raise _invalid_credentials()
+
+        # Lưu thông tin user vào Redis cache trong 60 giây
+        user_data = {
+            "id": user.id,
+            "email": user.email,
+            "password_hash": user.password_hash,
+            "full_name": user.full_name,
+            "avatar_url": user.avatar_url,
+            "grade": user.grade.value if hasattr(user.grade, "value") else user.grade if user.grade else None,
+            "role": user.role.value if hasattr(user.role, "value") else user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        }
+        await set_cached(cache_key, user_data, ttl_seconds=60)
 
     if not user.is_active:
         raise HTTPException(

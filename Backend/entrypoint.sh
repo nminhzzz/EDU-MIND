@@ -6,8 +6,8 @@
 
 set -e
 
-echo "==> Running Alembic migrations..."
-alembic upgrade head
+echo "==> Initializing database..."
+python pre_start.py
 
 echo "==> Starting Gunicorn..."
 exec gunicorn app.main:app \

@@ -102,6 +102,12 @@ async def confirm_unified(
             subject.id,
         )
 
+        # Xóa cache dashboard của học sinh
+        try:
+            redis.delete(f"dashboard_snapshot:{current_user.id}")
+        except Exception:
+            pass
+
         return {
             "message": "Xác nhận và lưu lộ trình hợp nhất chính thức thành công!",
             "goal": {

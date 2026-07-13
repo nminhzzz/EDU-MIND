@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_teacher, get_current_user, get_db
 from app.core.enums import UserRole
 from app.database.mongodb import get_mongodb_db
+from app.database.redis import get_redis
 from app.models.user import User
 from app.schemas.quiz import QuizCreateRequest, QuizDetailResponse, QuizResponse
 from app.schemas.quiz_attempt import QuizAttemptCreate, QuizAttemptResponse
@@ -161,6 +162,12 @@ def submit_quiz(
                 quiz_id,
                 float(attempt.score),
             )
+        
+        # Xóa cache dashboard của học sinh ngay lập tức để đồng bộ điểm số mới
+        try:
+            get_redis().delete(f"dashboard_snapshot:{current_user.id}")
+        except Exception:
+            pass
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except Exception as exc:

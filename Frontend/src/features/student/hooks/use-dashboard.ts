@@ -12,10 +12,13 @@ export function useDashboard() {
 
   useEffect(() => {
     const disconnect = sse.connect();
-    tasks.fetchTodayTasks();
-    classrooms.fetchClassrooms();
+    Promise.all([
+      tasks.fetchTodayTasks(),
+      classrooms.fetchClassrooms(),
+    ]);
     return disconnect;
-  }, [sse.connect, tasks.fetchTodayTasks, classrooms.fetchClassrooms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     stats: sse.stats,

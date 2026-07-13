@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_student, get_db
+from app.database.redis import get_redis
 from app.models.user import User
 from app.schemas.study_plan import StudyPlanResponse, StudyPlanUpdate
 from app.services.plan_service import (
@@ -71,7 +72,13 @@ def update_plan(
     current_user: User = Depends(get_current_student),
 ):
     try:
-        return update_student_plan(db, plan_id, current_user.id, body)
+        res = update_student_plan(db, plan_id, current_user.id, body)
+        # Xóa cache dashboard của học sinh để cập nhật tiến trình hoàn thành task
+        try:
+            get_redis().delete(f"dashboard_snapshot:{current_user.id}")
+        except Exception:
+            pass
+        return res
     except ValueError as exc:
         detail = str(exc)
         if "tự tích hoàn thành" in detail:

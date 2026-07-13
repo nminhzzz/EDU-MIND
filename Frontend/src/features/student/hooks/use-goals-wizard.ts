@@ -46,17 +46,25 @@ export function useGoalsWizard() {
   useEffect(() => {
     const checkScheduleAndLoadData = async () => {
       try {
-        const subjectsRes = await subjectService.list();
+        const [subjectsRes, goalsRes, prefRes] = await Promise.all([
+          subjectService.list(),
+          goalService.getGoals(),
+          goalService.getPreferences().catch((err) => {
+            if (getApiErrorStatus(err) === 404) {
+              return { data: null };
+            }
+            throw err;
+          }),
+        ]);
+
         setSubjects(subjectsRes.data);
         if (subjectsRes.data.length > 0) {
           setSelectedSubjectId(String(subjectsRes.data[0].id));
         }
 
-        const goalsRes = await goalService.getGoals();
         setGoals(goalsRes.data);
 
-        const prefRes = await goalService.getPreferences();
-        if (prefRes.data) {
+        if (prefRes && prefRes.data) {
           setStudyHours(prefRes.data.study_hours_per_day);
           setPreferredTime(prefRes.data.preferred_study_time);
 
@@ -72,14 +80,12 @@ export function useGoalsWizard() {
           } else {
             setStep("create_goal");
           }
+        } else {
+          setStep("setup_schedule");
         }
       } catch (err: unknown) {
-        if (getApiErrorStatus(err) === 404) {
-          setStep("setup_schedule");
-        } else {
-          console.error("Lỗi khi tải thông tin khởi tạo:", err);
-          toast.error("Không thể kết nối với máy chủ.");
-        }
+        console.error("Lỗi khi tải thông tin khởi tạo:", err);
+        toast.error("Không thể kết nối với máy chủ.");
       }
     };
 

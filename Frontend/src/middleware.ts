@@ -44,6 +44,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // If visiting login page with a redirect parameter, it means a 401 occurred in the client,
+  // so we must clear the cookies to break any redirect loops.
+  if (isAuthPage && request.nextUrl.searchParams.has("redirect")) {
+    const response = NextResponse.next();
+    clearAuthCookies(response);
+    return response;
+  }
+
   // Valid session on auth pages → redirect to role dashboard.
   if (isAuthenticated && isAuthPage) {
     return NextResponse.redirect(new URL(`/${userRole}`, request.url));
