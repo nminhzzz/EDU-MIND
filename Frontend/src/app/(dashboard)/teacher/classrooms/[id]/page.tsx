@@ -8,6 +8,9 @@ import {
   ArrowLeft,
   BarChart3,
   BookOpen,
+  ClipboardList,
+  BrainCircuit,
+  Eye,
   Loader2,
   Trash2,
   Trophy,
@@ -20,6 +23,8 @@ import { ROUTES } from "@/constants/routes";
 import { AddStudentModal } from "@/components/teacher/add-student-modal";
 import { QuizResultTable } from "@/components/teacher/quiz-result-table";
 import { StudentProgressTable } from "@/components/teacher/student-progress-table";
+import { quizService } from "@/features/student/services/quiz";
+import type { StudentQuiz } from "@/features/student/types/quiz";
 import classroomApi, {
   ClassroomDetail,
   ClassroomQuizAttempt,
@@ -28,12 +33,13 @@ import classroomApi, {
 import { parseApiError } from "@/utils/api-error";
 import { User } from "@/types/user";
 
-type TabId = "students" | "progress" | "quizzes";
+type TabId = "students" | "progress" | "quizzes" | "classroom_quizzes";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "students", label: "Danh sách học sinh", icon: Users },
   { id: "progress", label: "Tiến độ học tập", icon: BarChart3 },
   { id: "quizzes", label: "Kết quả bài thi", icon: Trophy },
+  { id: "classroom_quizzes", label: "Đề thi & Bài tập", icon: ClipboardList },
 ];
 
 export default function ClassroomDetailPage() {
@@ -44,11 +50,36 @@ export default function ClassroomDetailPage() {
   const [classroom, setClassroom] = useState<ClassroomDetail | null>(null);
   const [progress, setProgress] = useState<ClassroomStudentProgress[]>([]);
   const [quizAttempts, setQuizAttempts] = useState<ClassroomQuizAttempt[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [previewQuiz, setPreviewQuiz] = useState<StudentQuiz | null>(null);
+  const [loadingPreviewId, setLoadingPreviewId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("students");
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Modal tạo đề thi AI:
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [totalQuestions, setTotalQuestions] = useState(5);
+  const [deadline, setDeadline] = useState("");
+  const [includeEssay, setIncludeEssay] = useState(false);
+  const [essayCount, setEssayCount] = useState(2);
+
+  const handlePreviewQuiz = async (quizId: number) => {
+    setLoadingPreviewId(quizId);
+    try {
+      const res = await quizService.getReview(quizId);
+      setPreviewQuiz(res.data);
+    } catch (err) {
+      toast.error(parseApiError(err, "Không thể tải chi tiết đề thi."));
+    } finally {
+      setLoadingPreviewId(null);
+    }
+  };
 
   const fetchClassroom = useCallback(async () => {
     const res = await classroomApi.getDetail(classroomId);
@@ -65,6 +96,11 @@ export default function ClassroomDetailPage() {
     setQuizAttempts(res.data);
   }, [classroomId]);
 
+  const fetchQuizzes = useCallback(async () => {
+    const res = await classroomApi.getQuizzes(classroomId);
+    setQuizzes(res.data);
+  }, [classroomId]);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -72,6 +108,7 @@ export default function ClassroomDetailPage() {
         fetchClassroom(),
         fetchProgress(),
         fetchQuizAttempts(),
+        fetchQuizzes(),
       ]);
     } catch (err) {
       console.error("Lỗi tải chi tiết lớp học:", err);
@@ -79,7 +116,7 @@ export default function ClassroomDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchClassroom, fetchProgress, fetchQuizAttempts]);
+  }, [fetchClassroom, fetchProgress, fetchQuizAttempts, fetchQuizzes]);
 
   useEffect(() => {
     if (!classroomId || Number.isNaN(classroomId)) return;
@@ -125,6 +162,45 @@ export default function ClassroomDetailPage() {
       toast.error(parseApiError(err, "Không thể giải tán lớp học."));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleGenerateQuiz = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topic.trim()) {
+      toast.error("Vui lòng nhập chủ đề kiểm tra.");
+      return;
+    }
+    if (!classroom?.subject?.id) {
+      toast.error("Lớp học này chưa được gắn môn học nào.");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const res = await classroomApi.generateQuiz(classroomId, {
+        subject_id: classroom.subject.id,
+        topic,
+        difficulty,
+        total_questions: totalQuestions,
+        deadline: deadline || undefined,
+        include_essay: includeEssay,
+        essay_count: includeEssay ? essayCount : 0,
+      });
+      toast.success("Đã dùng AI sinh đề và giao bài kiểm tra thành công!");
+      setShowGenModal(false);
+      setTopic("");
+      setDeadline("");
+      setIncludeEssay(false);
+      setEssayCount(2);
+      await fetchAll();
+      if (res.data) {
+        setPreviewQuiz(res.data);
+      }
+    } catch (err) {
+      toast.error(parseApiError(err, "Không thể sinh đề thi bằng AI."));
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -303,6 +379,94 @@ export default function ClassroomDetailPage() {
         {activeTab === "quizzes" && (
           <QuizResultTable attempts={quizAttempts} />
         )}
+
+        {activeTab === "classroom_quizzes" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
+              <h3 className="font-extrabold text-sm text-zinc-800 dark:text-zinc-200">
+                Danh sách đề kiểm tra đã giao
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGenModal(true)}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+              >
+                <BrainCircuit className="w-3.5 h-3.5" />
+                Tạo đề thi bằng AI
+              </button>
+            </div>
+
+            {quizzes.length === 0 ? (
+              <div className="text-center py-12 text-zinc-400 dark:text-zinc-500">
+                <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm font-medium">Chưa có đề thi hay bài tập nào được giao cho lớp này.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowGenModal(true)}
+                  className="mt-4 text-sm font-bold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                >
+                  Tạo đề thi đầu tiên bằng AI
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {quizzes.map((q) => (
+                  <div
+                    key={q.id}
+                    className="p-5 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col justify-between hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
+                  >
+                    <div className="space-y-2 text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400">
+                          {q.difficulty === "easy" ? "Dễ" : q.difficulty === "hard" ? "Khó" : "Trung bình"}
+                        </span>
+                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                          ID: #{q.id}
+                        </span>
+                      </div>
+                      <h4 className="font-extrabold text-sm text-zinc-900 dark:text-white line-clamp-1">
+                        {q.title}
+                      </h4>
+                      <p className="text-xs text-zinc-505 dark:text-zinc-400 mt-1">
+                        Số câu hỏi: <strong className="text-zinc-700 dark:text-zinc-200">{q.total_questions}</strong> câu
+                      </p>
+                      {q.deadline && (
+                        <p className="text-[11px] text-zinc-450 dark:text-zinc-500 mt-1">
+                          Hạn chót: {new Date(q.deadline).toLocaleDateString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handlePreviewQuiz(q.id)}
+                        disabled={loadingPreviewId === q.id}
+                        className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] rounded-lg transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {loadingPreviewId === q.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Đang tải...
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            Xem chi tiết đề
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </motion.div>
 
       <AddStudentModal
@@ -310,6 +474,282 @@ export default function ClassroomDetailPage() {
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddStudent}
       />
+
+      {/* AI Quiz Generation Modal */}
+      {showGenModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4"
+          >
+            <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+              <h3 className="font-black text-base text-zinc-900 dark:text-white flex items-center gap-2">
+                <BrainCircuit className="w-5 h-5 text-violet-600" />
+                Tạo đề thi bằng AI
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGenModal(false)}
+                className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400 text-sm font-bold cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <form onSubmit={handleGenerateQuiz} className="space-y-4 text-left">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                  Chủ đề kiểm tra:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Lượng giác, Đạo hàm, Mảng trong Java..."
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Độ khó:
+                  </label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                  >
+                    <option value="easy">Dễ</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="hard">Khó</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Số câu hỏi:
+                  </label>
+                  <select
+                    value={totalQuestions}
+                    onChange={(e) => setTotalQuestions(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                  >
+                    <option value={5}>5 câu</option>
+                    <option value={10}>10 câu</option>
+                    <option value={15}>15 câu</option>
+                    <option value={20}>20 câu</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-650 dark:text-zinc-400 uppercase">
+                    Bao gồm câu hỏi tự luận:
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={includeEssay}
+                    onChange={(e) => setIncludeEssay(e.target.checked)}
+                    className="w-4 h-4 text-violet-600 focus:ring-violet-500 border-zinc-300 rounded cursor-pointer"
+                  />
+                </div>
+
+                {includeEssay && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Số câu hỏi tự luận:
+                    </label>
+                    <select
+                      value={essayCount}
+                      onChange={(e) => setEssayCount(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    >
+                      <option value={1}>1 câu</option>
+                      <option value={2}>2 câu (Mặc định)</option>
+                      <option value={3}>3 câu</option>
+                      <option value={4}>4 câu</option>
+                      <option value={5}>5 câu</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                  Hạn chót nộp bài (Không bắt buộc):
+                </label>
+                <input
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={generating}
+                className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-violet-500/20"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Đang thiết kế đề thi AI...
+                  </>
+                ) : (
+                  <>
+                    <BrainCircuit className="w-4 h-4" />
+                    Sinh đề & Giao bài ngay
+                  </>
+                )}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* AI Quiz Preview Modal for Teacher */}
+      <QuizPreviewModal
+        open={!!previewQuiz}
+        onClose={() => setPreviewQuiz(null)}
+        quiz={previewQuiz}
+      />
+    </div>
+  );
+}
+
+interface QuizPreviewModalProps {
+  open: boolean;
+  onClose: () => void;
+  quiz: StudentQuiz | null;
+}
+
+export function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
+  if (!open || !quiz) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col"
+      >
+        <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5">
+          <div className="text-left">
+            <h3 className="font-black text-base text-zinc-900 dark:text-white line-clamp-1">
+              {quiz.title}
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 px-2 py-0.5 rounded">
+                Độ khó: {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "hard" ? "Khó" : "Trung bình"}
+              </span>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                Tổng số: {quiz.total_questions} câu hỏi
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400 text-sm font-bold cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-left">
+          {quiz.questions.map((q, qIdx) => {
+            const isEssay = q.question_type === "essay";
+            return (
+              <div
+                key={qIdx}
+                className="p-5 border border-zinc-100 dark:border-zinc-850 rounded-xl bg-zinc-50/30 dark:bg-zinc-950/10 space-y-4"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xs font-bold mt-0.5">
+                    {qIdx + 1}
+                  </span>
+                  <div className="space-y-1">
+                    <p className="text-sm font-extrabold text-zinc-900 dark:text-white leading-relaxed">
+                      {q.question_text}
+                    </p>
+                    {isEssay && (
+                      <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-1.5 py-0.5 rounded">
+                        Tự luận
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {!isEssay && q.options && q.options.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-8">
+                    {q.options.map((opt) => {
+                      const isCorrect = opt.key.trim().toUpperCase() === q.correct_answer?.trim().toUpperCase();
+                      return (
+                        <div
+                          key={opt.key}
+                          className={`p-3 rounded-lg border text-xs font-semibold transition-all flex items-start gap-2 ${
+                            isCorrect
+                              ? "bg-emerald-50/50 border-emerald-250 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-400"
+                              : "bg-white border-zinc-100 text-zinc-700 dark:bg-zinc-950 dark:border-zinc-850 dark:text-zinc-300"
+                          }`}
+                        >
+                          <span
+                            className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
+                              isCorrect
+                                ? "bg-emerald-500 text-white"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                            }`}
+                          >
+                            {opt.key}
+                          </span>
+                          <span className="flex-1 pt-0.5 leading-snug">{opt.value}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isEssay && q.correct_answer && (
+                  <div className="pl-8 space-y-1.5">
+                    <h5 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Đáp án mẫu gợi ý:
+                    </h5>
+                    <div className="p-3.5 rounded-lg bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-750 dark:text-zinc-350 font-medium leading-relaxed whitespace-pre-line">
+                      {q.correct_answer}
+                    </div>
+                  </div>
+                )}
+
+                {q.explanation && (
+                  <div className="pl-8 space-y-1.5">
+                    <h5 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Giải thích đáp án:
+                    </h5>
+                    <div className="p-3.5 rounded-lg bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100 dark:border-violet-900/30 text-xs text-zinc-650 dark:text-zinc-400 font-medium leading-relaxed">
+                      {q.explanation}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-zinc-100 dark:border-zinc-800 p-4 flex justify-end bg-zinc-50/50 dark:bg-zinc-900/50 rounded-b-2xl">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

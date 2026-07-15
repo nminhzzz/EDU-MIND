@@ -1,4 +1,3 @@
-export { GenerateQuizModal } from "./generate-quiz-modal";
 export { QuickQuizPane } from "./quick-quiz-pane";
 export { QuizDetailHeader } from "./quiz-detail-header";
 export { QuizDetailView } from "./quiz-detail-view";

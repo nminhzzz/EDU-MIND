@@ -19,6 +19,9 @@ interface QuizDetailViewProps {
   onSubmit: () => void;
   onBackToList: () => void;
   onSelectQuestion: (index: number) => void;
+  essayFilePath?: string | null;
+  uploadingEssay?: boolean;
+  handleUploadEssay?: (file: File) => void;
 }
 
 export function QuizDetailView({
@@ -34,8 +37,14 @@ export function QuizDetailView({
   onSubmit,
   onBackToList,
   onSelectQuestion,
+  essayFilePath,
+  uploadingEssay,
+  handleUploadEssay,
 }: QuizDetailViewProps) {
-  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const mcqQuestions = quiz.questions.filter((q) => q.question_type !== "essay");
+  const currentQuestion = isReview
+    ? quiz.questions[currentQuestionIndex]
+    : (currentQuestionIndex < mcqQuestions.length ? mcqQuestions[currentQuestionIndex] : null);
 
   return (
     <div className="space-y-6 text-left max-w-4xl mx-auto">
@@ -54,6 +63,9 @@ export function QuizDetailView({
           onNext={onNext}
           onSubmit={onSubmit}
           onBackToList={onBackToList}
+          essayFilePath={essayFilePath}
+          uploadingEssay={uploadingEssay}
+          handleUploadEssay={handleUploadEssay}
         />
 
         <QuizQuestionMap
@@ -61,6 +73,7 @@ export function QuizDetailView({
           currentQuestionIndex={currentQuestionIndex}
           selectedAnswers={selectedAnswers}
           onSelectQuestion={onSelectQuestion}
+          isReview={isReview}
         />
       </div>
     </div>

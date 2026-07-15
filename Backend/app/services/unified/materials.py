@@ -78,6 +78,7 @@ async def generate_materials_and_quizzes_for_plans_bg(
 
         sys_instruction = _lecture_system_instruction(is_theory_subject)
 
+        # 1. Sinh tài liệu lý thuyết (rag_content) cho tất cả các kế hoạch trước
         for plan in plans_to_generate:
             try:
                 materials = await vector_search_materials(
@@ -113,8 +114,9 @@ async def generate_materials_and_quizzes_for_plans_bg(
                     )
                     plan_repository.save_rag_content(db, plan, rag_content)
                     db.commit()
+                    db.refresh(plan)
                     logger.info(
-                        "[BG] RAG content generated for plan %d: %s",
+                        "[BG] RAG content generated and committed for plan %d: %s",
                         plan.id,
                         plan.title,
                     )
@@ -131,7 +133,12 @@ async def generate_materials_and_quizzes_for_plans_bg(
                     plan.id,
                     subject_id,
                 )
+            await asyncio.sleep(0.05)
 
+        # 2. Sau khi sinh xong toàn bộ tài liệu lý thuyết, mới bắt đầu sinh các đề kiểm tra tuần tự
+        logger.info("[BG] All RAG materials generated. Starting quiz generation phase...")
+        for plan in plans_to_generate:
+            db.refresh(plan)
             if not quiz_repository.get_by_study_plan_id(db, plan.id):
                 try:
                     await generate_and_save_quiz(
@@ -144,12 +151,11 @@ async def generate_materials_and_quizzes_for_plans_bg(
                         total_questions=5,
                         study_plan_id=plan.id,
                     )
-                    logger.info("[BG] Quiz generated for plan %d", plan.id)
+                    logger.info("[BG] Quiz generated for plan %d using its rag_content", plan.id)
                 except Exception as exc:
                     logger.error(
                         "[BG] Quiz generation failed for plan %d: %s", plan.id, exc
                     )
-
             await asyncio.sleep(0.05)
 
         logger.info("[BG] Finished background generation for goal %d", goal_id)

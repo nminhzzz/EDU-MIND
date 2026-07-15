@@ -24,6 +24,9 @@ export default function StudentQuizDetailPage() {
     goToNextQuestion,
     goToQuestion,
     goBackToList,
+    essayFilePath,
+    uploadingEssay,
+    handleUploadEssay,
   } = useQuizAttempt(quizId);
 
   if (loading) {
@@ -46,6 +49,9 @@ export default function StudentQuizDetailPage() {
       onSubmit={handleSubmit}
       onBackToList={goBackToList}
       onSelectQuestion={goToQuestion}
+      essayFilePath={essayFilePath}
+      uploadingEssay={uploadingEssay}
+      handleUploadEssay={handleUploadEssay}
     />
   );
 }

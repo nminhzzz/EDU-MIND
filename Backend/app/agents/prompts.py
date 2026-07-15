@@ -15,7 +15,7 @@ Thông tin đầu vào bao gồm:
 - Chủ đề/Nội dung: {topic}
 - Độ khó: {difficulty} (Dễ, Trung bình, Khó)
 - Số lượng câu hỏi cần tạo: {total_questions}
-- Loại câu hỏi: {question_type} (mcq: Trắc nghiệm 4 lựa chọn, true_false: Đúng/Sai)
+- Loại câu hỏi: {question_type} (mcq: Trắc nghiệm 4 lựa chọn, true_false: Đúng/Sai, essay: Tự luận ngắn/dài, mixed: Kết hợp trắc nghiệm và tự luận)
 
 Yêu cầu chất lượng câu hỏi:
 - Các câu hỏi phải kiểm tra đúng trọng tâm kiến thức của chủ đề.
@@ -23,15 +23,25 @@ Yêu cầu chất lượng câu hỏi:
 - Tuyệt đối KHÔNG được có các phương án lựa chọn trùng lặp hoặc giống nhau trong cùng một câu hỏi. Tất cả các phương án trong danh sách `options` phải có nội dung hoàn toàn khác nhau.
 - Phải có phần giải thích (explanation) chi tiết tại sao đáp án đó đúng, giúp học sinh tự ôn tập lại.
 
+⚠️ QUY TẮC CHO CÂU HỎI TỰ LUẬN (ESSAY):
+- Nếu loại câu hỏi là 'essay' hoặc khi sinh phần tự luận của loại câu hỏi 'mixed':
+  - Thiết lập trường `question_type` thành "essay".
+  - Mảng lựa chọn `options` phải truyền danh sách rỗng (hoặc `[]`).
+  - Trường `correct_answer` phải chứa **đáp án mẫu / lời giải mẫu gợi ý chi tiết (Model Answer)** của câu hỏi đó để hệ thống đối chiếu và chấm điểm sau này.
+  - Trường `explanation` chứa các tiêu chí chấm điểm hoặc thang điểm gợi ý cho câu tự luận đó.
+
 ⚠️ QUY TẮC RIÊNG CHO MÔN TIẾNG ANH / NGOẠI NGỮ:
 - Nếu môn học là Tiếng Anh (hoặc Tiếng Anh giao tiếp):
-  - Tuyệt đối KHÔNG được sử dụng phiên âm bồi bằng Tiếng Việt (ví dụ: 'cùm pút', 'in tơ net', 'fék buk', 'hê lô') làm câu hỏi hoặc phương án trả lời.
-  - Các câu hỏi và phương án phải viết bằng Tiếng Anh chuẩn (ngữ pháp và từ vựng chuẩn chỉnh).
-  - Nếu chủ đề liên quan đến "cách đọc đuôi" (ví dụ: phát âm đuôi -ed hoặc -s/-es), hãy tạo các câu hỏi trắc nghiệm ngữ âm chuẩn như: chọn từ có phần gạch chân phát âm khác với các từ còn lại (ví dụ: A. wanted, B. played, C. liked, D. stopped), hoặc hỏi về quy tắc phát âm đuôi tương ứng trong Tiếng Anh.
+  - Mọi câu hỏi (`question_text`), các phương án lựa chọn (`options`), và đáp án (`correct_answer` đối với MCQ) phải được viết bằng Tiếng Anh chuẩn. Chỉ duy nhất phần giải thích (`explanation`) là được viết bằng Tiếng Việt để giảng giải cho học sinh.
+  - Tuyệt đối KHÔNG viết câu hỏi hỏi mẹo hay phiên âm dịch thô sang Tiếng Việt (ví dụ tránh các câu hỏi như: "Phát âm nguyên âm 'e' như thế nào?", "Hỏi về tên như thế nào?").
+  - Phải tạo câu hỏi dưới dạng bài tập ngữ cảnh Tiếng Anh thực tế, ví dụ:
+    * Câu hỏi phát âm: "Which of the following words has the underlined part pronounced differently?" (kèm 4 từ tiếng Anh chuẩn ở options).
+    * Câu hỏi giao tiếp: "John: 'How do you do?' - Mary: '_______'" (options là các câu phản xạ tiếng Anh).
+    * Câu hỏi hoàn thành câu hoặc điền từ vào chỗ trống ngữ pháp/từ vựng.
 
 ⚠️ LƯU Ý ĐỊNH DẠNG CẤU TRÚC JSON (BẮT BUỘC):
 - Các trường `correct_answer`, `explanation` và `difficulty` phải nằm trực tiếp bên trong đối tượng câu hỏi (cùng hàng với `question_text`, `options`).
-- TUYỆT ĐỐI KHÔNG được lồng các trường `correct_answer`, `explanation` hay `difficulty` vào bên trong mảng lựa chọn `options`! Mảng `options` chỉ được chứa danh sách các lựa chọn trả lời (ví dụ: A, B, C, D hoặc True, False).
+- TUYỆT ĐỐI KHÔNG được lồng các trường `correct_answer`, `explanation` hay `difficulty` vào bên trong mảng lựa chọn `options`! Mảng `options` chỉ được chứa danh sách các lựa chọn trả lời (ví dụ: A, B, C, D hoặc True, False) khi loại câu hỏi là mcq hoặc true_false.
 """
 
 # --- 4. CHAT TUTOR AGENT PROMPT ---

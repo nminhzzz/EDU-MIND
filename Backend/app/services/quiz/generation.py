@@ -3,6 +3,7 @@ AI quiz generation with RAG context and multi-agent QC review.
 """
 
 import asyncio
+from datetime import datetime
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -25,8 +26,10 @@ async def _generate_with_qc_review(
     topic: str,
     difficulty: str,
     total_questions: int,
+    question_type: str = "mcq",
     context: str,
     skip_qc: bool = False,
+    essay_count: int = 0,
 ) -> Any:
     """Run quiz generation with optional QC review and correction."""
     ai_quiz = await asyncio.to_thread(
@@ -35,8 +38,9 @@ async def _generate_with_qc_review(
         topic=topic,
         difficulty=difficulty,
         total_questions=total_questions,
-        question_type="mcq",
+        question_type=question_type,
         context=context,
+        essay_count=essay_count,
     )
 
     if skip_qc:
@@ -93,18 +97,31 @@ async def generate_and_save_quiz(
     if not subject:
         raise ValueError(f"Không tìm thấy môn học với ID={subject_id}")
 
-    materials = await vector_search_materials(
-        db_mongo=db_mongo, query_text=topic, subject_id=subject_id, top_k=3
-    )
-    context = build_rag_context(materials)
+    context = ""
+    if study_plan_id:
+        from app.models.study_plan import StudyPlan
+        plan = db.query(StudyPlan).filter(StudyPlan.id == study_plan_id).first()
+        if plan and plan.rag_content:
+            logger.info("Sinh đề thi: Sử dụng trực tiếp lý thuyết (rag_content) của study plan %d làm ngữ cảnh.", study_plan_id)
+            context = plan.rag_content
 
+    if not context:
+        logger.info("Sinh đề thi: Không có rag_content sẵn, chạy tìm kiếm vector MongoDB cho chủ đề: %s", topic)
+        materials = await vector_search_materials(
+            db_mongo=db_mongo, query_text=topic, subject_id=subject_id, top_k=3
+        )
+        context = build_rag_context(materials)
+
+    essay_count = max(1, round(total_questions * 0.3))
     ai_quiz = await _generate_with_qc_review(
         subject_name=subject.name,
         topic=topic,
         difficulty=difficulty,
         total_questions=total_questions,
+        question_type="mixed",
         context=context,
         skip_qc=False,
+        essay_count=essay_count,
     )
 
     questions_json = normalize_ai_questions(ai_quiz)
@@ -130,3 +147,68 @@ async def generate_and_save_quiz(
     commit_or_rollback(db)
     db.refresh(db_quiz)
     return db_quiz
+
+
+async def generate_classroom_quiz(
+    db: Session,
+    db_mongo: Any,
+    subject_id: int,
+    classroom_id: int,
+    topic: str,
+    difficulty: str,
+    total_questions: int,
+    deadline: Optional[datetime] = None,
+    include_essay: bool = False,
+    essay_count: int = 0,
+) -> Quiz:
+    """
+    Generate a quiz for a classroom via RAG: search related materials -> AI generates
+    questions -> optional QC review -> save to MySQL.
+    """
+    subject = subject_repository.get(db, subject_id)
+    if not subject:
+        raise ValueError(f"Không tìm thấy môn học với ID={subject_id}")
+
+    materials = await vector_search_materials(
+        db_mongo=db_mongo, query_text=topic, subject_id=subject_id, top_k=3
+    )
+    context = build_rag_context(materials)
+
+    # Determine question type for the generator
+    if include_essay and essay_count > 0:
+        question_type = "mixed"
+    else:
+        question_type = "mcq"
+
+    ai_quiz = await _generate_with_qc_review(
+        subject_name=subject.name,
+        topic=topic,
+        difficulty=difficulty,
+        total_questions=total_questions,
+        question_type=question_type,
+        context=context,
+        skip_qc=False,
+        essay_count=essay_count if include_essay else 0,
+    )
+
+    questions_json = normalize_ai_questions(ai_quiz)
+
+    raw_title = (getattr(ai_quiz, "title", None) or "").strip()
+    if not raw_title or raw_title == "QuizResponse":
+        raw_title = f"Bài tập: {topic} ({subject.name})"
+
+    db_quiz = quiz_repository.stage_classroom_quiz(
+        db,
+        subject_id=subject_id,
+        classroom_id=classroom_id,
+        title=raw_title,
+        difficulty=difficulty,
+        questions=questions_json,
+        deadline=deadline,
+        generated_by_ai=True,
+    )
+
+    commit_or_rollback(db)
+    db.refresh(db_quiz)
+    return db_quiz
+

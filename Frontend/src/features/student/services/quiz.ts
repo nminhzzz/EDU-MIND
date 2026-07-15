@@ -1,18 +1,15 @@
 import { apiClient } from "@/services/api-client";
 import type { QuizAttemptHistory } from "@/features/student/types";
 import {
-  GenerateQuizPayload,
-  GeneratedQuiz,
   QuizAttemptResult,
   QuizSubmitPayload,
   StudentQuiz,
 } from "@/features/student/types/quiz";
 
-/** AI quiz generation (RAG + LLM + QC) often takes 30–90s. Default axios timeout is 30s. */
-const AI_QUIZ_GENERATE_TIMEOUT_MS = 120_000;
-
 export const quizService = {
   getHistory: () => apiClient.get<QuizAttemptHistory[]>("/quizzes/student/history"),
+
+  getAssigned: () => apiClient.get<StudentQuiz[]>("/quizzes/student/assigned"),
 
   getById: (quizId: string | number) =>
     apiClient.get<StudentQuiz>(`/quizzes/${quizId}`),
@@ -23,13 +20,21 @@ export const quizService = {
   getByPlanId: (studyPlanId: number) =>
     apiClient.get<StudentQuiz>(`/quizzes/plan/${studyPlanId}`),
 
-  generate: (payload: GenerateQuizPayload) =>
-    apiClient.post<GeneratedQuiz>("/quizzes/generate", payload, {
-      timeout: AI_QUIZ_GENERATE_TIMEOUT_MS,
+  generateForPlan: (studyPlanId: number) =>
+    apiClient.post<StudentQuiz>(`/quizzes/plan/${studyPlanId}/generate`, null, {
+      timeout: 120_000,
     }),
 
   submit: (quizId: string | number, payload: QuizSubmitPayload) =>
     apiClient.post<QuizAttemptResult>(`/quizzes/${quizId}/submit`, payload),
+
+  uploadEssay: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.post<{ file_path: string }>("/quizzes/upload-essay", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export default quizService;

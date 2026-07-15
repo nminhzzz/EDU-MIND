@@ -4,6 +4,7 @@ Backward-compatible re-exports — prefer app.services.quiz.
 
 from app.services.quiz import (  # noqa: F401
     generate_and_save_quiz,
+    generate_classroom_quiz,
     get_classroom_quiz_attempts,
     get_quiz,
     get_quiz_for_study_plan,

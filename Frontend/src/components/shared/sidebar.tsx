@@ -22,7 +22,7 @@ export function Sidebar() {
     { label: "Tổng quan", href: ROUTES.STUDENT_DASHBOARD },
     { label: "Nhiệm vụ hôm nay", href: ROUTES.STUDENT_TASKS },
     { label: "Lộ trình học", href: ROUTES.STUDENT_GOALS },
-    { label: "Luyện đề", href: ROUTES.STUDENT_QUIZZES },
+    { label: "Bài kiểm tra", href: ROUTES.STUDENT_QUIZZES },
   ];
 
   const teacherItems: SidebarItem[] = [

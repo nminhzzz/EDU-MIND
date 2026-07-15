@@ -1,22 +1,22 @@
 import React from "react";
 import { serverFetch, needsClientFallback, unwrapServerData } from "@/lib/server-api";
-import type { QuizAttemptHistory, Subject } from "@/features/student/types";
+import type { QuizAttemptHistory, StudentQuiz } from "@/features/student/types";
 import { QuizzesClient } from "./quizzes-client";
 
 export default async function StudentQuizzesPage() {
-  const [historyResult, subjectsResult] = await Promise.all([
+  const [historyResult, assignedResult] = await Promise.all([
     serverFetch<QuizAttemptHistory[]>("/quizzes/student/history"),
-    serverFetch<Subject[]>("/subjects/"),
+    serverFetch<StudentQuiz[]>("/quizzes/student/assigned"),
   ]);
 
   const attempts = unwrapServerData(historyResult, []);
-  const subjects = unwrapServerData(subjectsResult, []);
-  const fetchOnClient = needsClientFallback([historyResult, subjectsResult]);
+  const assignedQuizzes = unwrapServerData(assignedResult, []);
+  const fetchOnClient = needsClientFallback([historyResult, assignedResult]);
 
   return (
     <QuizzesClient
       initialAttempts={attempts}
-      initialSubjects={subjects}
+      initialAssigned={assignedQuizzes}
       fetchOnClient={fetchOnClient}
     />
   );

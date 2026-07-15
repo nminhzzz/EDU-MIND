@@ -3,7 +3,7 @@ Quiz attempt submission and attempt history queries.
 """
 
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -41,6 +41,7 @@ def submit_quiz_attempt(
     student_id: int,
     submitted_answers: List[QuizAttemptAnswer],
     duration_seconds: int,
+    essay_file_path: Optional[str] = None,
 ) -> QuizAttempt:
     """
     Auto-grade a quiz submission, store the attempt, and optionally mark the
@@ -51,7 +52,7 @@ def submit_quiz_attempt(
         raise ValueError(f"Không tìm thấy đề thi với ID={quiz_id}")
 
     score, correct_count, wrong_count, answers_json = grade_submission(
-        quiz.questions or [], submitted_answers
+        quiz.questions or [], submitted_answers, essay_file_path
     )
 
     db_attempt = attempt_repository.stage_attempt(

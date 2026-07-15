@@ -67,6 +67,25 @@ export const classroomApi = {
     apiClient.get<ClassroomQuizAttempt[]>(
       `/quizzes/classroom/${classroomId}/attempts`,
     ),
+
+  getQuizzes: (classroomId: number) =>
+    apiClient.get<any[]>(`/quizzes/classrooms/${classroomId}`),
+
+  generateQuiz: (
+    classroomId: number,
+    payload: {
+      subject_id: number;
+      topic: string;
+      difficulty: string;
+      total_questions: number;
+      deadline?: string;
+      include_essay?: boolean;
+      essay_count?: number;
+    },
+  ) =>
+    apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate`, payload, {
+      timeout: 120_000,
+    }),
 };
 
 export default classroomApi;

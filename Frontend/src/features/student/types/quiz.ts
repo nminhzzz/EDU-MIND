@@ -5,7 +5,8 @@ export interface QuizOption {
 
 export interface StudentQuizQuestion {
   question_text: string;
-  options: QuizOption[];
+  question_type?: "mcq" | "true_false" | "essay";
+  options?: QuizOption[];
   correct_answer?: string;
   explanation?: string;
 }
@@ -17,6 +18,9 @@ export interface StudentQuiz {
   difficulty?: string;
   total_questions: number;
   questions: StudentQuizQuestion[];
+  deadline?: string;
+  classroom_id?: number;
+  latest_attempt?: any;
 }
 
 export interface GeneratedQuiz {
@@ -34,27 +38,21 @@ export interface QuizSubmitAnswer {
 export interface QuizSubmitPayload {
   answers: QuizSubmitAnswer[];
   duration_seconds: number;
+  essay_file_path?: string;
 }
 
 export interface QuizAttemptResult {
   score: number;
   correct_count: number;
   wrong_count: number;
-}
-
-export interface GenerateQuizPayload {
-  subject_id: number;
-  topic: string;
-  difficulty: string;
-  total_questions: number;
-  study_plan_id?: number;
-}
-
-export interface GenerateQuizFormState {
-  subject_id: string;
-  topic: string;
-  difficulty: string;
-  total_questions: number;
+  answers?: {
+    question_index: number;
+    answer: string;
+    is_correct: boolean;
+    score?: number;
+    feedback?: string;
+    essay_file_path?: string | null;
+  }[];
 }
 
 export type { QuizAttemptHistory } from "@/types/quiz";

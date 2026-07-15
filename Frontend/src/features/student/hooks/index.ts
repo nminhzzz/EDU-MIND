@@ -3,7 +3,6 @@ export { useConfirmDialog } from "./use-confirm-dialog";
 export { useDailyTasks } from "./use-daily-tasks";
 export { useDashboard } from "./use-dashboard";
 export { useDashboardSSE } from "./use-dashboard-sse";
-export { useGenerateQuiz } from "./use-generate-quiz";
 export { useGoalsWizard } from "./use-goals-wizard";
 export type { GoalsWizardStep, GoalsWizardState } from "./use-goals-wizard";
 export { useNewChatSession } from "./use-new-chat-session";

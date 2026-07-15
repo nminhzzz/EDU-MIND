@@ -34,6 +34,16 @@ def get_quiz_review(db: Session, quiz_id: int, current_user: User) -> Quiz:
                 "Bạn chưa hoàn thành bài thi này nên không thể xem đáp án giải thích."
             )
 
+    # Lấy lượt làm bài gần nhất của học sinh
+    latest_attempt = None
+    if current_user.role == UserRole.STUDENT:
+        latest_attempt = (
+            db.query(QuizAttempt)
+            .filter(QuizAttempt.quiz_id == quiz_id, QuizAttempt.student_id == current_user.id)
+            .order_by(QuizAttempt.submitted_at.desc())
+            .first()
+        )
+    quiz.latest_attempt = latest_attempt
     return quiz
 
 
@@ -54,6 +64,7 @@ def submit_student_quiz(
     student_id: int,
     submitted_answers: list[QuizAttemptAnswer],
     duration_seconds: int,
+    essay_file_path: Optional[str] = None,
 ) -> Tuple[QuizAttempt, Optional[int]]:
     """
     Submit a quiz attempt and return the attempt plus subject_id for analytics.
@@ -64,6 +75,7 @@ def submit_student_quiz(
         student_id=student_id,
         submitted_answers=submitted_answers,
         duration_seconds=duration_seconds,
+        essay_file_path=essay_file_path,
     )
     quiz = quiz_repository.get(db, quiz_id)
     subject_id = quiz.subject_id if quiz else None

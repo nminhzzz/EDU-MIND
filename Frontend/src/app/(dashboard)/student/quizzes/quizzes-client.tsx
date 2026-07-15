@@ -3,34 +3,30 @@
 import React from "react";
 import { QuizzesListView } from "@/features/student/components/quizzes/quizzes-list-view";
 import { useQuizHistory } from "@/features/student/hooks/use-quiz-history";
-import type { QuizAttemptHistory, Subject } from "@/features/student/types";
+import type { QuizAttemptHistory, StudentQuiz } from "@/features/student/types";
 
 interface QuizzesClientProps {
   initialAttempts: QuizAttemptHistory[];
-  initialSubjects: Subject[];
+  initialAssigned: StudentQuiz[];
   fetchOnClient?: boolean;
 }
 
 export function QuizzesClient({
   initialAttempts,
-  initialSubjects,
+  initialAssigned,
   fetchOnClient = false,
 }: QuizzesClientProps) {
-  const {
-    attempts,
-    subjects,
-    showGenerateModal,
-    openGenerateModal,
-    closeGenerateModal,
-  } = useQuizHistory({ initialAttempts, initialSubjects, fetchOnClient });
+  const { attempts, assignedQuizzes, loading } = useQuizHistory({
+    initialAttempts,
+    initialAssigned,
+    fetchOnClient,
+  });
 
   return (
     <QuizzesListView
       attempts={attempts}
-      subjects={subjects}
-      showGenerateModal={showGenerateModal}
-      onOpenGenerateModal={openGenerateModal}
-      onCloseGenerateModal={closeGenerateModal}
+      assignedQuizzes={assignedQuizzes}
+      loading={loading}
     />
   );
 }

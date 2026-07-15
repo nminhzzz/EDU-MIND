@@ -1,51 +1,49 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { quizService } from "@/features/student/services/quiz";
-import { useSubjects } from "@/features/student/hooks/use-subjects";
-import type { QuizAttemptHistory, Subject } from "@/features/student/types";
+import type { QuizAttemptHistory, StudentQuiz } from "@/features/student/types";
 
 interface UseQuizHistoryOptions {
   initialAttempts: QuizAttemptHistory[];
-  initialSubjects: Subject[];
+  initialAssigned: StudentQuiz[];
   fetchOnClient?: boolean;
 }
 
 export function useQuizHistory({
   initialAttempts,
-  initialSubjects,
+  initialAssigned,
   fetchOnClient = false,
 }: UseQuizHistoryOptions) {
-  const { subjects, fetchSubjects } = useSubjects({ initialSubjects });
   const [attempts, setAttempts] = useState<QuizAttemptHistory[]>(initialAttempts);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [assignedQuizzes, setAssignedQuizzes] = useState<StudentQuiz[]>(initialAssigned);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!fetchOnClient) return;
 
     const loadData = async () => {
+      setLoading(true);
       try {
-        const [, historyRes] = await Promise.all([
-          fetchSubjects(),
+        const [historyRes, assignedRes] = await Promise.all([
           quizService.getHistory(),
+          quizService.getAssigned(),
         ]);
         setAttempts(historyRes.data);
+        setAssignedQuizzes(assignedRes.data);
       } catch (err) {
-        console.error("Lỗi tải dữ liệu luyện đề phía client:", err);
+        console.error("Lỗi tải dữ liệu bài kiểm tra phía client:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadData();
-  }, [fetchOnClient, fetchSubjects]);
-
-  const openGenerateModal = useCallback(() => setShowGenerateModal(true), []);
-  const closeGenerateModal = useCallback(() => setShowGenerateModal(false), []);
+  }, [fetchOnClient]);
 
   return {
     attempts,
-    subjects,
-    showGenerateModal,
-    openGenerateModal,
-    closeGenerateModal,
+    assignedQuizzes,
+    loading,
   };
 }

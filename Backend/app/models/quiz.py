@@ -29,7 +29,7 @@ class Quiz(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     student_id = Column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     subject_id = Column(
         BigInteger, ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False
@@ -42,6 +42,7 @@ class Quiz(Base):
     )
 
     title = Column(String(255), nullable=False)
+    deadline = Column(DateTime, nullable=True)
 
     difficulty = Column(
         Enum("easy", "medium", "hard", name="quiz_difficulty"),

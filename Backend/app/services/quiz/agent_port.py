@@ -22,6 +22,7 @@ class QuizGeneratorPort:
         total_questions: int,
         question_type: str,
         context: str,
+        essay_count: int = 0,
     ) -> Any:
         return generate_quiz(
             subject=subject,
@@ -30,6 +31,7 @@ class QuizGeneratorPort:
             total_questions=total_questions,
             question_type=question_type,
             context=context,
+            essay_count=essay_count,
         )
 
     def review(self, *, quiz_data: dict, context: str) -> Any:

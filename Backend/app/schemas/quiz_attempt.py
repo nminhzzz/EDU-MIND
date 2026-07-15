@@ -16,6 +16,9 @@ class QuizAttemptAnswer(BaseModel):
 
 class QuizAttemptAnswerResponse(QuizAttemptAnswer):
     is_correct: Optional[bool] = Field(None, description="Kết quả đúng hay sai")
+    score: Optional[float] = Field(None, description="Điểm số câu tự luận (thang 10)")
+    feedback: Optional[str] = Field(None, description="Nhận xét chi tiết từ AI Grader")
+    essay_file_path: Optional[str] = Field(None, description="Đường dẫn file bài làm đã tải lên")
 
 
 class QuizAttemptCreate(BaseModel):
@@ -23,6 +26,7 @@ class QuizAttemptCreate(BaseModel):
         description="Danh sách đáp án học sinh đã làm"
     )
     duration_seconds: int = Field(description="Thời gian làm bài tính bằng giây")
+    essay_file_path: Optional[str] = Field(None, description="Đường dẫn file bài làm tự luận của học sinh")
 
 
 class QuizAttemptResponse(BaseModel):

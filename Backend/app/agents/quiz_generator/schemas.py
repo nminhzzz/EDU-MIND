@@ -5,7 +5,7 @@ Giai đoạn 3 — Fix quiz_generator/schemas.py:
 """
 
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 
 class QuizOption(BaseModel):
@@ -17,12 +17,12 @@ class QuizOption(BaseModel):
 
 class QuizQuestionItem(BaseModel):
     question_text: str = Field(description="Nội dung câu hỏi")
-    question_type: str = Field(description="'mcq' hoặc 'true_false'")
-    options: List[QuizOption] = Field(description="Danh sách các lựa chọn trả lời")
+    question_type: str = Field(description="'mcq', 'true_false', hoặc 'essay'")
+    options: Optional[List[QuizOption]] = Field(default=None, description="Danh sách các lựa chọn trả lời (bỏ qua nếu là tự luận)")
     correct_answer: str = Field(
-        description="Đáp án đúng khớp với key, vd: 'A' hoặc 'True'"
+        description="Đáp án đúng khớp với key (trắc nghiệm) hoặc Đáp án mẫu chi tiết (tự luận)"
     )
-    explanation: str = Field(description="Giải thích tại sao đáp án đó đúng")
+    explanation: str = Field(description="Giải thích đáp án hoặc tiêu chí chấm điểm tự luận")
     difficulty: str = Field(description="'easy', 'medium', hoặc 'hard'")
 
 

@@ -12,8 +12,6 @@ export type {
 } from "./goal";
 export type { AIRecommendation } from "./recommendation";
 export type {
-  GenerateQuizFormState,
-  GenerateQuizPayload,
   GeneratedQuiz,
   QuizAttemptHistory,
   QuizAttemptResult,

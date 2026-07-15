@@ -12,19 +12,21 @@ export function useTaskDetail(taskId: string | undefined) {
   const [task, setTask] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadTask = useCallback(async () => {
+  const loadTask = useCallback(async (silent = false) => {
     if (!taskId) return;
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const response = await studyPlanService.getPlan(Number(taskId));
       setTask(response.data);
     } catch (err) {
       console.error("Lỗi tải chi tiết nhiệm vụ:", err);
-      toast.error("Không thể tải nhiệm vụ học tập.");
-      router.push(ROUTES.STUDENT_TASKS);
+      if (!silent) {
+        toast.error("Không thể tải nhiệm vụ học tập.");
+        router.push(ROUTES.STUDENT_TASKS);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [taskId, router]);
 

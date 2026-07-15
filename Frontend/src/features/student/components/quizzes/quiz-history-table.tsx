@@ -9,23 +9,16 @@ import type { QuizAttemptHistory } from "@/features/student/types";
 
 interface QuizHistoryTableProps {
   attempts: QuizAttemptHistory[];
-  onGenerateClick: () => void;
 }
 
-export function QuizHistoryTable({ attempts, onGenerateClick }: QuizHistoryTableProps) {
+export function QuizHistoryTable({ attempts }: QuizHistoryTableProps) {
   if (attempts.length === 0) {
     return (
       <div className="py-16 text-center text-zinc-450 dark:text-zinc-550 space-y-3">
         <Trophy className="w-12 h-12 mx-auto opacity-30 text-indigo-400" />
-        <p className="text-sm font-semibold text-zinc-650 dark:text-zinc-350">
-          Bạn chưa thực hiện bài luyện tập nào.
+        <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">
+          Bạn chưa hoàn thành bài tập nào. Hãy làm các bài tập được giao ở phía trên!
         </p>
-        <button
-          onClick={onGenerateClick}
-          className="px-4 py-2 bg-indigo-55 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-        >
-          Sinh đề thi AI đầu tiên
-        </button>
       </div>
     );
   }
