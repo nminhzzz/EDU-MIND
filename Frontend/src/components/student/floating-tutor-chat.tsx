@@ -49,7 +49,7 @@ export function FloatingTutorChat() {
       const subName = selectedSub ? selectedSub.name : "";
       const finalTitle = newTitle.trim() || `Thảo luận môn ${subName}`;
       
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/chat/session`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/chat/tutor/session`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

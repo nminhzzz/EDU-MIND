@@ -472,7 +472,7 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
     response_text = generate_content_nvidia(
         messages=messages,
         system_instruction=system_instruction,
-        response_schema=None,
+        response_schema=UnifiedGoalPlanResponse,
         temperature=0.2,
         tools=None,
     )
@@ -694,7 +694,7 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
                 generate_content_nvidia,
                 messages=messages,
                 system_instruction=system_instruction,
-                response_schema=None,
+                response_schema=UnifiedGoalPlanResponse,
                 temperature=0.2,
                 tools=None,
             ),

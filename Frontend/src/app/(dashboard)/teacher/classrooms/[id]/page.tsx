@@ -628,7 +628,7 @@ interface QuizPreviewModalProps {
   quiz: StudentQuiz | null;
 }
 
-export function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
+function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
   if (!open || !quiz) return null;
 
   return (

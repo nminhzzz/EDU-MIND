@@ -2,48 +2,14 @@
 NVIDIA NIM chat completion — sync, async, and streaming generation with optional tool-calling.
 """
 
-import inspect
 import json
 from typing import Any, Dict, Generator, List, Optional
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.infrastructure.ai.nim_client import get_nvidia_async_client, get_nvidia_client
+from app.infrastructure.ai.nim_client import get_nvidia_client
 
 logger = get_logger(__name__)
-
-
-def function_to_openai_tool(func) -> dict:
-    """Convert a plain Python function into an OpenAI tool definition (JSON Schema)."""
-    sig = inspect.signature(func)
-    doc = inspect.getdoc(func) or ""
-    description = doc.split("\n")[0].strip() if doc else f"Hàm {func.__name__}"
-
-    _TYPE_MAP = {int: "integer", float: "number", bool: "boolean", list: "array"}
-
-    properties: dict = {}
-    required: list[str] = []
-
-    for name, param in sig.parameters.items():
-        if name in {"self", "db"}:
-            continue
-        param_type = _TYPE_MAP.get(param.annotation, "string")
-        properties[name] = {"type": param_type, "description": f"Tham số {name}"}
-        if param.default is inspect.Parameter.empty:
-            required.append(name)
-
-    return {
-        "type": "function",
-        "function": {
-            "name": func.__name__,
-            "description": description,
-            "parameters": {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-            },
-        },
-    }
 
 
 def _format_messages(
@@ -106,15 +72,11 @@ def _build_schema_instruction(response_schema: Optional[Any]) -> str:
         return ""
 
 
-def _strip_markdown_fences(text: str) -> str:
-    """Remove ```json ... ``` wrappers that some LLMs add around JSON output."""
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if len(lines) >= 2 and lines[0].startswith("```"):
-            end = -1 if lines[-1].startswith("```") else len(lines)
-            text = "\n".join(lines[1:end]).strip()
-    return text
+
+
+
+from pydantic import BaseModel
+from app.infrastructure.ai.nim_client import get_langchain_nvidia
 
 
 def generate_content_nvidia(
@@ -126,76 +88,37 @@ def generate_content_nvidia(
     max_tokens: Optional[int] = None,
 ) -> str:
     """
-    Call the NVIDIA NIM chat completion API with optional ReAct tool-calling loop.
-    Supports JSON schema enforcement via system-prompt injection.
+    Call the NVIDIA NIM chat completion API using LangChain.
+    Supports JSON schema enforcement via structured outputs.
     """
-    client = get_nvidia_client()
+    extra_params = {}
+    if max_tokens:
+        extra_params["max_tokens"] = max_tokens
+
+    llm = get_langchain_nvidia(temperature=temperature, **extra_params)
+
+    # If response_schema is provided, we use LangChain's structured output.
+    # We still build and inject schema instruction as a fallback/safeguard for prompt guidelines.
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
-    available_functions = {f.__name__: f for f in tools} if tools else {}
-    openai_tools = [function_to_openai_tool(f) for f in tools] if tools else None
-    response_format = {"type": "json_object"} if response_schema else None
-
-    text_response = ""
-    for _ in range(5):
-        current_tools = openai_tools
-        current_format = response_format if not current_tools else None
-
-        completion = client.chat.completions.create(
-            model=settings.NVIDIA_MODEL,
-            messages=formatted_messages,
-            temperature=temperature,
-            tools=current_tools,
-            response_format=current_format,
-            max_tokens=max_tokens,
-            timeout=180.0,
-        )
-
-        response_message = completion.choices[0].message
-        tool_calls = response_message.tool_calls
-
-        if not tool_calls:
-            text_response = response_message.content or ""
-            break
-
-        formatted_messages.append(
-            {
-                "role": "assistant",
-                "content": response_message.content,
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
-                    }
-                    for tc in tool_calls
-                ],
-            }
-        )
-
-        for tc in tool_calls:
-            fn_name = tc.function.name
-            fn_args = json.loads(tc.function.arguments)
-
-            if fn_name in available_functions:
-                try:
-                    logger.debug("AI Agent calling tool: %s with args %s", fn_name, fn_args)
-                    result_str = json.dumps(
-                        available_functions[fn_name](**fn_args), ensure_ascii=False
-                    )
-                except Exception as exc:
-                    logger.warning("Error executing tool %s: %s", fn_name, exc)
-                    result_str = f"Error executing tool: {exc}"
-            else:
-                logger.warning("AI Agent tried to call undefined tool: %s", fn_name)
-                result_str = f"Error: Tool '{fn_name}' is not available."
-
-            formatted_messages.append(
-                {"tool_call_id": tc.id, "role": "tool", "name": fn_name, "content": result_str}
-            )
-
-    return _strip_markdown_fences(text_response)
+    if response_schema:
+        structured_llm = llm.with_structured_output(response_schema)
+        response = structured_llm.invoke(formatted_messages)
+        if isinstance(response, BaseModel):
+            return response.model_dump_json()
+        elif isinstance(response, dict):
+            return json.dumps(response, ensure_ascii=False)
+        else:
+            return str(response)
+    else:
+        if tools:
+            llm_with_tools = llm.bind_tools(tools)
+            response = llm_with_tools.invoke(formatted_messages)
+            return response.content
+        else:
+            response = llm.invoke(formatted_messages)
+            return response.content
 
 
 def generate_content_nvidia_stream(
@@ -203,7 +126,7 @@ def generate_content_nvidia_stream(
     system_instruction: Optional[str] = None,
     temperature: float = 0.7,
 ) -> Generator[str, None, None]:
-    """Stream NVIDIA NIM chat completion token by token."""
+    """Stream NVIDIA NIM chat completion token by token (raw API for performance)."""
     client = get_nvidia_client()
     formatted_messages = _format_messages(messages, system_instruction)
 
@@ -228,25 +151,27 @@ async def generate_content_nvidia_async(
     max_tokens: Optional[int] = None,
 ) -> str:
     """
-    Async version of generate_content_nvidia — uses AsyncOpenAI so the event loop
-    is not blocked while waiting for the LLM response.
-
-    Does NOT support tool-calling (ReAct loop) — use the sync version for agents
-    that need tool use.  Suitable for single-turn JSON-schema generation tasks
-    (quiz generation, analytics evaluation, recommendations).
+    Async version of generate_content_nvidia using LangChain's ainvoke.
     """
-    client = get_nvidia_async_client()
+    extra_params = {}
+    if max_tokens:
+        extra_params["max_tokens"] = max_tokens
+
+    llm = get_langchain_nvidia(temperature=temperature, **extra_params)
+
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
-    response_format = {"type": "json_object"} if response_schema else None
+    if response_schema:
+        structured_llm = llm.with_structured_output(response_schema)
+        response = await structured_llm.ainvoke(formatted_messages)
+        if isinstance(response, BaseModel):
+            return response.model_dump_json()
+        elif isinstance(response, dict):
+            return json.dumps(response, ensure_ascii=False)
+        else:
+            return str(response)
+    else:
+        response = await llm.ainvoke(formatted_messages)
+        return response.content
 
-    completion = await client.chat.completions.create(
-        model=settings.NVIDIA_MODEL,
-        messages=formatted_messages,
-        temperature=temperature,
-        response_format=response_format,
-        max_tokens=max_tokens,
-        timeout=180.0,
-    )
-    return _strip_markdown_fences(completion.choices[0].message.content or "")

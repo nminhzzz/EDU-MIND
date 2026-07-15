@@ -14,16 +14,15 @@ def remove_duplicate_questions(
     questions: List[QuizQuestionItem],
 ) -> List[QuizQuestionItem]:
     """
-    Loại bỏ các câu hỏi bị trùng lặp văn bản câu hỏi (phớt lờ khoảng trắng, viết hoa/viết thường và ký tự đặc biệt).
+    Loại bỏ các câu hỏi bị trùng lặp văn bản câu hỏi (phớt lờ khoảng trắng, viết hoa/viết thường).
     """
     unique_questions = []
     seen_texts = set()
     for q in questions:
         if not q or not q.question_text:
             continue
-        # Chuẩn hóa văn bản câu hỏi
+        # Chuẩn hóa văn bản câu hỏi (chỉ bỏ khoảng trắng và viết thường)
         clean_text = q.question_text.strip().lower()
-        clean_text = re.sub(r"[^\w\s]", "", clean_text)
         clean_text = "".join(clean_text.split())
 
         if clean_text not in seen_texts:
@@ -70,7 +69,7 @@ def preprocess_raw_quiz_data(data: dict) -> dict:
             seen_values = set()
             for opt in new_options:
                 val_clean = opt["value"].strip().lower()
-                val_clean = re.sub(r"[^\w\s]", "", val_clean).strip()
+                val_clean = " ".join(val_clean.split())
                 if val_clean:
                     if val_clean in seen_values:
                         logger.warning(
@@ -102,11 +101,11 @@ def generate_quiz(
     Agent sinh đề kiểm tra tự động dựa trên môn học, chủ đề, độ khó, số câu hỏi yêu cầu và tài liệu RAG.
     Sử dụng NVIDIA NIM sinh JSON có cấu trúc, tích hợp chống Prompt Injection, Auto-Retry và lọc trùng lặp.
     """
-    # Nếu số lượng câu hỏi lớn (> 10), tự động chia batch sinh song song tránh timeout và lỗi LLM
-    if total_questions > 10:
+    # Nếu số lượng câu hỏi từ 8 trở lên, tự động chia batch sinh song song tránh timeout và lỗi LLM
+    if total_questions >= 8:
         import concurrent.futures
         
-        logger.info("Sinh đề thi: Số lượng câu hỏi lớn (%d câu). Kích hoạt chia làm 2 batch sinh song song.", total_questions)
+        logger.info("Sinh đề thi: Kích hoạt chia làm 2 batch sinh song song cho %d câu hỏi.", total_questions)
         total_q1 = total_questions // 2
         total_q2 = total_questions - total_q1
         
@@ -238,8 +237,8 @@ Nếu Tài liệu tham khảo không chứa thông tin hoặc không đủ thôn
             # Lọc trùng lặp câu hỏi
             quiz_res.questions = remove_duplicate_questions(quiz_res.questions)
 
-            # Yêu cầu số câu hỏi phải khớp chính xác (hoặc tối thiểu ít hơn 1 câu nếu số câu hỏi lớn hơn 5)
-            min_acceptable = max(1, total_questions - 1) if total_questions > 5 else total_questions
+            # Yêu cầu số câu hỏi phải khớp chính xác (hoặc chấp nhận tối thiểu 70% nếu có câu trùng lặp bị lọc bỏ)
+            min_acceptable = max(1, int(total_questions * 0.7))
             count = len(quiz_res.questions)
 
             if count >= total_questions:

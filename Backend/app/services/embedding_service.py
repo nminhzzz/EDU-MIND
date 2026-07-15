@@ -107,56 +107,71 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     return float(np.dot(a, b) / (norm_a * norm_b))
 
 
-# ── Atlas $vectorSearch (primary path) ────────────────────────────────────────
+from langchain_core.embeddings import Embeddings
+
+class NVIDIAEmbeddings(Embeddings):
+    """LangChain Embeddings wrapper using our existing get_embedding function."""
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [get_embedding(t) for t in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        return get_embedding(text)
+
 
 async def _atlas_vector_search(
     db_mongo: Any,
-    query_vector: List[float],
+    query_text: str,
     subject_id: int,
     top_k: int,
     min_score: float,
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    Attempt MongoDB Atlas $vectorSearch.  Returns None if the aggregation fails
-    (e.g. index not found, self-hosted MongoDB), which triggers the fallback.
+    Attempt MongoDB Atlas Vector Search using LangChain MongoDBAtlasVectorSearch.
     """
     try:
-        pipeline = [
-            {
-                "$vectorSearch": {
-                    "index": _ATLAS_INDEX_NAME,
-                    "path": "embedding",
-                    "queryVector": query_vector,
-                    "numCandidates": max(top_k * 20, 150),
-                    "limit": top_k,
-                    "filter": {"subject_id": {"$eq": subject_id}},
-                }
-            },
-            {
-                "$addFields": {"score": {"$meta": "vectorSearchScore"}}
-            },
-            {
-                "$project": {"embedding": 0}  # don't return the large vector array
-            },
-        ]
-        cursor = db_mongo.study_material_embeddings.aggregate(pipeline)
-        docs = await cursor.to_list(length=top_k)
+        from langchain_mongodb import MongoDBAtlasVectorSearch
 
-        return [
-            {
-                "id": str(doc["_id"]),
-                "subject_id": doc["subject_id"],
-                "topic": doc["topic"],
-                "content": doc["content"],
-                "score": doc.get("score", 1.0),
-                "metadata": doc.get("metadata", {}),
-            }
-            for doc in docs
-            if doc.get("score", 1.0) >= min_score
-        ]
+        # Get synchronous collection from Motor's delegate
+        sync_collection = db_mongo.study_material_embeddings.delegate
+
+        # Initialize vector store
+        vector_store = MongoDBAtlasVectorSearch(
+            collection=sync_collection,
+            embedding=NVIDIAEmbeddings(),
+            index_name=_ATLAS_INDEX_NAME,
+            text_key="content",
+            embedding_key="embedding",
+        )
+
+        # Define search options (filter by subject_id)
+        pre_filter = {"subject_id": {"$eq": subject_id}}
+
+        def _run_search():
+            return vector_store.similarity_search_with_score(
+                query=query_text,
+                k=top_k,
+                pre_filter=pre_filter
+            )
+
+        docs_with_scores = await asyncio.to_thread(_run_search)
+
+        results = []
+        for doc, score in docs_with_scores:
+            if score >= min_score:
+                results.append({
+                    "id": str(doc.metadata.get("_id", "")),
+                    "subject_id": doc.metadata.get("subject_id", subject_id),
+                    "topic": doc.metadata.get("topic", ""),
+                    "content": doc.page_content,
+                    "score": float(score),
+                    "metadata": doc.metadata.get("metadata", {}),
+                })
+        return results
     except Exception as exc:
-        logger.debug("Atlas $vectorSearch unavailable, falling back: %s", exc)
+        logger.warning("Atlas Vector Search via LangChain failed, falling back: %s", exc)
         return None
+
 
 
 # ── NumPy-accelerated cosine fallback ─────────────────────────────────────────
@@ -297,7 +312,7 @@ async def vector_search_materials(
     query_vector = await asyncio.to_thread(get_embedding, query_text)
 
     # Try Atlas first, fall back to NumPy cosine
-    results = await _atlas_vector_search(db_mongo, query_vector, subject_id, top_k, min_score)
+    results = await _atlas_vector_search(db_mongo, query_text, subject_id, top_k, min_score)
     if results is None:
         results = await _python_cosine_search(db_mongo, query_vector, subject_id, top_k, min_score)
 
