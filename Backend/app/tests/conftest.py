@@ -79,14 +79,14 @@ def clean_redis():
 
 
 @pytest.fixture
-def mock_nvidia_generate():
-    """Patch the central NVIDIA content generator (sync)."""
-    with patch("app.infrastructure.ai.content.generate_content_nvidia") as mock:
+def mock_deepseek_generate():
+    """Patch the central DeepSeek content generator (sync)."""
+    with patch("app.infrastructure.ai.content.generate_content_deepseek") as mock:
         yield mock
 
 
 @pytest.fixture
-def mock_nvidia_stream():
-    """Patch the central NVIDIA streaming content generator."""
-    with patch("app.infrastructure.ai.content.generate_content_nvidia_stream") as mock:
+def mock_deepseek_stream():
+    """Patch the central DeepSeek streaming content generator."""
+    with patch("app.infrastructure.ai.content.generate_content_deepseek_stream") as mock:
         yield mock

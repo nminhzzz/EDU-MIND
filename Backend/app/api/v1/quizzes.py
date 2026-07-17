@@ -201,9 +201,9 @@ def api_get_classroom_quiz_attempts(
         current_user_role=current_teacher.role,
     )
 
-
+from app.services.quiz import generate_classroom_quiz
 from typing import List
-
+from app.repositories.classroom_repository import classroom_repository
 @router.post(
     "/classrooms/{classroom_id}/generate",
     response_model=QuizDetailResponse,
@@ -217,7 +217,7 @@ async def generate_classroom_quiz_api(
     db_mongo: Any = Depends(get_mongodb_db),
     current_teacher: User = Depends(get_current_teacher),
 ):
-    from app.repositories.classroom_repository import classroom_repository
+    
     classroom = classroom_repository.get(db, classroom_id)
     if not classroom:
         raise HTTPException(status_code=404, detail="Không tìm thấy lớp học.")
@@ -225,7 +225,7 @@ async def generate_classroom_quiz_api(
         raise HTTPException(status_code=403, detail="Bạn không phải là giáo viên của lớp học này.")
 
     try:
-        from app.services.quiz import generate_classroom_quiz
+        
         return await generate_classroom_quiz(
             db=db,
             db_mongo=db_mongo,

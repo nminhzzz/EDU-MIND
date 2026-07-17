@@ -184,7 +184,7 @@ def test_format_available_schedule_empty():
 # ── 4. INTEGRATION TESTS (MOCKED LLM & DB) ────────────────────────────────
 
 
-@patch("app.agents.roadmap_planner.agent.generate_content_nvidia")
+@patch("app.agents.roadmap_planner.agent.generate_content_deepseek")
 @patch("app.agents.roadmap_planner.agent.get_student_analytics_db")
 @patch("app.agents.roadmap_planner.agent.get_recent_attempts_db")
 @patch("app.agents.roadmap_planner.agent.vector_search_materials")
@@ -249,7 +249,7 @@ async def test_generate_unified_plan_success(
     assert result.daily_schedule[0].date == "2026-07-06"
 
 
-@patch("app.agents.roadmap_planner.agent.generate_content_nvidia")
+@patch("app.agents.roadmap_planner.agent.generate_content_deepseek")
 @patch("app.agents.roadmap_planner.agent.get_student_analytics_db")
 @patch("app.agents.roadmap_planner.agent.get_recent_attempts_db")
 @pytest.mark.asyncio
@@ -308,7 +308,7 @@ async def test_generate_unified_plan_excludes_busy_weekday(
         assert date.fromisoformat(day.date).strftime("%a").lower() != "thu"
 
 
-@patch("app.agents.roadmap_planner.agent.generate_content_nvidia")
+@patch("app.agents.roadmap_planner.agent.generate_content_deepseek")
 @patch("app.agents.roadmap_planner.agent.get_student_analytics_db")
 @patch("app.agents.roadmap_planner.agent.get_recent_attempts_db")
 @pytest.mark.asyncio

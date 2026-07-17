@@ -11,7 +11,7 @@ from app.models.quiz import Quiz
 # ── 1. UNIT TESTS: QUIZ GENERATOR ──────────────────────────────────────────
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_generate_quiz_success(mock_generate):
     # Giả lập phản hồi JSON hợp lệ từ LLM
     mock_response = {
@@ -50,7 +50,7 @@ def test_generate_quiz_success(mock_generate):
     mock_generate.assert_called_once()
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_generate_quiz_markdown_wrapped_json(mock_generate):
     # Giả lập phản hồi JSON bị bao bọc bởi markdown và hội thoại
     mock_raw_response = """Dưới đây là đề thi của bạn:
@@ -86,7 +86,7 @@ Chúc bạn thi tốt!"""
     assert result.questions[0].question_text == "Java?"
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_generate_quiz_parse_error(mock_generate):
     # LLM trả về chuỗi text lỗi không phải JSON
     mock_generate.return_value = "Xin lỗi, tôi gặp sự cố kết nối."
@@ -99,13 +99,13 @@ def test_generate_quiz_parse_error(mock_generate):
             total_questions=1,
             question_type="mcq",
         )
-    assert "Lỗi khi sinh đề thi sau 3 lần thử lại" in str(excinfo.value)
+    assert "Quiz generation failed after 3 attempts" in str(excinfo.value)
 
 
 # ── 2. UNIT TESTS: QC REVIEWER ─────────────────────────────────────────────
 
 
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 def test_review_generated_quiz_valid(mock_generate):
     mock_review_data = {
         "is_valid": True,
@@ -122,7 +122,7 @@ def test_review_generated_quiz_valid(mock_generate):
     assert len(result.error_question_indices) == 0
 
 
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 def test_review_generated_quiz_invalid(mock_generate):
     mock_review_data = {
         "is_valid": False,
@@ -140,7 +140,7 @@ def test_review_generated_quiz_invalid(mock_generate):
     assert "trùng lặp" in result.feedback
 
 
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 def test_review_generated_quiz_fallback(mock_generate):
     # Thẩm định viên trả về text lỗi làm crash việc parse JSON
     mock_generate.return_value = "Lỗi hệ thống LLM"
@@ -157,7 +157,7 @@ def test_review_generated_quiz_fallback(mock_generate):
 # ── 3. UNIT TESTS: CORRECT QUIZ QUESTIONS ──────────────────────────────────
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_correct_quiz_questions(mock_generate):
     mock_corrected_response = {
         "title": "Java Test Corrected",
@@ -192,8 +192,8 @@ def test_correct_quiz_questions(mock_generate):
 
 
 @patch("app.services.quiz.generation.vector_search_materials")
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 @pytest.mark.asyncio
 async def test_generate_and_save_quiz_workflow_without_errors(
     mock_review_llm,
@@ -252,8 +252,8 @@ async def test_generate_and_save_quiz_workflow_without_errors(
 
 
 @patch("app.services.quiz.generation.vector_search_materials")
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 @pytest.mark.asyncio
 async def test_generate_and_save_quiz_workflow_with_qc_correction(
     mock_review_llm,
@@ -296,7 +296,7 @@ async def test_generate_and_save_quiz_workflow_with_qc_correction(
         ],
     }
 
-    # generate_content_nvidia sẽ được gọi 2 lần: lần 1 sinh đề ban đầu, lần 2 sinh đề sau khi sửa đổi.
+    # generate_content_deepseek sẽ được gọi 2 lần: lần 1 sinh đề ban đầu, lần 2 sinh đề sau khi sửa đổi.
     mock_generator_llm.side_effect = [
         json.dumps(original_quiz),
         json.dumps(corrected_quiz),
@@ -333,8 +333,8 @@ async def test_generate_and_save_quiz_workflow_with_qc_correction(
 
 
 @patch("app.services.quiz.generation.vector_search_materials")
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
-@patch("app.agents.quiz_generator.reviewer.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
+@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 @pytest.mark.asyncio
 async def test_generate_and_save_quiz_auto_healing(
     mock_review_llm,
@@ -399,7 +399,7 @@ async def test_generate_and_save_quiz_auto_healing(
 # ── 5. NEW SECURITY & ROBUSTNESS TESTS ─────────────────────────────────────
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_generate_quiz_prompt_injection_safety(mock_generate):
     # Xác thực rằng prompt sinh đề có tích hợp chỉ thị phòng vệ prompt injection
     mock_response = {
@@ -438,7 +438,7 @@ def test_generate_quiz_prompt_injection_safety(mock_generate):
     )
 
 
-@patch("app.agents.quiz_generator.agent.generate_content_nvidia")
+@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
 def test_generate_quiz_remove_duplicates_and_retry(mock_generate):
     # Giả lập lần 1: LLM trả về 2 câu hỏi giống hệt nhau (trùng lặp) -> Bị lọc và thiếu số lượng -> Gọi lần 2
     response_with_duplicates = {
@@ -463,7 +463,7 @@ def test_generate_quiz_remove_duplicates_and_retry(mock_generate):
         ],
     }
 
-    # Giả lập lần 2: LLM trả về 2 câu hỏi khác biệt hoàn toàn -> Thành công
+    # Giả lập lần 2: LLM trả về 3 câu hỏi khác biệt hoàn toàn -> Thành công
     response_unique = {
         "title": "Java Unique Test",
         "questions": [
@@ -483,6 +483,14 @@ def test_generate_quiz_remove_duplicates_and_retry(mock_generate):
                 "explanation": "",
                 "difficulty": "easy",
             },
+            {
+                "question_text": "Câu hỏi số ba?",
+                "question_type": "mcq",
+                "options": [{"key": "A", "value": "X"}, {"key": "B", "value": "Y"}],
+                "correct_answer": "A",
+                "explanation": "",
+                "difficulty": "easy",
+            },
         ],
     }
 
@@ -495,22 +503,19 @@ def test_generate_quiz_remove_duplicates_and_retry(mock_generate):
         subject="Java",
         topic="Inheritance",
         difficulty="easy",
-        total_questions=2,
+        total_questions=3,
         question_type="mcq",
     )
 
     # Phải gọi LLM 2 lần do lần 1 bị lỗi trùng lặp/thiếu số lượng câu hỏi
     assert mock_generate.call_count == 2
     assert result.title == "Java Unique Test"
-    assert len(result.questions) == 2
-    assert result.questions[0].question_text != result.questions[1].question_text
+    assert len(result.questions) == 3
+    assert len({q.question_text for q in result.questions}) == 3
 
 
-@patch("app.services.embedding_service.get_embedding")
 @pytest.mark.asyncio
-async def test_vector_search_materials_similarity_threshold(mock_get_embedding):
-    mock_get_embedding.return_value = [0.1] * 1536  # dummy vector
-
+async def test_vector_search_materials_similarity_threshold():
     # Mock MongoDB cursor và dữ liệu tài liệu
     db_mongo_mock = MagicMock()
 
@@ -534,7 +539,7 @@ async def test_vector_search_materials_similarity_threshold(mock_get_embedding):
         "embedding": [-0.1] * 1536,  # Ngược hoàn toàn -> sim = -1.0
     }
 
-    from unittest.mock import AsyncMock
+    from unittest.mock import AsyncMock, patch
 
     cursor_mock = MagicMock()
     cursor_mock.to_list = AsyncMock(return_value=[doc_match, doc_irrelevant])
@@ -542,9 +547,14 @@ async def test_vector_search_materials_similarity_threshold(mock_get_embedding):
 
     from app.services.embedding_service import vector_search_materials
 
-    results = await vector_search_materials(
-        db_mongo=db_mongo_mock, query_text="Java", subject_id=1, top_k=5, min_score=0.55
-    )
+    with patch("app.services.embedding_service.get_cached", return_value=None), \
+         patch("app.services.embedding_service.set_cached", return_value=None), \
+         patch("app.services.embedding_service._atlas_vector_search", return_value=None), \
+         patch("app.services.embedding_service.get_embedding", return_value=[0.1] * 1536):
+        
+        results = await vector_search_materials(
+            db_mongo=db_mongo_mock, query_text="Java", subject_id=1, top_k=5, min_score=0.55
+        )
 
     # Tài liệu lạc đề (Lịch sử) có sim = -1.0 < 0.55 nên phải bị loại bỏ
     assert len(results) == 1

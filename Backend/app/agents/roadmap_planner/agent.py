@@ -4,7 +4,7 @@ import re
 from datetime import date, timedelta
 from typing import Any, Dict, Optional
 
-from app.infrastructure.ai import generate_content_nvidia, generate_content_nvidia_stream
+from app.infrastructure.ai import generate_content_deepseek, generate_content_deepseek_stream
 from app.agents.tools.db_tools import get_recent_attempts_db, get_student_analytics_db
 from app.core.logging import get_logger
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
@@ -122,6 +122,29 @@ def get_busy_weekdays(
     return busy
 
 
+def get_explicitly_available_weekdays(
+    user_message: Optional[str], history: Optional[list]
+) -> set[str]:
+    """Nhận diện thứ trong tuần học sinh muốn học/rảnh học (vd: 'tôi muốn học cả thứ 7')."""
+    text = _collect_constraint_text(user_message, history)
+    available: set[str] = set()
+    for weekday_key, patterns in _VI_WEEKDAY_PATTERNS:
+        for pat in patterns:
+            # Ví dụ: "học thứ 7", "học cả thứ 7", "học thêm thứ 7", "rảnh thứ 7"
+            if re.search(
+                rf"(?:học|hoc|rảnh|ranh|thêm|them|học\s+cả|hoc\s+ca)\s+(?:{pat})",
+                text,
+            ) or re.search(
+                rf"(?:{pat})\s+(?:học|hoc|rảnh|ranh|cũng\s+học|cung\s+hoc|được|duoc)",
+                text,
+            ):
+                # Đảm bảo không nằm cạnh từ phủ định
+                if not re.search(rf"(?:không|khong|bận|ban)\s+(?:học\s+)?(?:cả\s+)?(?:{pat})", text):
+                    available.add(weekday_key)
+                    break
+    return available
+
+
 def get_manually_busy_dates(
     user_message: Optional[str], history: Optional[list], current_date: str
 ) -> set:
@@ -136,21 +159,30 @@ def get_manually_busy_dates(
 
     text_to_search = _collect_constraint_text(user_message, history)
 
-    # 1. Check "mai bận"
-    if re.search(r"\bmai\b(?:[\w\s]{0,15})\bbận\b", text_to_search) or re.search(
-        r"\bngày mai\b(?:[\w\s]{0,15})\bbận\b", text_to_search
+    # Từ khóa báo bận / nghỉ
+    busy_keywords = r"bận|ban|nghỉ|nghi|nghit|off|không\s+học|khong\s+hoc|không\s+rảnh|khong\s+ranh"
+    # Chỉ ngày mai
+    tomorrow_keywords = r"mai|ngày\s+mai|ngay\s+mai"
+    # Chỉ ngày kia / ngày mốt
+    kia_keywords = r"kia|ngày\s+kia|ngay\s+kia|mốt|ngày\s+mốt|ngay\s+mot"
+
+    # 1. Check ngày mai
+    if (
+        re.search(rf"\b({tomorrow_keywords})\b(?:[\w\s]{{0,15}})\b({busy_keywords})\b", text_to_search)
+        or re.search(rf"\b({busy_keywords})\b(?:[\w\s]{{0,15}})\b({tomorrow_keywords})\b", text_to_search)
     ):
         busy_dates.add(tomorrow_date)
 
-    # 2. Check "ngày kia bận"
-    if re.search(r"\bkia\b(?:[\w\s]{0,15})\bbận\b", text_to_search) or re.search(
-        r"\bngày kia\b(?:[\w\s]{0,15})\bbận\b", text_to_search
+    # 2. Check ngày kia
+    if (
+        re.search(rf"\b({kia_keywords})\b(?:[\w\s]{{0,15}})\b({busy_keywords})\b", text_to_search)
+        or re.search(rf"\b({busy_keywords})\b(?:[\w\s]{{0,15}})\b({kia_keywords})\b", text_to_search)
     ):
         busy_dates.add(day_after_tomorrow_date)
 
     # 3. Check regex tìm khoảng ngày bận dạng từ DD/MM đến DD/MM
     range_patterns = re.findall(
-        r"(?:bận|nghỉ)\s+từ\s+(?:ngày\s+)?(\d{1,2})[/-](\d{1,2})\s+đến\s+(?:ngày\s+)?(\d{1,2})[/-](\d{1,2})",
+        r"(?:bận|ban|nghỉ|nghi|nghit)\s+từ\s+(?:ngày\s+)?(\d{1,2})[/-](\d{1,2})\s+đến\s+(?:ngày\s+)?(\d{1,2})[/-](\d{1,2})",
         text_to_search,
     )
     for d1_str, m1_str, d2_str, m2_str in range_patterns:
@@ -171,7 +203,7 @@ def get_manually_busy_dates(
 
     # 4. Check regex tìm ngày bận dạng DD/MM hoặc DD-MM
     date_patterns = re.findall(
-        r"(?:bận|nghỉ)(?:\s+ngày)?\s+(\d{1,2})[/-](\d{1,2})", text_to_search
+        r"(?:bận|ban|nghỉ|nghi|nghit)(?:\s+ngày)?\s+(\d{1,2})[/-](\d{1,2})", text_to_search
     )
     for day_str, month_str in date_patterns:
         try:
@@ -179,8 +211,6 @@ def get_manually_busy_dates(
             month = int(month_str)
             year = current_dt.year
             d = date(year, month, day)
-            # Nếu ngày được nói nằm trước ngày hiện tại (ví dụ: bận 5/1 khi hôm nay là 25/12/2026),
-            # nghĩa là người dùng đang nhắc tới tháng 1 năm sau (2027)
             if d < current_dt:
                 d = date(year + 1, month, day)
             busy_dates.add(d.strftime("%Y-%m-%d"))
@@ -189,7 +219,7 @@ def get_manually_busy_dates(
 
     # 5. Check regex tìm ngày bận dạng YYYY-MM-DD
     iso_patterns = re.findall(
-        r"(?:bận|nghỉ)(?:\s+ngày)?\s+(\d{4}-\d{2}-\d{2})", text_to_search
+        r"(?:bận|ban|nghỉ|nghi|nghit)(?:\s+ngày)?\s+(\d{4}-\d{2}-\d{2})", text_to_search
     )
     for iso_str in iso_patterns:
         busy_dates.add(iso_str)
@@ -220,7 +250,10 @@ def _reassign_daily_schedule_dates(
 
     manually_busy_dates = get_manually_busy_dates(None, history, current_date)
     busy_weekdays = get_busy_weekdays(None, history)
-    effective_off_days = set(off_days or []) | busy_weekdays
+    explicitly_available = get_explicitly_available_weekdays(None, history)
+    
+    # Hiệu lực ngày nghỉ = (ngày nghỉ mặc định + thứ bận mới) - thứ muốn học
+    effective_off_days = (set(off_days or []) | busy_weekdays) - explicitly_available
 
     available_dates = []
     temp_dt = current_dt
@@ -296,7 +329,7 @@ async def generate_unified_plan(
 ) -> UnifiedGoalPlanResponse:
     """
     Super Agent hợp nhất Giai đoạn 1, 2 và 3.
-    Thực hiện RAG để tìm giáo trình -> Gọi Llama 3.1 70B lập lịch tuần, lịch ngày, và tạo đề thi thử trọn gói.
+    Thực hiện RAG để tìm giáo trình -> Gọi DeepSeek V4 Flash lập lịch tuần, lịch ngày, và tạo đề thi thử trọn gói.
     """
     # 1. RAG: Tìm tài liệu học tập trong MongoDB
     context_str = ""
@@ -468,8 +501,8 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
         )
 
     # Gọi NVIDIA NIM API qua OpenAI SDK để sinh JSON có cấu trúc
-    logger.debug("roadmap_planner: Calling generate_content_nvidia...")
-    response_text = generate_content_nvidia(
+    logger.debug("roadmap_planner: Calling generate_content_deepseek...")
+    response_text = generate_content_deepseek(
         messages=messages,
         system_instruction=system_instruction,
         response_schema=UnifiedGoalPlanResponse,
@@ -691,7 +724,7 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
     try:
         response_text = await asyncio.wait_for(
             asyncio.to_thread(
-                generate_content_nvidia,
+                generate_content_deepseek,
                 messages=messages,
                 system_instruction=system_instruction,
                 response_schema=UnifiedGoalPlanResponse,

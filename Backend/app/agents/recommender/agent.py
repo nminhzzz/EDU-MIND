@@ -1,4 +1,4 @@
-from app.infrastructure.ai import generate_content_nvidia
+from app.infrastructure.ai import generate_content_deepseek
 from typing import Optional
 
 
@@ -34,8 +34,8 @@ Yêu cầu: Viết bằng tiếng Việt, giọng điệu chuyên nghiệp, tíc
 
     messages = [{"role": "user", "content": prompt}]
 
-    # Gọi NVIDIA NIM API
-    response_text = generate_content_nvidia(
+    # Gọi DeepSeek API
+    response_text = generate_content_deepseek(
         messages=messages,
         system_instruction="Bạn là trợ lý AI chuyên nghiệp phân tích kết quả học tập và đề xuất ôn tập.",
         temperature=0.3,

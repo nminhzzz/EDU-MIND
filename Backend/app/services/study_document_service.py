@@ -50,7 +50,7 @@ async def _index_document_embedding(
     document_id: int,
     file_name: str,
 ) -> None:
-    """Background task — NVIDIA embedding can take 30–90s; must not block upload response."""
+    """Background task — Gemini embedding can take 30–90s; must not block upload response."""
     try:
         await save_study_material(
             db_mongo=db_mongo,

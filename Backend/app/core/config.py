@@ -42,9 +42,12 @@ class Settings(BaseSettings):
 
     # ── AI keys ──────────────────────────────────────────────────────────────
     GEMINI_API_KEY: str = ""
-    NVIDIA_API_KEY: str = ""
-    NVIDIA_MODEL: str = "meta/llama-3.1-8b-instruct"
-    USE_NVIDIA: bool = False
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_MODEL: str = "deepseek/deepseek-v4-flash"
+    # Base URL for the OpenAI-compatible AI provider.
+    # Override in .env to switch providers without touching code.
+    AI_BASE_URL: str = "https://api.cline.bot/api/v1"
+    USE_DEEPSEEK: bool = False
 
     # ── Email (SMTP / SendGrid / Mailgun) ────────────────────────────────────
     MAIL_USERNAME: str = ""

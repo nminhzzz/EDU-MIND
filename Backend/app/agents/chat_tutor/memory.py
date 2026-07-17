@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
-from app.infrastructure.ai import generate_content_nvidia
+from app.infrastructure.ai import generate_content_deepseek
 from app.core.logging import get_logger
 from app.database.mongodb import get_mongodb_db
 
@@ -155,7 +155,7 @@ async def summarize_session_if_needed(session_id: str) -> None:
         )
 
     try:
-        new_summary = generate_content_nvidia(
+        new_summary = generate_content_deepseek(
             messages=[{"role": "user", "content": prompt}],
             system_instruction="Bạn là trợ lý ảo phân tích hội thoại.",
             temperature=0.3,

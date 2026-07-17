@@ -26,15 +26,15 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from app.infrastructure.ai import get_nvidia_client
+from app.core.config import settings
 from app.core.cache import get_cached, invalidate_pattern, rag_search_key, set_cached
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-EMBEDDING_MODEL = "nvidia/nv-embed-v1"
+EMBEDDING_MODEL = "models/gemini-embedding-001"
 _ATLAS_INDEX_NAME = "study_material_vector_index"
-# NVIDIA nv-embed-v1 giới hạn 4096 token; PDF tiếng Việt ~1.5 ký tự/token → chunk ~4000 ký tự
+# Gemini embedding-001 supports large inputs; limit to ~4000 characters
 _MAX_EMBED_CHARS = 4_000
 
 
@@ -79,16 +79,39 @@ def _chunk_text_for_embedding(text: str, max_chars: int = _MAX_EMBED_CHARS) -> L
 # ── Embedding generation ───────────────────────────────────────────────────────
 
 def get_embedding(text: str) -> List[float]:
-    """Generate a vector embedding via NVIDIA NIM (synchronous)."""
+    """Generate a vector embedding via Gemini API (3072 dimensions) with exponential backoff for rate limits."""
     if not text.strip():
-        return [0.0] * 4096
+        return [0.0] * 3072
 
-    client = get_nvidia_client()
-    try:
-        response = client.embeddings.create(input=[text], model=EMBEDDING_MODEL)
-        return response.data[0].embedding
-    except Exception as exc:
-        raise RuntimeError(f"Lỗi khi sinh vector embedding từ NVIDIA NIM: {exc}") from exc
+    import time
+    import google.generativeai as genai
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+
+    max_retries = 20
+    base_delay = 2.0
+
+    for attempt in range(max_retries):
+        try:
+            response = genai.embed_content(
+                model=EMBEDDING_MODEL,
+                content=text
+            )
+            return response["embedding"]
+        except Exception as exc:
+            exc_str = str(exc)
+            if "429" in exc_str or "quota" in exc_str.lower() or "limit" in exc_str.lower():
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"Lỗi khi sinh vector embedding từ Gemini (đã thử {max_retries} lần): {exc}") from exc
+                delay = min(65.0, base_delay * (2 ** attempt))
+                logger.warning(
+                    "Exceeded Gemini API rate limit. Retrying in %.1fs... (Attempt %d/%d)",
+                    delay,
+                    attempt + 1,
+                    max_retries,
+                )
+                time.sleep(delay)
+            else:
+                raise RuntimeError(f"Lỗi khi sinh vector embedding từ Gemini: {exc}") from exc
 
 
 def cosine_similarity(v1: List[float], v2: List[float]) -> float:
@@ -109,7 +132,7 @@ def cosine_similarity(v1: List[float], v2: List[float]) -> float:
 
 from langchain_core.embeddings import Embeddings
 
-class NVIDIAEmbeddings(Embeddings):
+class GeminiEmbeddings(Embeddings):
     """LangChain Embeddings wrapper using our existing get_embedding function."""
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -138,7 +161,7 @@ async def _atlas_vector_search(
         # Initialize vector store
         vector_store = MongoDBAtlasVectorSearch(
             collection=sync_collection,
-            embedding=NVIDIAEmbeddings(),
+            embedding=GeminiEmbeddings(),
             index_name=_ATLAS_INDEX_NAME,
             text_key="content",
             embedding_key="embedding",

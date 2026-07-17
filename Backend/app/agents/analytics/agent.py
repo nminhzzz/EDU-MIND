@@ -1,5 +1,5 @@
 import json
-from app.infrastructure.ai import generate_content_nvidia
+from app.infrastructure.ai import generate_content_deepseek
 from app.agents.analytics.schemas import LearningAnalyticsResponse
 
 
@@ -33,8 +33,8 @@ Yêu cầu đánh giá:
 
     messages = [{"role": "user", "content": prompt}]
 
-    # Gọi NVIDIA NIM API
-    response_text = generate_content_nvidia(
+    # Gọi DeepSeek API
+    response_text = generate_content_deepseek(
         messages=messages,
         system_instruction="Bạn là trợ lý AI chuyên gia giáo dục phân tích học thuật cao cấp.",
         response_schema=LearningAnalyticsResponse,

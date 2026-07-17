@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Nền tảng học tập thông minh hỗ trợ bởi AI (Llama 3.1 8B).",
+    description="Nền tảng học tập thông minh hỗ trợ bởi AI (DeepSeek V4 Flash).",
     version="1.0.0",
     # Hide interactive docs in production to reduce attack surface
     docs_url=None if settings.is_production else "/docs",

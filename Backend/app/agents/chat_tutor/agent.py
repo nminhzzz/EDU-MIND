@@ -1,6 +1,6 @@
 import asyncio
 from typing import Optional, List, Dict, Any, AsyncGenerator
-from app.infrastructure.ai import generate_content_nvidia, generate_content_nvidia_stream
+from app.infrastructure.ai import generate_content_deepseek, generate_content_deepseek_stream
 from app.agents.prompts import CHAT_TUTOR_SYSTEM_PROMPT
 from app.agents.tools.datetime_tool import get_current_date
 from app.agents.tools.db_tools import (
@@ -79,7 +79,7 @@ async def normal_chat_with_tutor(
     )
 
     reply_text = await asyncio.to_thread(
-        generate_content_nvidia, messages=msgs, system_instruction=sys_inst, temperature=0.7
+        generate_content_deepseek, messages=msgs, system_instruction=sys_inst, temperature=0.7
     )
 
     if session_id:
@@ -112,7 +112,7 @@ async def stream_chat_with_tutor(
     token_queue: _queue.Queue = _queue.Queue()
 
     def _stream_to_queue() -> None:
-        for tok in generate_content_nvidia_stream(
+        for tok in generate_content_deepseek_stream(
             messages=msgs, system_instruction=sys_inst, temperature=0.7
         ):
             token_queue.put(tok)
@@ -337,7 +337,7 @@ async def chat_with_tutor(
         ]
 
         reply_text = await asyncio.to_thread(
-            generate_content_nvidia,
+            generate_content_deepseek,
             messages=messages,
             system_instruction=system_instruction,
             temperature=0.4,

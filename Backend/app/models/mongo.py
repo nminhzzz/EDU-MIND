@@ -102,7 +102,7 @@ class StudyMaterialEmbedding(BaseModel):
     # Nội dung văn bản mảnh tài liệu
     content: str
 
-    # Mảng vector số thực biểu diễn ngữ nghĩa (tương thích NVIDIA NIM)
+    # Mảng vector số thực biểu diễn ngữ nghĩa (tương thích Gemini API)
     embedding: List[float]
 
     # Các metadata bổ sung (số trang, tên tài liệu gốc...)

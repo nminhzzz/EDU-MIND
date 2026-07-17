@@ -152,7 +152,7 @@ async def seed_materials_rag():
                 print(f"ℹ️ Material '{data['topic']}' already exists for subject {subject.name}. Skipping.")
                 continue
             
-            # Lưu tài liệu học tập, tự động tạo vector embedding bằng NVIDIA NIM
+            # Lưu tài liệu học tập, tự động tạo vector embedding bằng Gemini API
             doc_id = await save_study_material(
                 db_mongo=db_mongo,
                 subject_id=subject.id,

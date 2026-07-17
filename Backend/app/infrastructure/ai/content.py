@@ -1,15 +1,27 @@
 """
-NVIDIA NIM chat completion — sync, async, and streaming generation with optional tool-calling.
+AI chat completion — sync, async, and streaming generation with optional
+structured JSON output.
+
+Supports any OpenAI-compatible provider configured via .env.
+Response-format differences (e.g. cline-pass wrapping) are handled at the
+transport layer in nim_client.py — this module stays provider-agnostic.
 """
 
 import json
 from typing import Any, Dict, Generator, List, Optional
 
+from pydantic import BaseModel
+
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.infrastructure.ai.nim_client import get_nvidia_client
+from app.infrastructure.ai.nim_client import get_langchain_deepseek, get_deepseek_client
 
 logger = get_logger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
 
 
 def _format_messages(
@@ -22,7 +34,6 @@ def _format_messages(
     and normalising all incoming message objects to plain dicts.
     """
     sys_prompt = (system_instruction or "Bạn là một trợ lý AI hữu ích.") + schema_instruction
-
     formatted: List[Dict[str, str]] = [{"role": "system", "content": sys_prompt}]
 
     for msg in messages:
@@ -35,23 +46,28 @@ def _format_messages(
             if getattr(msg, "role", "user") in {"model", "assistant"}
             else "user"
         )
+
         if hasattr(msg, "parts") and msg.parts:
-            parts_text = "\n".join(
+            content = "\n".join(
                 p.text if hasattr(p, "text") and p.text else str(p)
                 for p in msg.parts
             )
-            content_text = parts_text
         else:
-            content_text = str(msg)
+            content = str(msg)
 
-        formatted.append({"role": role, "content": content_text})
+        formatted.append({"role": role, "content": content})
 
     return formatted
 
 
 def _build_schema_instruction(response_schema: Optional[Any]) -> str:
+    """
+    Return a prompt suffix that instructs the LLM to output JSON conforming
+    to *response_schema*.  Returns an empty string when no schema is provided.
+    """
     if response_schema is None:
         return ""
+
     try:
         if hasattr(response_schema, "model_json_schema"):
             json_schema = response_schema.model_json_schema()
@@ -72,14 +88,21 @@ def _build_schema_instruction(response_schema: Optional[Any]) -> str:
         return ""
 
 
+def _serialise_structured_response(response: Any) -> str:
+    """Serialise a Pydantic model, dict, or other object to a JSON string."""
+    if isinstance(response, BaseModel):
+        return response.model_dump_json()
+    if isinstance(response, dict):
+        return json.dumps(response, ensure_ascii=False)
+    return str(response)
 
 
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
-from pydantic import BaseModel
-from app.infrastructure.ai.nim_client import get_langchain_nvidia
 
-
-def generate_content_nvidia(
+def generate_content_deepseek(
     messages: List[Dict[str, str]],
     system_instruction: Optional[str] = None,
     response_schema: Optional[Any] = None,
@@ -88,50 +111,40 @@ def generate_content_nvidia(
     max_tokens: Optional[int] = None,
 ) -> str:
     """
-    Call the NVIDIA NIM chat completion API using LangChain.
-    Supports JSON schema enforcement via structured outputs.
+    Call the configured OpenAI-compatible AI provider via LangChain (sync).
+
+    When *response_schema* is supplied the schema is injected into the system
+    prompt (via ``_build_schema_instruction``) and the model is asked to return
+    plain JSON.  We intentionally do NOT use ``with_structured_output`` because
+    that path relies on the OpenAI SDK's internal choice-parsing which crashes
+    on providers (e.g. cline-pass) that wrap the payload in a ``data`` field.
     """
-    extra_params = {}
+    extra_params: Dict[str, Any] = {}
     if max_tokens:
         extra_params["max_tokens"] = max_tokens
 
-    llm = get_langchain_nvidia(temperature=temperature, **extra_params)
+    llm = get_langchain_deepseek(temperature=temperature, **extra_params)
 
-    # If response_schema is provided, we use LangChain's structured output.
-    # We still build and inject schema instruction as a fallback/safeguard for prompt guidelines.
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
-    if response_schema:
-        structured_llm = llm.with_structured_output(response_schema)
-        response = structured_llm.invoke(formatted_messages)
-        if isinstance(response, BaseModel):
-            return response.model_dump_json()
-        elif isinstance(response, dict):
-            return json.dumps(response, ensure_ascii=False)
-        else:
-            return str(response)
-    else:
-        if tools:
-            llm_with_tools = llm.bind_tools(tools)
-            response = llm_with_tools.invoke(formatted_messages)
-            return response.content
-        else:
-            response = llm.invoke(formatted_messages)
-            return response.content
+    if tools:
+        return llm.bind_tools(tools).invoke(formatted_messages).content
+
+    return llm.invoke(formatted_messages).content
 
 
-def generate_content_nvidia_stream(
+def generate_content_deepseek_stream(
     messages: List[Dict[str, str]],
     system_instruction: Optional[str] = None,
     temperature: float = 0.7,
 ) -> Generator[str, None, None]:
-    """Stream NVIDIA NIM chat completion token by token (raw API for performance)."""
-    client = get_nvidia_client()
+    """Stream chat completion token by token using the raw OpenAI client."""
+    client = get_deepseek_client()
     formatted_messages = _format_messages(messages, system_instruction)
 
     completion = client.chat.completions.create(
-        model=settings.NVIDIA_MODEL,
+        model=settings.DEEPSEEK_MODEL,
         messages=formatted_messages,
         temperature=temperature,
         stream=True,
@@ -143,35 +156,22 @@ def generate_content_nvidia_stream(
             yield chunk.choices[0].delta.content
 
 
-async def generate_content_nvidia_async(
+async def generate_content_deepseek_async(
     messages: List[Dict[str, str]],
     system_instruction: Optional[str] = None,
     response_schema: Optional[Any] = None,
     temperature: float = 0.7,
     max_tokens: Optional[int] = None,
 ) -> str:
-    """
-    Async version of generate_content_nvidia using LangChain's ainvoke.
-    """
-    extra_params = {}
+    """Async version of ``generate_content_deepseek`` — see sync version for full docs."""
+    extra_params: Dict[str, Any] = {}
     if max_tokens:
         extra_params["max_tokens"] = max_tokens
 
-    llm = get_langchain_nvidia(temperature=temperature, **extra_params)
+    llm = get_langchain_deepseek(temperature=temperature, **extra_params)
 
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
-    if response_schema:
-        structured_llm = llm.with_structured_output(response_schema)
-        response = await structured_llm.ainvoke(formatted_messages)
-        if isinstance(response, BaseModel):
-            return response.model_dump_json()
-        elif isinstance(response, dict):
-            return json.dumps(response, ensure_ascii=False)
-        else:
-            return str(response)
-    else:
-        response = await llm.ainvoke(formatted_messages)
-        return response.content
-
+    response = await llm.ainvoke(formatted_messages)
+    return response.content

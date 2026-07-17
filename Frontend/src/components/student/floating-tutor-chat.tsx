@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/features/student/hooks/use-chat";
 import { useNewChatSession } from "@/features/student/hooks/use-new-chat-session";
+import { chatService } from "@/features/student/services/chat";
 import { MarkdownText } from "@/components/student/markdown-text";
 import { ChatSession } from "@/features/student/types/chat";
 
@@ -49,22 +50,21 @@ export function FloatingTutorChat() {
       const subName = selectedSub ? selectedSub.name : "";
       const finalTitle = newTitle.trim() || `Thảo luận môn ${subName}`;
       
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/chat/tutor/session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({
-          subject_id: Number(subjectId),
-          title: finalTitle,
-        }),
-      });
+      const payload = {
+        subject_id: Number(subjectId),
+        title: finalTitle,
+      };
 
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const res = await chatService.createSession(payload);
       
-      handleSessionCreated(data);
+      const newSession: ChatSession = {
+        session_id: res.data,
+        title: payload.title,
+        subject_id: payload.subject_id,
+        created_at: new Date().toISOString(),
+      };
+      
+      handleSessionCreated(newSession);
       setSubjectId("");
       setNewTitle("");
     } catch (err) {

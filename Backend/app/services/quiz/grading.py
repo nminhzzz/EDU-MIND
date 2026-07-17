@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.infrastructure.ai import generate_content_nvidia
+from app.infrastructure.ai import generate_content_deepseek
 from app.schemas.quiz_attempt import QuizAttemptAnswer
 
 logger = get_logger(__name__)
@@ -250,7 +250,7 @@ Trả về dữ liệu dưới định dạng JSON sau:
             score: float = Field(description="Điểm số thang 10, từ 0.0 đến 10.0")
             feedback: str = Field(description="Lời phê ngắn gọn, nhận xét ưu khuyết điểm")
 
-        response_text = generate_content_nvidia(
+        response_text = generate_content_deepseek(
             messages=[{"role": "user", "content": prompt}],
             system_instruction=system_instruction,
             response_schema=EssayGradeSchema,
