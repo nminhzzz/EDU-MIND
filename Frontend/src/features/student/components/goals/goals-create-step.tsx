@@ -9,12 +9,10 @@ interface GoalsCreateStepProps {
   selectedSubjectId: string;
   targetScore: number;
   deadline: string;
-  userMessage: string;
   loading: boolean;
   onSubjectChange: (value: string) => void;
   onTargetScoreChange: (value: number) => void;
   onDeadlineChange: (value: string) => void;
-  onUserMessageChange: (value: string) => void;
   onScheduleEditClick: () => void;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -24,12 +22,10 @@ export function GoalsCreateStep({
   selectedSubjectId,
   targetScore,
   deadline,
-  userMessage,
   loading,
   onSubjectChange,
   onTargetScoreChange,
   onDeadlineChange,
-  onUserMessageChange,
   onScheduleEditClick,
   onSubmit,
 }: GoalsCreateStepProps) {
@@ -96,19 +92,6 @@ export function GoalsCreateStep({
                 className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-              Yêu cầu bổ sung gửi AI Agent (Tùy chọn):
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Ví dụ: Tập trung nhiều bài kiểm tra, giảm giờ học tuần đầu, tôi yếu lập trình hướng đối tượng..."
-              value={userMessage}
-              onChange={(e) => onUserMessageChange(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
-            />
           </div>
 
           <div className="pt-4 flex flex-col md:flex-row items-center justify-between gap-4">

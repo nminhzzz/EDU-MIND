@@ -1,23 +1,20 @@
 """
-Unified goal confirmation — persist draft from Redis/MongoDB into MySQL.
+Unified goal confirmation — persist draft directly into MySQL.
 """
 
-import json
-from datetime import date, datetime
+from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import GoalStatus, PlanStatus
 from app.core.logging import get_logger
-from app.database.redis import get_redis
 from app.database.unit_of_work import commit_or_rollback
 from app.models.quiz import Quiz
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.subject import Subject
 from app.models.user import User
-from app.repositories import chat_repository
 from app.repositories.goal_repository import goal_repository
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
 
@@ -42,33 +39,6 @@ _QUIZ_TITLE_NOISE = [
     "-",
     "_",
 ]
-
-
-async def _resolve_plan_from_draft(
-    session_id: str,
-) -> UnifiedGoalPlanResponse:
-    """Load a draft plan from Redis, falling back to MongoDB chat history."""
-    redis_client = get_redis()
-    redis_key = f"unified_draft:{session_id}"
-    cached_data = redis_client.get(redis_key)
-
-    if cached_data:
-        logger.debug("Redis cache HIT for key %s", redis_key)
-        try:
-            return UnifiedGoalPlanResponse(**json.loads(cached_data))
-        except Exception as exc:
-            logger.warning("Failed to parse Redis cache data: %s", exc)
-
-    logger.debug("Redis cache MISS for key %s — falling back to MongoDB", redis_key)
-    last_msg = await chat_repository.get_last_assistant_message(session_id)
-    if not last_msg:
-        raise ValueError(
-            "Không tìm thấy lộ trình nháp cũ trong cache hay MongoDB. Vui lòng tạo mới."
-        )
-    try:
-        return UnifiedGoalPlanResponse(**json.loads(last_msg))
-    except Exception as exc:
-        raise ValueError(f"Dữ liệu lộ trình nháp bị lỗi cấu trúc: {exc}") from exc
 
 
 def _cancel_active_goals(
@@ -189,15 +159,13 @@ async def confirm_unified_draft(
     db: Session,
     student: User,
     subject_obj: Subject,
-    session_id: str,
     target_score: float,
     deadline: date,
+    plan: UnifiedGoalPlanResponse,
 ) -> Dict[str, Any]:
     """
-    Xác nhận lưu lộ trình nháp trọn gói từ Redis (hoặc Fallback Mongo) vào MySQL.
+    Xác nhận lưu lộ trình học tập trực tiếp từ payload gửi lên vào MySQL.
     """
-    plan = await _resolve_plan_from_draft(session_id)
-
     _cancel_active_goals(db, student.id, subject_obj.id)
 
     db_goal = StudyGoal(
@@ -218,13 +186,6 @@ async def confirm_unified_draft(
 
     commit_or_rollback(db)
     db.refresh(db_goal)
-
-    redis_key = f"unified_draft:{session_id}"
-    try:
-        get_redis().delete(redis_key)
-        logger.debug("Deleted Redis cache key %s after confirmation", redis_key)
-    except Exception as exc:
-        logger.warning("Failed to delete Redis cache key %s: %s", redis_key, exc)
 
     return {
         "goal": db_goal,

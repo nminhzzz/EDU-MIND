@@ -33,15 +33,10 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
     setTargetScore,
     deadline,
     setDeadline,
-    userMessage,
-    setUserMessage,
     draft,
-    chatMessage,
-    setChatMessage,
-    chatLoading,
+    handleUpdatePlan,
     handleSaveSchedule,
     handleCreateDraft,
-    handleSendMessageToAI,
     handleConfirmRoadmap,
     handleDeleteGoal,
     toggleTimeSlot,
@@ -84,12 +79,10 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
             selectedSubjectId={selectedSubjectId}
             targetScore={targetScore}
             deadline={deadline}
-            userMessage={userMessage}
             loading={loading}
             onSubjectChange={setSelectedSubjectId}
             onTargetScoreChange={setTargetScore}
             onDeadlineChange={setDeadline}
-            onUserMessageChange={setUserMessage}
             onScheduleEditClick={() => setStep("setup_schedule")}
             onSubmit={handleCreateDraft}
           />
@@ -102,13 +95,10 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
             selectedSubjectId={selectedSubjectId}
             targetScore={targetScore}
             deadline={deadline}
-            chatMessage={chatMessage}
-            chatLoading={chatLoading}
             loading={loading}
-            onChatMessageChange={setChatMessage}
-            onSendMessage={handleSendMessageToAI}
             onConfirm={handleConfirmRoadmap}
             onCancelDraft={handleCancelDraft}
+            onUpdatePlan={handleUpdatePlan}
           />
         )}
 

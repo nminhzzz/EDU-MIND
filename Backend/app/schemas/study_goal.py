@@ -37,6 +37,8 @@ class StudyGoalResponse(BaseModel):
         from_attributes = True
 
 
+from app.schemas.unified_goal import UnifiedGoalPlanResponse
+
 # ── Request tạo bản nháp / tinh chỉnh lộ trình nháp ───────────
 class StudyGoalDraftCreate(BaseModel):
     subject_id: int
@@ -44,19 +46,16 @@ class StudyGoalDraftCreate(BaseModel):
         ..., ge=0, le=10, description="Điểm mục tiêu (thang 10)"
     )
     deadline: date
-    session_id: Optional[str] = Field(
-        None, description="ID phiên chat nháp (nếu tinh chỉnh)"
-    )
-    user_message: Optional[str] = Field(
-        None, description="Câu phản hồi tinh chỉnh của học sinh (nếu có)"
-    )
     available_schedule: Optional[Dict[str, Any]] = None
 
 
 # ── Request xác nhận và lưu chính thức lộ trình ──────────────
 class StudyGoalConfirm(BaseModel):
-    session_id: str
     subject_id: int
     target_score: float = Field(..., ge=0, le=10)
     deadline: date
     available_schedule: Optional[Dict[str, Any]] = None
+    plan: UnifiedGoalPlanResponse = Field(
+        ..., description="Lộ trình học tập chi tiết đã chỉnh sửa thủ công"
+    )
+

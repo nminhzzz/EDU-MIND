@@ -36,7 +36,7 @@ def _get_subject_or_404(db: Session, subject_id: int):
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(rate_limiter(limit=5, period_seconds=600, action="unified_draft"))],
     summary="Tạo bản nháp lộ trình học tập hợp nhất (Phase 1 + 2 + 3)",
-    description="Nhập mục tiêu + deadline + lịch rảnh, sinh trọn gói: Lộ trình tuần, Lịch ngày, Giáo trình RAG và Quizzes.",
+    description="Nhập mục tiêu + deadline + lịch rảnh, sinh trọn gói: Lộ trình tuần và Lịch ngày.",
 )
 async def create_or_update_unified_draft(
     body: StudyGoalDraftCreate,
@@ -51,12 +51,9 @@ async def create_or_update_unified_draft(
         subject_obj=subject,
         target_score=body.target_score,
         deadline=body.deadline,
-        user_message=body.user_message,
-        session_id=body.session_id,
     )
     return {
         "message": "Sinh lộ trình nháp hợp nhất thành công!",
-        "session_id": result["session_id"],
         "plan": result["plan"],
     }
 
@@ -65,7 +62,7 @@ async def create_or_update_unified_draft(
     "/unified/confirm",
     status_code=status.HTTP_201_CREATED,
     summary="Xác nhận lưu chính thức lộ trình nháp hợp nhất vào MySQL",
-    description="Đọc cache Redis hoặc Mongo của session_id, ghi MySQL đồng thời (StudyGoal, StudyPlans, Quiz).",
+    description="Ghi MySQL đồng thời (StudyGoal, StudyPlans, Quiz) trực tiếp từ payload lộ trình đã sửa đổi.",
 )
 async def confirm_unified(
     body: StudyGoalConfirm,
@@ -74,7 +71,7 @@ async def confirm_unified(
     current_user: User = Depends(get_current_student),
 ) -> dict:
     redis = get_redis()
-    lock_key = f"lock:confirm:{body.session_id}"
+    lock_key = f"lock:confirm:{current_user.id}:{body.subject_id}"
 
     if not redis.set(lock_key, "locked", nx=True, ex=10):
         raise HTTPException(
@@ -89,9 +86,9 @@ async def confirm_unified(
             db=db,
             student=current_user,
             subject_obj=subject,
-            session_id=body.session_id,
             target_score=body.target_score,
             deadline=body.deadline,
+            plan=body.plan,
         )
 
         goal = result["goal"]

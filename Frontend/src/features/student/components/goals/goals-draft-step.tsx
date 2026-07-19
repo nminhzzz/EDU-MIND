@@ -11,13 +11,10 @@ interface GoalsDraftStepProps {
   selectedSubjectId: string;
   targetScore: number;
   deadline: string;
-  chatMessage: string;
-  chatLoading: boolean;
   loading: boolean;
-  onChatMessageChange: (value: string) => void;
-  onSendMessage: (e: React.FormEvent) => void;
   onConfirm: () => void;
   onCancelDraft: () => void;
+  onUpdatePlan: (updatedPlan: DraftResponse["plan"]) => void;
 }
 
 export function GoalsDraftStep({
@@ -26,13 +23,10 @@ export function GoalsDraftStep({
   selectedSubjectId,
   targetScore,
   deadline,
-  chatMessage,
-  chatLoading,
   loading,
-  onChatMessageChange,
-  onSendMessage,
   onConfirm,
   onCancelDraft,
+  onUpdatePlan,
 }: GoalsDraftStepProps) {
   return (
     <motion.div
@@ -49,35 +43,24 @@ export function GoalsDraftStep({
           selectedSubjectId={selectedSubjectId}
           targetScore={targetScore}
           deadline={deadline}
+          onUpdatePlan={onUpdatePlan}
         />
       </div>
 
       <div className="space-y-5">
         <div className="bg-zinc-950 dark:bg-zinc-900 border border-zinc-850 p-6 rounded-2xl text-zinc-50 shadow-md">
           <span className="text-[10px] font-bold tracking-wider text-indigo-300 block uppercase">
-            Thảo luận với AI
+            Hướng dẫn chỉnh sửa
           </span>
           <h3 className="text-sm font-black uppercase mt-1">ĐIỀU CHỈNH LỘ TRÌNH</h3>
-          <p className="text-[10px] text-zinc-400 mt-2 leading-relaxed">
-            Nếu bạn muốn thay đổi bất kỳ phần nào của lộ trình (ví dụ: chuyển bài học giữa các tuần, học thêm chủ đề cụ thể...), hãy yêu cầu AI ngay bên dưới.
+          <p className="text-[11px] text-zinc-400 mt-3 leading-relaxed">
+            Bạn có thể chỉnh sửa trực tiếp lộ trình bằng tay trên giao diện bên trái:
           </p>
-
-          <form onSubmit={onSendMessage} className="mt-5 space-y-3">
-            <textarea
-              rows={3}
-              placeholder="Nhập yêu cầu điều chỉnh lộ trình..."
-              value={chatMessage}
-              onChange={(e) => onChatMessageChange(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-zinc-800 rounded-xl bg-zinc-900 text-white font-medium focus:outline-none focus:border-indigo-500 placeholder-zinc-500"
-            />
-            <button
-              type="submit"
-              disabled={chatLoading || !chatMessage.trim()}
-              className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-850 text-white font-bold rounded-xl text-xs transition-all cursor-pointer"
-            >
-              {chatLoading ? "AI ĐANG ĐIỀU CHỈNH..." : "GỬI YÊU CẦU ĐỔI ->"}
-            </button>
-          </form>
+          <ul className="text-[10px] text-zinc-400 mt-2 space-y-1.5 list-disc list-inside leading-relaxed">
+            <li>Bấm vào tên bài học hoặc mô tả để chỉnh sửa nội dung.</li>
+            <li>Thay đổi trực tiếp thời gian học của từng buổi.</li>
+            <li>Chỉnh sửa các nhiệm vụ tuần để tối ưu lộ trình của mình.</li>
+          </ul>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-4">

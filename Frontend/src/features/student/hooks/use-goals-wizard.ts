@@ -37,11 +37,7 @@ export function useGoalsWizard() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [targetScore, setTargetScore] = useState<number>(8);
   const [deadline, setDeadline] = useState<string>("");
-  const [userMessage, setUserMessage] = useState<string>("");
-
   const [draft, setDraft] = useState<DraftResponse | null>(null);
-  const [chatMessage, setChatMessage] = useState<string>("");
-  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     const checkScheduleAndLoadData = async () => {
@@ -132,7 +128,6 @@ export function useGoalsWizard() {
           subject_id: Number(selectedSubjectId),
           target_score: targetScore,
           deadline,
-          user_message: userMessage || undefined,
         });
         setDraft(res.data);
         toast.success("AI đã phác thảo lộ trình học tập cá nhân!");
@@ -143,36 +138,12 @@ export function useGoalsWizard() {
         setLoading(false);
       }
     },
-    [selectedSubjectId, targetScore, deadline, userMessage],
+    [selectedSubjectId, targetScore, deadline],
   );
 
-  const handleSendMessageToAI = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!chatMessage.trim() || !draft) return;
-
-      setChatLoading(true);
-      const tempMsg = chatMessage;
-      setChatMessage("");
-      try {
-        const res = await goalService.createDraft({
-          subject_id: Number(selectedSubjectId),
-          target_score: targetScore,
-          deadline,
-          user_message: tempMsg,
-          session_id: draft.session_id,
-        });
-        setDraft(res.data);
-        toast.success("Đã cập nhật lộ trình theo phản hồi của bạn.");
-      } catch (err: unknown) {
-        toast.error(parseApiError(err, "Không thể gửi tin nhắn phản hồi."));
-        setChatMessage(tempMsg);
-      } finally {
-        setChatLoading(false);
-      }
-    },
-    [chatMessage, draft, selectedSubjectId, targetScore, deadline],
-  );
+  const handleUpdatePlan = useCallback((updatedPlan: NonNullable<typeof draft>["plan"]) => {
+    setDraft((prev) => (prev ? { ...prev, plan: updatedPlan } : null));
+  }, []);
 
   const handleConfirmRoadmap = useCallback(async () => {
     if (!draft) return;
@@ -182,7 +153,7 @@ export function useGoalsWizard() {
         subject_id: Number(selectedSubjectId),
         target_score: targetScore,
         deadline,
-        session_id: draft.session_id,
+        plan: draft.plan,
       });
       toast.success("Kích hoạt lộ trình học tập thành công!");
       setStep("success");
@@ -277,15 +248,10 @@ export function useGoalsWizard() {
     setTargetScore,
     deadline,
     setDeadline,
-    userMessage,
-    setUserMessage,
     draft,
-    chatMessage,
-    setChatMessage,
-    chatLoading,
+    handleUpdatePlan,
     handleSaveSchedule,
     handleCreateDraft,
-    handleSendMessageToAI,
     handleConfirmRoadmap,
     handleDeleteGoal,
     toggleTimeSlot,

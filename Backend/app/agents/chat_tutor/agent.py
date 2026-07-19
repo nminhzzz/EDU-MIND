@@ -13,17 +13,7 @@ from app.agents.chat_tutor.memory import (
     add_tutor_message,
     summarize_session_if_needed,
 )
-from app.agents.chat_tutor.intent import detect_intent, extract_subject
-from app.database.mysql import SessionLocal
-from app.models.user import User
-from app.models.subject import Subject
-from app.services.unified_service import (
-    generate_unified_draft,
-    generate_unified_draft_stream,
-    confirm_unified_draft,
-    format_plan_as_text,
-)
-from app.database.redis import get_redis
+from app.agents.chat_tutor.intent import detect_intent
 
 
 async def _build_chat_context(
@@ -142,146 +132,6 @@ async def stream_chat_with_tutor(
         await summarize_session_if_needed(session_id)
 
 
-async def chat_with_plan(
-    intent: dict, student_id: int, session_id: Optional[str], db=None
-) -> tuple:
-    data = intent["data"]
-
-    if intent["type"] == "ask_info":
-        missing = data["missing"]
-        subject_hint = f" môn {data['subject']}" if data.get("subject") else ""
-        score_hint = f" điểm {data['target_score']}" if data.get("target_score") else ""
-        deadline_hint = f" hạn {data['deadline']}" if data.get("deadline") else ""
-        reply = (
-            f"Để lập lộ trình học tập, anh/chị vui lòng cung cấp thêm: {', '.join(missing)}.\n"
-            f'Ví dụ: "Tôi muốn học{subject_hint} đạt{score_hint} trong{deadline_hint} 2 tuần"'
-        )
-        return reply, []
-
-    if intent["type"] in ("create_plan", "refine_plan"):
-        student = db.query(User).filter(User.id == student_id).first() if db else None
-        if not student:
-            return "Vui lòng đăng nhập để lập lộ trình.", []
-
-        subject_name = data.get("subject", "")
-        subject = (
-            db.query(Subject).filter(Subject.name.ilike(f"%{subject_name}%")).first()
-            if db
-            else None
-        )
-        if not subject:
-            return f"Không tìm thấy môn học '{subject_name}' trong hệ thống.", []
-
-        target_score = float(data.get("target_score", 7.0))
-        from datetime import date, timedelta
-
-        deadline_str = data.get("deadline")
-        deadline = (
-            date.fromisoformat(deadline_str)
-            if deadline_str
-            else date.today() + timedelta(days=30)
-        )
-
-        user_msg = data.get("user_message", "Hãy lập lộ trình học tập cho tôi.")
-
-        session_id_to_use = session_id if intent["type"] == "refine_plan" else None
-
-        result = await generate_unified_draft(
-            student=student,
-            subject_obj=subject,
-            target_score=target_score,
-            deadline=deadline,
-            user_message=user_msg,
-            session_id=session_id_to_use,
-        )
-
-        plan = result["plan"]
-        plan_text = format_plan_as_text(plan)
-        new_session_id = result["session_id"]
-
-        reply = (
-            f"📋 **Lộ trình học {subject.name} - Mục tiêu {target_score}/10**\n\n"
-            f"{plan_text}\n\n"
-            f"---\n"
-            f"🆔 Mã phiên: {new_session_id}\n\n"
-            f"Anh/chị có thể:\n"
-            f'- Nói **"sửa/tinh chỉnh"** để điều chỉnh lộ trình\n'
-            f'- Nói **"lưu lại"** hoặc **"OK"** để chốt lưu vào hệ thống'
-        )
-        return reply, []
-
-    if intent["type"] == "confirm_plan":
-        student = db.query(User).filter(User.id == student_id).first() if db else None
-        if not student or not session_id:
-            return "Không tìm thấy phiên lộ trình nào để lưu.", []
-
-        cached_key = f"unified_draft:{session_id}"
-        redis_client = get_redis()
-        if not redis_client.exists(cached_key):
-            return "Không tìm thấy lộ trình nháp. Vui lòng tạo lộ trình trước.", []
-
-        import json
-        from datetime import date
-
-        cached = redis_client.get(cached_key)
-        plan_data = json.loads(cached)
-
-        subject_id = plan_data.get("_subject_id")
-        if not subject_id:
-            first_material = plan_data.get("curriculum_materials") or [None]
-            if first_material:
-                subject = (
-                    db.query(Subject)
-                    .filter(
-                        Subject.name.ilike(f"%{first_material[0].get('topic', '')}%")
-                    )
-                    .first()
-                    if db
-                    else None
-                )
-                subject_id = subject.id if subject else None
-
-        if not subject_id:
-            subject = db.query(Subject).first()
-            subject_id = subject.id if subject else None
-
-        subject_obj = (
-            db.query(Subject).filter(Subject.id == subject_id).first()
-            if subject_id
-            else None
-        )
-        if not subject_obj:
-            return "Không tìm thấy môn học. Vui lòng tạo lại lộ trình.", []
-
-        last_date = plan_data.get("daily_schedule", [{}])[-1].get(
-            "date", str(date.today())
-        )
-        from datetime import date as dt_date
-
-        confirm = await confirm_unified_draft(
-            db=db,
-            student=student,
-            subject_obj=subject_obj,
-            session_id=session_id,
-            target_score=plan_data.get("_target_score", 7.0),
-            deadline=(
-                dt_date.fromisoformat(last_date)
-                if isinstance(last_date, str)
-                else dt_date.today()
-            ),
-        )
-
-        reply = (
-            f"✅ **Đã lưu lộ trình thành công!**\n"
-            f"- Số ngày học: {confirm['total_plans']}\n"
-            f"- Số đề thi: {confirm['total_quizzes']}\n\n"
-            f"Chúc anh/chị học tập hiệu quả!"
-        )
-        return reply, []
-
-    return "Tôi chưa hiểu ý anh/chị. Vui lòng nói rõ hơn!", []
-
-
 async def chat_with_tutor(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
@@ -289,15 +139,6 @@ async def chat_with_tutor(
     session_id: Optional[str] = None,
 ) -> tuple:
     intent = await detect_intent(user_message, session_id, student_id)
-
-    if intent["type"] in ("create_plan", "refine_plan", "confirm_plan", "ask_info"):
-        db = SessionLocal()
-        try:
-            return await chat_with_plan(intent, student_id, session_id, db)
-        except Exception as e:
-            return f"Lỗi xử lý lộ trình: {str(e)}", []
-        finally:
-            db.close()
 
     if intent["type"] == "explain_quiz":
         # Lấy thông tin bài quiz gần nhất của học sinh từ MySQL
@@ -362,96 +203,6 @@ async def chat_with_tutor_stream(
 ) -> AsyncGenerator[str, None]:
     intent = await detect_intent(user_message, session_id, student_id)
 
-    if intent["type"] == "ask_info":
-        db = SessionLocal()
-        try:
-            reply, _ = await chat_with_plan(intent, student_id, session_id, db)
-            for token in reply.split(" "):
-                yield token + " "
-                import asyncio
-
-                await asyncio.sleep(0.01)
-        except Exception as e:
-            yield f"[Lỗi: {str(e)}]"
-        finally:
-            db.close()
-        return
-
-    if intent["type"] in ("create_plan", "refine_plan"):
-        db = SessionLocal()
-        try:
-            student = db.query(User).filter(User.id == student_id).first()
-            if not student:
-                yield "Vui lòng đăng nhập."
-                return
-
-            subject_name = intent["data"].get("subject", "")
-            subject = (
-                db.query(Subject)
-                .filter(Subject.name.ilike(f"%{subject_name}%"))
-                .first()
-                if db
-                else None
-            )
-            if not subject:
-                yield f"Không tìm thấy môn học '{subject_name}'."
-                return
-
-            target_score = float(intent["data"].get("target_score", 7.0))
-            from datetime import date, timedelta
-
-            deadline_str = intent["data"].get("deadline")
-            deadline = (
-                date.fromisoformat(deadline_str)
-                if deadline_str
-                else date.today() + timedelta(days=30)
-            )
-            user_msg = intent["data"].get("user_message", "")
-            sid_to_use = session_id if intent["type"] == "refine_plan" else None
-
-            is_first_token = True
-            async for msg_type, msg_data in generate_unified_draft_stream(
-                student=student,
-                subject_obj=subject,
-                target_score=target_score,
-                deadline=deadline,
-                user_message=user_msg,
-                session_id=sid_to_use,
-            ):
-                if msg_type == "progress":
-                    yield f"\n{msg_data}\n"
-                elif msg_type == "token":
-                    if is_first_token:
-                        yield "\n📝 Nội dung lộ trình:\n\n"
-                        is_first_token = False
-                    yield msg_data
-                elif msg_type == "complete_plan":
-                    yield f"\n\n{msg_data['plan_text']}\n\n"
-                    yield f"🆔 Mã phiên: {msg_data['session_id']}\n"
-                    yield "💡 Nói 'lưu lại' để xác nhận hoặc 'sửa' để điều chỉnh.\n"
-                elif msg_type == "error":
-                    yield f"\n❌ {msg_data}\n"
-        except Exception as e:
-            yield f"\n❌ Lỗi: {str(e)}\n"
-        finally:
-            db.close()
-        return
-
-    if intent["type"] == "confirm_plan":
-        db = SessionLocal()
-        try:
-            reply, _ = await chat_with_plan(intent, student_id, session_id, db)
-            for token in reply.split(" "):
-                yield token + " "
-                import asyncio
-
-                await asyncio.sleep(0.01)
-        except Exception as e:
-            yield f"[Lỗi: {str(e)}]"
-        finally:
-            db.close()
-        return
-
     if intent["type"] == "explain_quiz":
         try:
             reply, _ = await chat_with_tutor(
@@ -460,7 +211,6 @@ async def chat_with_tutor_stream(
             for token in reply.split(" "):
                 yield token + " "
                 import asyncio
-
                 await asyncio.sleep(0.01)
         except Exception as e:
             yield f"[Lỗi: {str(e)}]"

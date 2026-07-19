@@ -81,37 +81,6 @@ def load_student_preferences(student_id: int) -> Tuple[float, str, List[str], An
     return study_hours_per_day, preferred_time_vn, off_days, available_schedule
 
 
-def prune_roadmap_history(history: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """
-    Tối ưu hóa bối cảnh lịch sử lập lộ trình (TC-02):
-    Loại bỏ các bản phác thảo JSON trung gian để tránh phình to ngữ cảnh (Context Window Bloat).
-    Giữ lại:
-    1. Tin nhắn đầu tiên của User (yêu cầu lập lộ trình gốc).
-    2. Tin nhắn gần nhất của Assistant (chứa bản JSON nháp hiện tại).
-    3. Tất cả tin nhắn tinh chỉnh của User — tích lũy ràng buộc bận/nghỉ qua nhiều lượt.
-    """
-    if not history or len(history) <= 2:
-        return history
-
-    first_msg = history[0]
-
-    last_assistant_msg = None
-    for msg in reversed(history):
-        if msg["role"] in ["assistant", "model"]:
-            last_assistant_msg = msg
-            break
-
-    pruned = [first_msg]
-    if last_assistant_msg:
-        pruned.append(last_assistant_msg)
-
-    for msg in history:
-        if msg["role"] in ["user", "student"] and msg != first_msg:
-            pruned.append(msg)
-
-    return pruned
-
-
 def get_active_goal_for_subject(
     db: Session, student_id: int, subject_id: int
 ) -> Optional[StudyGoal]:
