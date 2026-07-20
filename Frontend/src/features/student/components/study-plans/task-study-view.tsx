@@ -8,7 +8,6 @@ import { TaskMaterialPane } from "./task-material-pane";
 import { TaskStudyFooter } from "./task-study-footer";
 import { TaskStudyHeader } from "./task-study-header";
 import { TaskStudyTabs } from "./task-study-tabs";
-import { TaskTutorPane } from "./task-tutor-pane";
 import { Sparkles } from "lucide-react";
 
 interface TaskStudyViewProps {
@@ -77,27 +76,23 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
     <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
       <TaskStudyHeader title={task.title} backHref={backHref} />
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 min-h-0">
-        <div className="border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 flex flex-col min-h-[420px] lg:min-h-0 overflow-hidden">
-          <TaskStudyTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex-1 flex flex-col min-h-0 w-full">
+        <TaskStudyTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <div className="flex-1 overflow-y-auto p-6">
-            {activeTab === "material" ? (
-              <TaskMaterialPane task={task} />
-            ) : (
-              <div className="h-full">
-                <QuickQuizPane
-                  studyPlanId={task.id}
-                  subjectId={subjectId}
-                  topic={task.title}
-                  onSuccess={handleQuizSuccess}
-                />
-              </div>
-            )}
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 w-full">
+          {activeTab === "material" ? (
+            <TaskMaterialPane task={task} />
+          ) : (
+            <div className="h-full max-w-4xl mx-auto">
+              <QuickQuizPane
+                studyPlanId={task.id}
+                subjectId={subjectId}
+                topic={task.title}
+                onSuccess={handleQuizSuccess}
+              />
+            </div>
+          )}
         </div>
-
-        <TaskTutorPane subjectId={subjectId} topic={task.title} />
       </div>
 
       <TaskStudyFooter task={task} backHref={backHref} />
