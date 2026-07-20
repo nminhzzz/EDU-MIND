@@ -124,6 +124,7 @@ def submit_quiz(
             submitted_answers=body.answers,
             duration_seconds=body.duration_seconds,
             essay_file_path=body.essay_file_path,
+            tab_violations_count=body.tab_violations_count,
         )
         if subject_id is not None:
             background_tasks.add_task(

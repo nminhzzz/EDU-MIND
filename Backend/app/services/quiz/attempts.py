@@ -42,6 +42,7 @@ def submit_quiz_attempt(
     submitted_answers: List[QuizAttemptAnswer],
     duration_seconds: int,
     essay_file_path: Optional[str] = None,
+    tab_violations_count: int = 0,
 ) -> QuizAttempt:
     """
     Auto-grade a quiz submission, store the attempt, and optionally mark the
@@ -64,6 +65,7 @@ def submit_quiz_attempt(
         correct_count=correct_count,
         wrong_count=wrong_count,
         duration_seconds=duration_seconds,
+        tab_violations_count=tab_violations_count,
     )
     commit_or_rollback(db)
     db.refresh(db_attempt)
@@ -113,6 +115,7 @@ def get_classroom_quiz_attempts(
             "correct_count": att.correct_count,
             "wrong_count": att.wrong_count,
             "duration_seconds": att.duration_seconds,
+            "tab_violations_count": att.tab_violations_count,
             "submitted_at": att.submitted_at,
         }
         for att, qz, usr in attempts
@@ -132,6 +135,7 @@ def get_student_quiz_attempts(db: Session, student_id: int) -> List[Dict]:
             "correct_count": att.correct_count,
             "wrong_count": att.wrong_count,
             "duration_seconds": att.duration_seconds,
+            "tab_violations_count": att.tab_violations_count,
             "submitted_at": att.submitted_at,
         }
         for att, qz in attempts

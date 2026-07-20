@@ -26,6 +26,7 @@ class QuizAttemptCreate(BaseModel):
         description="Danh sách đáp án học sinh đã làm"
     )
     duration_seconds: int = Field(description="Thời gian làm bài tính bằng giây")
+    tab_violations_count: int = Field(0, description="Số lần học sinh thoát tab hoặc làm việc riêng")
     essay_file_path: Optional[str] = Field(None, description="Đường dẫn file bài làm tự luận của học sinh")
 
 
@@ -38,6 +39,7 @@ class QuizAttemptResponse(BaseModel):
     correct_count: int
     wrong_count: int
     duration_seconds: int
+    tab_violations_count: int
     submitted_at: datetime
 
     class Config:

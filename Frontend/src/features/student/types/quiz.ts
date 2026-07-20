@@ -38,6 +38,7 @@ export interface QuizSubmitAnswer {
 export interface QuizSubmitPayload {
   answers: QuizSubmitAnswer[];
   duration_seconds: number;
+  tab_violations_count: number;
   essay_file_path?: string;
 }
 
@@ -45,6 +46,7 @@ export interface QuizAttemptResult {
   score: number;
   correct_count: number;
   wrong_count: number;
+  tab_violations_count?: number;
   answers?: {
     question_index: number;
     answer: string;

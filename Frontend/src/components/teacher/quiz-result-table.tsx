@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
-import { Trophy, Clock } from "lucide-react";
+import { Trophy, Clock, AlertTriangle } from "lucide-react";
 
 interface QuizAttempt {
   attempt_id: number;
@@ -14,6 +14,7 @@ interface QuizAttempt {
   correct_count: number;
   wrong_count: number;
   duration_seconds: number;
+  tab_violations_count?: number;
   submitted_at: string;
 }
 
@@ -41,6 +42,7 @@ export function QuizResultTable({ attempts }: QuizResultTableProps) {
             <th className="text-center py-3 px-4 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Điểm</th>
             <th className="text-center py-3 px-4 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Đúng/Sai</th>
             <th className="text-center py-3 px-4 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Thời gian</th>
+            <th className="text-center py-3 px-4 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Giám sát</th>
             <th className="text-right py-3 px-4 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Ngày nộp</th>
           </tr>
         </thead>
@@ -79,6 +81,20 @@ export function QuizResultTable({ attempts }: QuizResultTableProps) {
                   <Clock className="w-3.5 h-3.5" />
                   {att.duration_seconds ? `${Math.floor(att.duration_seconds / 60)}p${att.duration_seconds % 60}s` : '—'}
                 </span>
+              </td>
+              <td className="py-3 px-4 text-center">
+                {att.tab_violations_count ? (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                    att.tab_violations_count >= 3
+                      ? 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 animate-pulse border border-red-200 dark:border-red-950/50'
+                      : 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-950/50'
+                  }`}>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {att.tab_violations_count >= 3 ? 'Bị khóa (3+ lần)' : `${att.tab_violations_count} lần`}
+                  </span>
+                ) : (
+                  <span className="text-zinc-400 text-xs font-semibold">— Không vi phạm</span>
+                )}
               </td>
               <td className="py-3 px-4 text-right text-zinc-500 dark:text-zinc-400 text-xs">
                 {new Date(att.submitted_at).toLocaleString("vi-VN")}

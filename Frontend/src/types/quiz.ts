@@ -35,5 +35,6 @@ export interface QuizAttemptHistory {
   correct_count: number;
   wrong_count: number;
   duration_seconds: number;
+  tab_violations_count: number;
   submitted_at: string;
 }

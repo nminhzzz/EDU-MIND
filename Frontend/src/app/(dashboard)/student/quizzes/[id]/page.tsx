@@ -17,6 +17,9 @@ export default function StudentQuizDetailPage() {
     currentQuestionIndex,
     selectedAnswers,
     duration,
+    timeRemaining,
+    timeLimit,
+    tabViolations,
     submitting,
     handleSelectOption,
     handleSubmit,
@@ -40,6 +43,9 @@ export default function StudentQuizDetailPage() {
       quiz={quiz}
       isReview={isReview}
       duration={duration}
+      timeRemaining={timeRemaining}
+      timeLimit={timeLimit}
+      tabViolations={tabViolations}
       currentQuestionIndex={currentQuestionIndex}
       selectedAnswers={selectedAnswers}
       submitting={submitting}

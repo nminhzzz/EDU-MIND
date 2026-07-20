@@ -30,6 +30,9 @@ class QuizAttempt(Base):
     # Thời gian làm bài (giây)
     duration_seconds = Column(Integer, nullable=False)
 
+    # Số lần thoát tab / đổi màn hình
+    tab_violations_count = Column(Integer, nullable=False, default=0)
+
     submitted_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships

@@ -10,6 +10,9 @@ interface QuizDetailViewProps {
   quiz: StudentQuiz;
   isReview: boolean;
   duration: number;
+  timeRemaining: number;
+  timeLimit: number;
+  tabViolations: number;
   currentQuestionIndex: number;
   selectedAnswers: Record<number, string>;
   submitting: boolean;
@@ -28,6 +31,9 @@ export function QuizDetailView({
   quiz,
   isReview,
   duration,
+  timeRemaining,
+  timeLimit,
+  tabViolations,
   currentQuestionIndex,
   selectedAnswers,
   submitting,
@@ -48,7 +54,14 @@ export function QuizDetailView({
 
   return (
     <div className="space-y-6 text-left max-w-4xl mx-auto">
-      <QuizDetailHeader quiz={quiz} isReview={isReview} duration={duration} />
+      <QuizDetailHeader
+        quiz={quiz}
+        isReview={isReview}
+        duration={duration}
+        timeRemaining={timeRemaining}
+        timeLimit={timeLimit}
+        tabViolations={tabViolations}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <QuizQuestionPanel

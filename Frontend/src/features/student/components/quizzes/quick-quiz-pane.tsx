@@ -153,6 +153,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
           answer: selectedAnswers[idx] || "",
         })),
         duration_seconds: duration,
+        tab_violations_count: 0,
         essay_file_path: essayFilePath || undefined,
       });
       setResult(res.data);

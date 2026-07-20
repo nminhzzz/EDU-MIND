@@ -68,6 +68,7 @@ class AttemptRepository(BaseRepository[QuizAttempt, BaseModel, BaseModel]):
         correct_count: int,
         wrong_count: int,
         duration_seconds: int,
+        tab_violations_count: int = 0,
     ) -> QuizAttempt:
         """Stage a quiz attempt in the current session (no commit)."""
         db_attempt = QuizAttempt(
@@ -78,6 +79,7 @@ class AttemptRepository(BaseRepository[QuizAttempt, BaseModel, BaseModel]):
             correct_count=correct_count,
             wrong_count=wrong_count,
             duration_seconds=duration_seconds,
+            tab_violations_count=tab_violations_count,
         )
         db.add(db_attempt)
         return db_attempt

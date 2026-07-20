@@ -65,6 +65,7 @@ def submit_student_quiz(
     submitted_answers: list[QuizAttemptAnswer],
     duration_seconds: int,
     essay_file_path: Optional[str] = None,
+    tab_violations_count: int = 0,
 ) -> Tuple[QuizAttempt, Optional[int]]:
     """
     Submit a quiz attempt and return the attempt plus subject_id for analytics.
@@ -76,6 +77,7 @@ def submit_student_quiz(
         submitted_answers=submitted_answers,
         duration_seconds=duration_seconds,
         essay_file_path=essay_file_path,
+        tab_violations_count=tab_violations_count,
     )
     quiz = quiz_repository.get(db, quiz_id)
     subject_id = quiz.subject_id if quiz else None
