@@ -86,6 +86,15 @@ export const classroomApi = {
     apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate`, payload, {
       timeout: 120_000,
     }),
+
+  generateQuizFromFile: (
+    classroomId: number,
+    formData: FormData,
+  ) =>
+    apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate-from-file`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 180_000,
+    }),
 };
 
 export default classroomApi;

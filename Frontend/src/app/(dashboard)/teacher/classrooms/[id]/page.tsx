@@ -10,10 +10,15 @@ import {
   BookOpen,
   ClipboardList,
   BrainCircuit,
+  Edit3,
   Eye,
+  FileText,
   Loader2,
+  Plus,
+  Save,
   Trash2,
   Trophy,
+  UploadCloud,
   UserMinus,
   UserPlus,
   Users,
@@ -32,6 +37,7 @@ import classroomApi, {
 } from "@/services/classroom";
 import { parseApiError } from "@/utils/api-error";
 import { User } from "@/types/user";
+import { MathRenderer } from "@/components/shared/math-renderer";
 
 type TabId = "students" | "progress" | "quizzes" | "classroom_quizzes";
 
@@ -62,6 +68,8 @@ export default function ClassroomDetailPage() {
   // Modal tạo đề thi AI:
   const [showGenModal, setShowGenModal] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [genMode, setGenMode] = useState<"topic" | "file">("topic");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(5);
@@ -124,23 +132,24 @@ export default function ClassroomDetailPage() {
   }, [classroomId, fetchAll]);
 
   const handleAddStudent = async (email: string) => {
-    await classroomApi.addStudent(classroomId, email);
-    toast.success("Đã thêm học sinh vào lớp.");
-    await fetchAll();
+    try {
+      await classroomApi.addStudent(classroomId, email);
+      toast.success("Đã thêm học sinh vào lớp.");
+      setShowAddModal(false);
+      await fetchAll();
+    } catch (err) {
+      toast.error(parseApiError(err, "Không thể thêm học sinh."));
+    }
   };
 
   const handleRemoveStudent = async (studentId: number) => {
     if (!confirm("Bạn có chắc muốn xóa học sinh này khỏi lớp?")) return;
-
-    setRemovingId(studentId);
     try {
       await classroomApi.removeStudent(classroomId, studentId);
       toast.success("Đã xóa học sinh khỏi lớp.");
       await fetchAll();
     } catch (err) {
       toast.error(parseApiError(err, "Không thể xóa học sinh."));
-    } finally {
-      setRemovingId(null);
     }
   };
 
@@ -167,8 +176,12 @@ export default function ClassroomDetailPage() {
 
   const handleGenerateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic.trim()) {
+    if (genMode === "topic" && !topic.trim()) {
       toast.error("Vui lòng nhập chủ đề kiểm tra.");
+      return;
+    }
+    if (genMode === "file" && !uploadedFile) {
+      toast.error("Vui lòng chọn 1 file tài liệu (PDF, Word hoặc TXT).");
       return;
     }
     if (!classroom?.subject?.id) {
@@ -178,27 +191,44 @@ export default function ClassroomDetailPage() {
 
     setGenerating(true);
     try {
-      const res = await classroomApi.generateQuiz(classroomId, {
-        subject_id: classroom.subject.id,
-        topic,
-        difficulty,
-        total_questions: totalQuestions,
-        deadline: deadline || undefined,
-        include_essay: includeEssay,
-        essay_count: includeEssay ? essayCount : 0,
-      });
+      let res;
+      if (genMode === "file" && uploadedFile) {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        formData.append("subject_id", String(classroom.subject.id));
+        if (topic.trim()) formData.append("topic", topic.trim());
+        formData.append("difficulty", difficulty);
+        formData.append("total_questions", String(totalQuestions));
+        if (deadline) formData.append("deadline", deadline);
+        formData.append("include_essay", String(includeEssay));
+        if (includeEssay) formData.append("essay_count", String(essayCount));
+
+        res = await classroomApi.generateQuizFromFile(classroomId, formData);
+      } else {
+        res = await classroomApi.generateQuiz(classroomId, {
+          subject_id: classroom.subject.id,
+          topic,
+          difficulty,
+          total_questions: totalQuestions,
+          deadline: deadline || undefined,
+          include_essay: includeEssay,
+          essay_count: includeEssay ? essayCount : 0,
+        });
+      }
       toast.success("Đã dùng AI sinh đề và giao bài kiểm tra thành công!");
       setShowGenModal(false);
       setTopic("");
+      setUploadedFile(null);
       setDeadline("");
       setIncludeEssay(false);
       setEssayCount(2);
-      await fetchAll();
-      if (res.data) {
+      if (res?.data) {
         setPreviewQuiz(res.data);
       }
+      await fetchAll();
     } catch (err) {
-      toast.error(parseApiError(err, "Không thể sinh đề thi bằng AI."));
+      console.error("Lỗi sinh đề thi:", err);
+      toast.error(parseApiError(err, "Không thể sinh đề thi bằng AI. Vui lòng thử lại."));
     } finally {
       setGenerating(false);
     }
@@ -497,20 +527,89 @@ export default function ClassroomDetailPage() {
               </button>
             </div>
 
+            {/* Mode Switcher Tabs */}
+            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setGenMode("topic")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  genMode === "topic"
+                    ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
+              >
+                Nhập chủ đề chữ
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenMode("file")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  genMode === "file"
+                    ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                Tải file (PDF/Word)
+              </button>
+            </div>
+
             <form onSubmit={handleGenerateQuiz} className="space-y-4 text-left">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                  Chủ đề kiểm tra:
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Lượng giác, Đạo hàm, Mảng trong Java..."
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
-                  required
-                />
-              </div>
+              {genMode === "file" ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Chọn file tài liệu (PDF, Word, TXT):
+                    </label>
+                    <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
+                      <FileText className="w-6 h-6 text-violet-500" />
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        {uploadedFile ? uploadedFile.name : "Nhấp để chọn file PDF, .docx hoặc .txt"}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        Hệ thống sẽ trích xuất nội dung và sinh câu hỏi RAG bám sát tài liệu này
+                      </span>
+                      <input
+                        type="file"
+                        accept=".pdf,.docx,.doc,.txt"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setUploadedFile(e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Tên/Chủ đề đề thi (Không bắt buộc):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Mặc định lấy theo tên file..."
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Chủ đề kiểm tra:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Lượng giác, Đạo hàm, Mảng trong Java..."
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    required={genMode === "topic"}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -612,58 +711,307 @@ export default function ClassroomDetailPage() {
         </div>
       )}
 
-      {/* AI Quiz Preview Modal for Teacher */}
-      <QuizPreviewModal
+      {/* AI Quiz Edit & Preview Modal for Teacher */}
+      <QuizEditPreviewModal
         open={!!previewQuiz}
         onClose={() => setPreviewQuiz(null)}
         quiz={previewQuiz}
+        onSaveSuccess={fetchAll}
       />
     </div>
   );
 }
 
-interface QuizPreviewModalProps {
+interface QuizEditPreviewModalProps {
   open: boolean;
   onClose: () => void;
   quiz: StudentQuiz | null;
+  onSaveSuccess?: () => void;
 }
 
-function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
+function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPreviewModalProps) {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [title, setTitle] = useState<string>("");
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [saving, setSaving] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (quiz) {
+      setTitle(quiz.title || "");
+      setQuestions(quiz.questions ? JSON.parse(JSON.stringify(quiz.questions)) : []);
+      setIsEditing(false);
+    }
+  }, [quiz]);
+
   if (!open || !quiz) return null;
+
+  const handleAddQuestion = () => {
+    setQuestions((prev) => [
+      ...prev,
+      {
+        question_text: "Câu hỏi mới...",
+        question_type: "mcq",
+        options: [
+          { key: "A", value: "Phương án A" },
+          { key: "B", value: "Phương án B" },
+          { key: "C", value: "Phương án C" },
+          { key: "D", value: "Phương án D" },
+        ],
+        correct_answer: "A",
+        explanation: "Giải thích lý do chọn đáp án này...",
+      },
+    ]);
+  };
+
+  const handleDeleteQuestion = (idx: number) => {
+    if (questions.length <= 1) {
+      toast.error("Đề thi phải có ít nhất 1 câu hỏi.");
+      return;
+    }
+    setQuestions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleUpdateQuestionField = (idx: number, field: string, value: any) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q))
+    );
+  };
+
+  const handleUpdateOption = (qIdx: number, optIdx: number, val: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => {
+        if (i !== qIdx) return q;
+        const newOpts = [...(q.options || [])];
+        if (newOpts[optIdx]) {
+          newOpts[optIdx] = { ...newOpts[optIdx], value: val };
+        }
+        return { ...q, options: newOpts };
+      })
+    );
+  };
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast.error("Vui lòng nhập tiêu đề đề thi.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await quizService.updateQuiz(quiz.id, {
+        title,
+        total_questions: questions.length,
+        questions,
+      });
+      toast.success("Đã cập nhật & lưu thay đổi đề thi thành công!");
+      setIsEditing(false);
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật đề thi:", err);
+      toast.error("Không thể lưu thay đổi đề thi. Vui lòng thử lại.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col"
+        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden"
       >
-        <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5">
-          <div className="text-left">
-            <h3 className="font-black text-base text-zinc-900 dark:text-white line-clamp-1">
-              {quiz.title}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 px-2 py-0.5 rounded">
-                Độ khó: {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "hard" ? "Khó" : "Trung bình"}
-              </span>
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                Tổng số: {quiz.total_questions} câu hỏi
-              </span>
-            </div>
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5 bg-zinc-50/50 dark:bg-zinc-900/50">
+          <div className="text-left flex-1 mr-4">
+            {isEditing ? (
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                  Tiêu đề đề thi:
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-black text-zinc-900 dark:text-white bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
+                />
+              </div>
+            ) : (
+              <div>
+                <h3 className="font-black text-base text-zinc-900 dark:text-white line-clamp-1">
+                  {title || quiz.title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 px-2 py-0.5 rounded">
+                    Độ khó: {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "hard" ? "Khó" : "Trung bình"}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                    Tổng số: {questions.length} câu hỏi
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400 text-sm font-bold cursor-pointer"
-          >
-            Đóng
-          </button>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                isEditing
+                  ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                  : "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400 hover:bg-violet-100"
+              }`}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa đề thi"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400 text-sm font-bold cursor-pointer px-2"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
 
+        {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 text-left">
-          {quiz.questions.map((q, qIdx) => {
+          {questions.map((q, qIdx) => {
             const isEssay = q.question_type === "essay";
+
+            if (isEditing) {
+              return (
+                <div
+                  key={qIdx}
+                  className="p-5 border border-violet-200/80 dark:border-violet-900/40 rounded-xl bg-violet-50/10 dark:bg-violet-950/5 space-y-4 shadow-sm"
+                >
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold">
+                        {qIdx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                        Loại câu hỏi:
+                      </span>
+                      <select
+                        value={q.question_type || "mcq"}
+                        onChange={(e) =>
+                          handleUpdateQuestionField(qIdx, "question_type", e.target.value)
+                        }
+                        className="px-2.5 py-1 text-xs font-bold border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
+                      >
+                        <option value="mcq">Trắc nghiệm (MCQ)</option>
+                        <option value="essay">Tự luận (Essay)</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteQuestion(qIdx)}
+                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
+                      title="Xóa câu hỏi này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Question Text Textarea */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold uppercase text-zinc-400">
+                      Nội dung câu hỏi #{qIdx + 1}:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={q.question_text || ""}
+                      onChange={(e) =>
+                        handleUpdateQuestionField(qIdx, "question_text", e.target.value)
+                      }
+                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+
+                  {/* MCQ Options */}
+                  {!isEssay && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-extrabold uppercase text-zinc-400">
+                          Các lựa chọn & Đáp án đúng:
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-zinc-500">Đáp án đúng:</span>
+                          <select
+                            value={q.correct_answer || "A"}
+                            onChange={(e) =>
+                              handleUpdateQuestionField(qIdx, "correct_answer", e.target.value)
+                            }
+                            className="px-2 py-0.5 text-xs font-bold border border-emerald-300 dark:border-emerald-800 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                          >
+                            {(q.options || []).map((opt: any) => (
+                              <option key={opt.key} value={opt.key}>
+                                Đáp án {opt.key}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(q.options || []).map((opt: any, optIdx: number) => (
+                          <div key={optIdx} className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center text-xs font-bold shrink-0">
+                              {opt.key}
+                            </span>
+                            <input
+                              type="text"
+                              value={opt.value || ""}
+                              onChange={(e) => handleUpdateOption(qIdx, optIdx, e.target.value)}
+                              className="flex-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Essay Answer */}
+                  {isEssay && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold uppercase text-zinc-400">
+                        Đáp án mẫu gợi ý (Tự luận):
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={q.correct_answer || ""}
+                        onChange={(e) =>
+                          handleUpdateQuestionField(qIdx, "correct_answer", e.target.value)
+                        }
+                        className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Explanation */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold uppercase text-zinc-400">
+                      Lời giải thích đáp án:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={q.explanation || ""}
+                      onChange={(e) =>
+                        handleUpdateQuestionField(qIdx, "explanation", e.target.value)
+                      }
+                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            // View Mode Read-only
             return (
               <div
                 key={qIdx}
@@ -675,7 +1023,7 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
                   </span>
                   <div className="space-y-1">
                     <p className="text-sm font-extrabold text-zinc-900 dark:text-white leading-relaxed">
-                      {q.question_text}
+                      <MathRenderer content={q.question_text || ""} />
                     </p>
                     {isEssay && (
                       <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-1.5 py-0.5 rounded">
@@ -687,8 +1035,9 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
 
                 {!isEssay && q.options && q.options.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-8">
-                    {q.options.map((opt) => {
-                      const isCorrect = opt.key.trim().toUpperCase() === q.correct_answer?.trim().toUpperCase();
+                    {q.options.map((opt: any) => {
+                      const isCorrect =
+                        opt.key.trim().toUpperCase() === q.correct_answer?.trim().toUpperCase();
                       return (
                         <div
                           key={opt.key}
@@ -707,7 +1056,9 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
                           >
                             {opt.key}
                           </span>
-                          <span className="flex-1 pt-0.5 leading-snug">{opt.value}</span>
+                          <span className="flex-1 pt-0.5 leading-snug">
+                            <MathRenderer content={opt.value || ""} />
+                          </span>
                         </div>
                       );
                     })}
@@ -720,7 +1071,7 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
                       Đáp án mẫu gợi ý:
                     </h5>
                     <div className="p-3.5 rounded-lg bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-750 dark:text-zinc-350 font-medium leading-relaxed whitespace-pre-line">
-                      {q.correct_answer}
+                      <MathRenderer content={q.correct_answer || ""} />
                     </div>
                   </div>
                 )}
@@ -731,7 +1082,7 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
                       Giải thích đáp án:
                     </h5>
                     <div className="p-3.5 rounded-lg bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100 dark:border-violet-900/30 text-xs text-zinc-650 dark:text-zinc-400 font-medium leading-relaxed">
-                      {q.explanation}
+                      <MathRenderer content={q.explanation || ""} />
                     </div>
                   </div>
                 )}
@@ -740,16 +1091,68 @@ function QuizPreviewModal({ open, onClose, quiz }: QuizPreviewModalProps) {
           })}
         </div>
 
-        <div className="border-t border-zinc-100 dark:border-zinc-800 p-4 flex justify-end bg-zinc-50/50 dark:bg-zinc-900/50 rounded-b-2xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
-          >
-            Đóng
-          </button>
+        {/* Footer */}
+        <div className="border-t border-zinc-100 dark:border-zinc-800 p-4 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 rounded-b-2xl">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleAddQuestion}
+                className="px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Thêm câu hỏi mới
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl hover:bg-zinc-300 transition-all cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      Lưu thay đổi & Cập nhật
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50 font-bold text-xs rounded-xl hover:bg-violet-100 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Chỉnh sửa câu hỏi & Đáp án
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
   );
 }
+

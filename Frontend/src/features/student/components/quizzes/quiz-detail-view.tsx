@@ -5,6 +5,7 @@ import { StudentQuiz } from "@/features/student/types/quiz";
 import { QuizDetailHeader } from "./quiz-detail-header";
 import { QuizQuestionMap } from "./quiz-question-map";
 import { QuizQuestionPanel } from "./quiz-question-panel";
+import { AIQuizFeedbackCard } from "./ai-quiz-feedback-card";
 
 interface QuizDetailViewProps {
   quiz: StudentQuiz;
@@ -54,6 +55,15 @@ export function QuizDetailView({
 
   return (
     <div className="space-y-6 text-left max-w-4xl mx-auto">
+      {isReview && quiz.latest_attempt && (
+        <AIQuizFeedbackCard
+          assessment={quiz.latest_attempt.ai_assessment}
+          score={quiz.latest_attempt.score ?? 0}
+          correctCount={quiz.latest_attempt.correct_count ?? 0}
+          totalQuestions={quiz.questions.length}
+        />
+      )}
+
       <QuizDetailHeader
         quiz={quiz}
         isReview={isReview}

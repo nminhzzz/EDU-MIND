@@ -16,7 +16,11 @@ from app.repositories.classroom_repository import classroom_repository
 from app.repositories.plan_repository import plan_repository
 from app.repositories.quiz_repository import quiz_repository
 from app.schemas.quiz_attempt import QuizAttemptAnswer
-from app.services.quiz.grading import PLAN_PASS_SCORE_THRESHOLD, grade_submission
+from app.services.quiz.grading import (
+    PLAN_PASS_SCORE_THRESHOLD,
+    generate_ai_attempt_feedback,
+    grade_submission,
+)
 
 DAILY_TASK_QUIZ_LABEL = "NHIỆM VỤ NGÀY"
 _INVALID_QUIZ_TITLES = frozenset({"quizresponse", ""})
@@ -56,6 +60,15 @@ def submit_quiz_attempt(
         quiz.questions or [], submitted_answers, essay_file_path
     )
 
+    ai_assessment = generate_ai_attempt_feedback(
+        quiz_title=quiz.title or "Đề thi",
+        questions_list=quiz.questions or [],
+        answers_json=answers_json,
+        score=score,
+        correct_count=correct_count,
+        wrong_count=wrong_count,
+    )
+
     db_attempt = attempt_repository.stage_attempt(
         db,
         quiz_id=quiz_id,
@@ -66,6 +79,7 @@ def submit_quiz_attempt(
         wrong_count=wrong_count,
         duration_seconds=duration_seconds,
         tab_violations_count=tab_violations_count,
+        ai_assessment=ai_assessment,
     )
     commit_or_rollback(db)
     db.refresh(db_attempt)

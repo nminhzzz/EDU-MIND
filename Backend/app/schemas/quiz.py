@@ -73,3 +73,19 @@ class QuizDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class QuestionItemUpdateRequest(BaseModel):
+    question_text: str = Field(description="Nội dung câu hỏi")
+    question_type: str = Field(default="mcq", description="Loại câu hỏi: mcq hoặc essay")
+    options: List[QuizOptionSchema] = Field(default=[], description="Danh sách các lựa chọn")
+    correct_answer: str = Field(description="Đáp án đúng hoặc đáp án mẫu")
+    explanation: Optional[str] = Field(None, description="Giải thích đáp án")
+
+
+class QuizUpdateRequest(BaseModel):
+    title: Optional[str] = Field(None, description="Tiêu đề bài kiểm tra")
+    difficulty: Optional[str] = Field(None, description="Độ khó")
+    deadline: Optional[datetime] = Field(None, description="Hạn chót nộp bài")
+    questions: Optional[List[QuestionItemUpdateRequest]] = Field(None, description="Danh sách câu hỏi đã chỉnh sửa")
+

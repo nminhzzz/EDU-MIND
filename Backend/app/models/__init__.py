@@ -20,7 +20,6 @@ from app.models.study_plan_progress import StudyPlanProgress
 from app.models.quiz import Quiz
 from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_analytic import LearningAnalytic
-from app.models.ai_recommendation_review import AIRecommendationReview
 from app.models.notification import Notification
 
 # ── MongoDB Models (Pydantic — không dùng SQLAlchemy) ────────
@@ -46,7 +45,6 @@ __all__ = [
     "Quiz",
     "QuizAttempt",
     "LearningAnalytic",
-    "AIRecommendationReview",
     "Notification",
     # MongoDB
     "ChatSession",

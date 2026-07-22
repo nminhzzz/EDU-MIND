@@ -39,3 +39,16 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     grade: Optional[StudentGrade] = None
+
+
+from app.schemas.student_preference import StudentPreferenceResponse
+from app.schemas.learning_analytic import LearningAnalyticResponse
+from typing import List
+
+class StudentProfileDetailResponse(BaseModel):
+    user: UserResponse
+    preference: Optional[StudentPreferenceResponse] = None
+    learning_analytics: List[LearningAnalyticResponse] = []
+
+    class Config:
+        from_attributes = True

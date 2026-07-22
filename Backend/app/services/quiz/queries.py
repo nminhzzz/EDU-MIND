@@ -43,6 +43,23 @@ def get_quiz_review(db: Session, quiz_id: int, current_user: User) -> Quiz:
             .order_by(QuizAttempt.submitted_at.desc())
             .first()
         )
+        if latest_attempt and not latest_attempt.ai_assessment:
+            try:
+                from app.services.quiz.grading import generate_ai_attempt_feedback
+                ai_assessment = generate_ai_attempt_feedback(
+                    quiz_title=quiz.title,
+                    questions_list=quiz.questions or [],
+                    answers_json=latest_attempt.answers or [],
+                    score=float(latest_attempt.score),
+                    correct_count=latest_attempt.correct_count,
+                    wrong_count=latest_attempt.wrong_count,
+                )
+                latest_attempt.ai_assessment = ai_assessment
+                db.commit()
+                db.refresh(latest_attempt)
+            except Exception as exc:
+                pass
+
     quiz.latest_attempt = latest_attempt
     return quiz
 
@@ -82,3 +99,18 @@ def submit_student_quiz(
     quiz = quiz_repository.get(db, quiz_id)
     subject_id = quiz.subject_id if quiz else None
     return attempt, subject_id
+
+
+def get_student_assigned_quizzes_service(db: Session, student_id: int) -> list[Quiz]:
+    """Retrieve all classroom quizzes assigned to a student."""
+    from app.models.classroom_student import ClassroomStudent
+    classrooms = db.query(ClassroomStudent.classroom_id).filter(
+        ClassroomStudent.student_id == student_id
+    ).all()
+    classroom_ids = [c[0] for c in classrooms]
+
+    if not classroom_ids:
+        return []
+
+    return db.query(Quiz).filter(Quiz.classroom_id.in_(classroom_ids)).all()
+

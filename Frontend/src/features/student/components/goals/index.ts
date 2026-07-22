@@ -1,6 +1,7 @@
 export { DayScheduleCard, TimeSlotRow } from "./day-schedule-card";
 export { DraftPlanPreview } from "./draft-plan-preview";
 export { GoalCard } from "./goal-card";
+export { GoalDetailView } from "./goal-detail-view";
 export { GoalsCheckingStep } from "./goals-checking-step";
 export { GoalsCreateStep } from "./goals-create-step";
 export { GoalsDraftStep } from "./goals-draft-step";

@@ -8,7 +8,6 @@ export type { GoalsWizardStep, GoalsWizardState } from "./use-goals-wizard";
 export { useNewChatSession } from "./use-new-chat-session";
 export { useQuizAttempt } from "./use-quiz-attempt";
 export { useQuizHistory } from "./use-quiz-history";
-export { useRecommendations } from "./use-recommendations";
 export { useSSE } from "./use-sse";
 export type { UseSSEOptions } from "./use-sse";
 export { useStudentClassrooms } from "./use-student-classrooms";

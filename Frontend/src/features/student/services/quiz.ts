@@ -28,6 +28,9 @@ export const quizService = {
   submit: (quizId: string | number, payload: QuizSubmitPayload) =>
     apiClient.post<QuizAttemptResult>(`/quizzes/${quizId}/submit`, payload),
 
+  updateQuiz: (quizId: string | number, payload: Partial<StudentQuiz>) =>
+    apiClient.put<StudentQuiz>(`/quizzes/${quizId}`, payload),
+
   uploadEssay: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);

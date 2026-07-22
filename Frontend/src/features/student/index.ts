@@ -3,7 +3,6 @@ export * from "./components/common";
 export * from "./components/dashboard";
 export * from "./components/goals";
 export * from "./components/quizzes";
-export * from "./components/recommendations";
 export * from "./components/study-plans";
 export * from "./constants";
 export * from "./hooks";

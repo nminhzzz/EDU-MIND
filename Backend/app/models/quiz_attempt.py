@@ -35,6 +35,9 @@ class QuizAttempt(Base):
 
     submitted_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    # Đánh giá & Lời phê AI Tutor: {"overall_feedback": "...", "strengths": [...], "weaknesses": [...], "recommendation": "..."}
+    ai_assessment = Column(JSON, nullable=True)
+
     # Relationships
     quiz = relationship("Quiz", back_populates="attempts")
     student = relationship("User", foreign_keys=[student_id])

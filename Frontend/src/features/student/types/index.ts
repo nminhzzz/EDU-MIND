@@ -10,7 +10,6 @@ export type {
   StudyGoal,
   StudyGoalResponse,
 } from "./goal";
-export type { AIRecommendation } from "./recommendation";
 export type {
   GeneratedQuiz,
   QuizAttemptHistory,

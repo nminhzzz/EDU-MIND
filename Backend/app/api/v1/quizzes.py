@@ -4,9 +4,10 @@ API quản lý Đề thi và Chấm bài (Quizzes & Question Bank).
 
 import os
 import uuid
-from typing import Any, List
+from datetime import datetime
+from typing import Any, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_teacher, get_current_user, get_db
@@ -14,19 +15,22 @@ from app.core.enums import UserRole
 from app.database.mongodb import get_mongodb_db
 from app.database.redis import get_redis
 from app.models.user import User
-from app.schemas.quiz import QuizDetailResponse, QuizResponse, ClassroomQuizCreateRequest
+from app.schemas.quiz import QuizDetailResponse, QuizResponse, ClassroomQuizCreateRequest, QuizUpdateRequest
 from app.schemas.quiz_attempt import QuizAttemptCreate, QuizAttemptResponse
 from app.schemas.teacher import TeacherQuizCreate
 from app.services.analytic_service import update_student_analytics_and_recommend
 from app.services.quiz_service import (
     generate_and_save_quiz,
+    generate_classroom_quiz_from_file,
     get_classroom_quiz_attempts,
     get_quiz,
     get_quiz_for_study_plan,
     get_quiz_review,
+    get_student_assigned_quizzes_service,
     get_student_quiz_attempts,
     submit_student_quiz,
     teacher_create_quiz,
+    update_quiz_by_teacher,
 )
 from app.services.quiz import generate_classroom_quiz
 from app.repositories.classroom_repository import classroom_repository
@@ -90,9 +94,9 @@ async def generate_quiz_for_plan(
             detail="Chỉ học sinh mới có thể sinh đề luyện tập.",
         )
     
-    from app.models.study_plan import StudyPlan
-    plan = db.query(StudyPlan).filter(StudyPlan.id == study_plan_id, StudyPlan.student_id == current_user.id).first()
-    if not plan:
+    from app.repositories.plan_repository import plan_repository
+    plan = plan_repository.get(db, study_plan_id)
+    if not plan or plan.student_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy nhiệm vụ học tập này.",
@@ -134,11 +138,9 @@ def api_get_student_attempts_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != UserRole.STUDENT:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ học sinh mới có thể xem lịch sử làm bài luyện tập.",
-        )
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_str.lower() != "student":
+        return []
     return get_student_quiz_attempts(db=db, student_id=current_user.id)
 
 
@@ -151,19 +153,11 @@ def get_student_assigned_quizzes(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != "student":
-        raise HTTPException(status_code=403, detail="Chỉ học sinh mới có bài tập được giao.")
-
-    classrooms = db.query(ClassroomStudent.classroom_id).filter(
-        ClassroomStudent.student_id == current_user.id
-    ).all()
-    classroom_ids = [c[0] for c in classrooms]
-
-    if not classroom_ids:
+    role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role_str.lower() != "student":
         return []
 
-    quizzes = db.query(Quiz).filter(Quiz.classroom_id.in_(classroom_ids)).all()
-    return quizzes
+    return get_student_assigned_quizzes_service(db=db, student_id=current_user.id)
 
 
 @router.post(
@@ -183,6 +177,32 @@ def api_teacher_create_quiz(
         obj_in=body,
         current_user_role=current_teacher.role,
     )
+
+
+@router.put(
+    "/{quiz_id}",
+    response_model=QuizDetailResponse,
+    summary="Giáo viên cập nhật đề thi (tiêu đề, độ khó, hạn chót, danh sách câu hỏi)",
+)
+def api_update_quiz(
+    quiz_id: int,
+    body: QuizUpdateRequest,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+):
+    try:
+        return update_quiz_by_teacher(
+            db=db,
+            quiz_id=quiz_id,
+            teacher_id=current_teacher.id,
+            update_data=body,
+            current_user_role=current_teacher.role,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
 
 
 @router.get(
@@ -241,6 +261,56 @@ async def generate_classroom_quiz_api(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi hệ thống khi sinh đề thi: {str(exc)}",
         )
+
+
+@router.post(
+    "/classrooms/{classroom_id}/generate-from-file",
+    response_model=QuizDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Giáo viên sinh đề thi tự động từ file tải lên (PDF/Word/TXT) bằng AI RAG",
+)
+async def generate_classroom_quiz_from_file_api(
+    classroom_id: int,
+    file: UploadFile = File(...),
+    subject_id: int = Form(...),
+    topic: Optional[str] = Form(None),
+    difficulty: str = Form("medium"),
+    total_questions: int = Form(5),
+    deadline: Optional[datetime] = Form(None),
+    include_essay: bool = Form(False),
+    essay_count: int = Form(0),
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+):
+    classroom = classroom_repository.get(db, classroom_id)
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học.")
+    if classroom.teacher_id != current_teacher.id and current_teacher.role != "admin":
+        raise HTTPException(status_code=403, detail="Bạn không phải là giáo viên của lớp học này.")
+
+    try:
+        file_bytes = await file.read()
+        return await generate_classroom_quiz_from_file(
+            db=db,
+            subject_id=subject_id,
+            classroom_id=classroom_id,
+            file_bytes=file_bytes,
+            filename=file.filename or "tai_lieu.pdf",
+            topic=topic,
+            difficulty=difficulty,
+            total_questions=total_questions,
+            deadline=deadline,
+            include_essay=include_essay,
+            essay_count=essay_count,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi hệ thống khi sinh đề thi từ file: {str(exc)}",
+        )
+
 
 
 @router.get(

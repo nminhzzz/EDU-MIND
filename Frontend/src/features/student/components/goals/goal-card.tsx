@@ -59,9 +59,11 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
           </span>
         </div>
 
-        <h3 className="text-[15px] sm:text-base font-extrabold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2 min-h-[2.75rem]">
-          {goal.title || `Lộ trình môn ${subject?.name || ""}`}
-        </h3>
+        <Link href={ROUTES.STUDENT_GOAL_DETAIL(goal.id)} className="block group-hover:text-indigo-600 transition-colors">
+          <h3 className="text-[15px] sm:text-base font-extrabold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2 min-h-[2.75rem]">
+            {goal.title || `Lộ trình môn ${subject?.name || ""}`}
+          </h3>
+        </Link>
 
         {subject?.name && (
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{subject.name}</p>
@@ -92,10 +94,10 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
 
       <div className="px-5 sm:px-6 py-4 border-t border-zinc-100 dark:border-zinc-800/90 bg-zinc-50/40 dark:bg-zinc-900/40 flex items-center justify-between gap-3">
         <Link
-          href={ROUTES.STUDENT_DASHBOARD}
+          href={ROUTES.STUDENT_GOAL_DETAIL(goal.id)}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
         >
-          Bắt đầu học ngay
+          Xem chi tiết lộ trình
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
         <button

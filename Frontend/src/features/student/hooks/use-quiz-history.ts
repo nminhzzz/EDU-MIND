@@ -26,11 +26,11 @@ export function useQuizHistory({
       setLoading(true);
       try {
         const [historyRes, assignedRes] = await Promise.all([
-          quizService.getHistory(),
-          quizService.getAssigned(),
+          quizService.getHistory().catch(() => ({ data: [] })),
+          quizService.getAssigned().catch(() => ({ data: [] })),
         ]);
-        setAttempts(historyRes.data);
-        setAssignedQuizzes(assignedRes.data);
+        setAttempts(historyRes?.data || []);
+        setAssignedQuizzes(assignedRes?.data || []);
       } catch (err) {
         console.error("Lỗi tải dữ liệu bài kiểm tra phía client:", err);
       } finally {

@@ -7,7 +7,6 @@ from alembic import command
 from alembic.config import Config
 
 # Import all models to register them on Base.metadata
-from app.models.ai_recommendation_review import AIRecommendationReview  # noqa: F401
 from app.models.classroom import Classroom  # noqa: F401
 from app.models.classroom_student import ClassroomStudent  # noqa: F401
 from app.models.learning_analytic import LearningAnalytic  # noqa: F401

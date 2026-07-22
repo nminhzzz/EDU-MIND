@@ -42,11 +42,19 @@ export interface QuizSubmitPayload {
   essay_file_path?: string;
 }
 
+export interface AIAssessment {
+  overall_feedback: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendation?: string;
+}
+
 export interface QuizAttemptResult {
   score: number;
   correct_count: number;
   wrong_count: number;
   tab_violations_count?: number;
+  ai_assessment?: AIAssessment | null;
   answers?: {
     question_index: number;
     answer: string;

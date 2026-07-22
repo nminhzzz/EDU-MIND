@@ -5,6 +5,8 @@ import { quizService } from "@/features/student/services/quiz";
 import type { QuizAttemptResult, StudentQuiz } from "@/features/student/types";
 import { toast } from "sonner";
 import { Loader2, HelpCircle, CheckCircle2, XCircle, Trophy, UploadCloud, Sparkles } from "lucide-react";
+import { AIQuizFeedbackCard } from "./ai-quiz-feedback-card";
+import { MathRenderer } from "@/components/shared/math-renderer";
 
 interface QuickQuizPaneProps {
   subjectId: number;
@@ -236,7 +238,15 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
         </div>
 
         {/* Detailed Question Review List */}
-        <div className="p-4 space-y-4 max-h-[350px] overflow-y-auto">
+        <div className="p-4 space-y-4 max-h-[450px] overflow-y-auto">
+          {/* AI Tutor Feedback Card */}
+          <AIQuizFeedbackCard
+            assessment={result.ai_assessment}
+            score={result.score}
+            correctCount={result.correct_count}
+            totalQuestions={quiz.questions.length}
+          />
+
           <h5 className="text-[10px] font-black text-zinc-400 uppercase tracking-wider mb-2">CHI TIẾT ĐÁP ÁN ĐÃ CHẤM</h5>
           {quiz.questions.map((q, idx) => {
             const attemptAns = result.answers?.find((a: any) => a.question_index === idx);

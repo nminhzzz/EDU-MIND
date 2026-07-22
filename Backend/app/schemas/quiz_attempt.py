@@ -30,6 +30,13 @@ class QuizAttemptCreate(BaseModel):
     essay_file_path: Optional[str] = Field(None, description="Đường dẫn file bài làm tự luận của học sinh")
 
 
+class AIAssessmentResponse(BaseModel):
+    overall_feedback: str = Field(description="Lời phê tổng thể cá nhân hóa từ AI Tutor")
+    strengths: List[str] = Field(default_factory=list, description="Danh sách điểm mạnh / chủ đề đã nắm vững")
+    weaknesses: List[str] = Field(default_factory=list, description="Danh sách lỗ hổng kiến thức cần ôn tập lại")
+    recommendation: Optional[str] = Field(None, description="Gợi ý bước học tiếp theo")
+
+
 class QuizAttemptResponse(BaseModel):
     id: int
     quiz_id: int
@@ -41,6 +48,8 @@ class QuizAttemptResponse(BaseModel):
     duration_seconds: int
     tab_violations_count: int
     submitted_at: datetime
+    ai_assessment: Optional[AIAssessmentResponse] = Field(None, description="Đánh giá & Lời phê từ AI Tutor")
 
     class Config:
         from_attributes = True
+

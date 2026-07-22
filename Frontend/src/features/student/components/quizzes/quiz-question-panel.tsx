@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import { ChevronLeft, ChevronRight, RotateCcw, Send, FileText, UploadCloud, CheckCircle2, ShieldCheck, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { StudentQuiz, StudentQuizQuestion } from "@/features/student/types/quiz";
+import { MathRenderer } from "@/components/shared/math-renderer";
 
 function getOptionStyle(
   isReview: boolean,
@@ -179,7 +180,7 @@ export function QuizQuestionPanel({
         ) : (
           <>
             <h3 className="text-base font-extrabold text-zinc-850 dark:text-zinc-100 leading-relaxed mb-6">
-              {question.question_text}
+              <MathRenderer content={question.question_text || ""} />
             </h3>
 
             {qType === "essay" ? (
@@ -266,7 +267,7 @@ export function QuizQuestionPanel({
                         Gợi ý đáp án / Bài mẫu gợi ý
                       </h4>
                       <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-semibold whitespace-pre-wrap">
-                        {question.correct_answer}
+                        <MathRenderer content={question.correct_answer || ""} />
                       </p>
                     </div>
 
@@ -276,7 +277,7 @@ export function QuizQuestionPanel({
                           Tiêu chí chấm điểm
                         </span>
                         <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
-                          {question.explanation}
+                          <MathRenderer content={question.explanation || ""} />
                         </p>
                       </div>
                     )}
@@ -298,7 +299,9 @@ export function QuizQuestionPanel({
                       className={`w-full flex items-start gap-4 p-4 border rounded-xl text-left transition-all ${optionStyle}`}
                     >
                       <span className="font-extrabold text-sm">{opt.key}.</span>
-                      <span className="text-sm font-semibold">{opt.value}</span>
+                      <span className="text-sm font-semibold">
+                        <MathRenderer content={opt.value || ""} />
+                      </span>
                     </button>
                   );
                 })}
@@ -309,7 +312,7 @@ export function QuizQuestionPanel({
                       Giải thích đáp án AI
                     </h4>
                     <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
-                      {question.explanation}
+                      <MathRenderer content={question.explanation || ""} />
                     </p>
                   </div>
                 )}

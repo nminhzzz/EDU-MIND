@@ -94,6 +94,7 @@ def _recalculate_learning_analytic(
             ),
             "score": float(a.score),
             "is_passed": float(a.score) >= PASS_SCORE_THRESHOLD,
+            "ai_assessment": a.ai_assessment,
         }
         for a in attempts
     ]

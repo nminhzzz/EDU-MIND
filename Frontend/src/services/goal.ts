@@ -27,6 +27,8 @@ export type StudyGoalResponse = StudyGoal;
 const AI_DRAFT_TIMEOUT_MS = 120_000;
 const AI_CONFIRM_TIMEOUT_MS = 60_000;
 
+import { StudyPlan } from "./study-plan";
+
 export const goalApi = {
   getPreferences: () =>
     apiClient.get<StudentPreference>("/users/preferences"),
@@ -40,6 +42,10 @@ export const goalApi = {
   getSubjects: () => apiClient.get<Subject[]>("/subjects/"),
 
   getGoals: () => apiClient.get<StudyGoal[]>("/goals/"),
+
+  getGoal: (id: number) => apiClient.get<StudyGoal>(`/goals/${id}`),
+
+  getGoalPlans: (id: number) => apiClient.get<StudyPlan[]>(`/goals/${id}/plans`),
 
   deleteGoal: (id: number) =>
     apiClient.delete<ApiMessageResponse>(`/goals/${id}`),

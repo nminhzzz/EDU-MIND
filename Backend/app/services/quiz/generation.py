@@ -212,3 +212,93 @@ async def generate_classroom_quiz(
     db.refresh(db_quiz)
     return db_quiz
 
+
+async def generate_classroom_quiz_from_file(
+    db: Session,
+    subject_id: int,
+    classroom_id: int,
+    file_bytes: bytes,
+    filename: str,
+    topic: Optional[str] = None,
+    difficulty: str = "medium",
+    total_questions: int = 5,
+    deadline: Optional[datetime] = None,
+    include_essay: bool = False,
+    essay_count: int = 0,
+) -> Quiz:
+    """
+    Extract text from an uploaded file (.pdf, .docx, .txt) and use it as RAG context
+    to generate an AI quiz for a classroom.
+    """
+    import os
+    import io
+
+    ext = os.path.splitext(filename.lower())[1]
+    extracted_text = ""
+
+    if ext == ".pdf":
+        try:
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                pages = [page.extract_text() for page in pdf.pages if page.extract_text()]
+                extracted_text = "\n".join(pages)
+        except Exception:
+            import pypdf
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            pages = [page.extract_text() for page in reader.pages if page.extract_text()]
+            extracted_text = "\n".join(pages)
+    elif ext in [".docx", ".doc"]:
+        import docx
+        doc = docx.Document(io.BytesIO(file_bytes))
+        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+        extracted_text = "\n".join(paragraphs)
+    elif ext in [".txt"]:
+        extracted_text = file_bytes.decode("utf-8", errors="ignore")
+    else:
+        raise ValueError(f"Định dạng tệp {ext} không được hỗ trợ. Vui lòng tải file PDF, Word hoặc TXT.")
+
+    if not extracted_text.strip():
+        raise ValueError("Không thể trích xuất nội dung văn bản từ tệp tin được tải lên.")
+
+    context = extracted_text[:8000]
+
+    subject = subject_repository.get(db, subject_id)
+    if not subject:
+        raise ValueError(f"Không tìm thấy môn học với ID={subject_id}")
+
+    topic_name = topic or filename
+    question_type = "mixed" if (include_essay and essay_count > 0) else "mcq"
+
+    ai_quiz = await _generate_with_qc_review(
+        subject_name=subject.name,
+        topic=topic_name,
+        difficulty=difficulty,
+        total_questions=total_questions,
+        question_type=question_type,
+        context=context,
+        skip_qc=False,
+        essay_count=essay_count if include_essay else 0,
+    )
+
+    questions_json = normalize_ai_questions(ai_quiz)
+
+    raw_title = (getattr(ai_quiz, "title", None) or "").strip()
+    if not raw_title or raw_title == "QuizResponse":
+        raw_title = f"Đề thi từ tài liệu: {filename} ({subject.name})"
+
+    db_quiz = quiz_repository.stage_classroom_quiz(
+        db,
+        subject_id=subject_id,
+        classroom_id=classroom_id,
+        title=raw_title,
+        difficulty=difficulty,
+        questions=questions_json,
+        deadline=deadline,
+        generated_by_ai=True,
+    )
+
+    commit_or_rollback(db)
+    db.refresh(db_quiz)
+    return db_quiz
+
+

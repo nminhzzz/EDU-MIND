@@ -42,3 +42,25 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+// Student profile detailed types
+import { StudentPreference } from "@/features/student/types/goal";
+import { Subject } from "@/features/student/types/subject";
+
+export interface LearningAnalytic {
+  id: number;
+  student_id: number;
+  subject_id: number;
+  subject: Subject | null;
+  average_score: number;
+  quizzes_completed: number;
+  weak_topics: { topic: string; score?: number }[];
+  strong_topics: { topic: string; score?: number }[];
+  ai_feedback: string | null;
+}
+
+export interface StudentProfileDetail {
+  user: User;
+  preference: StudentPreference | null;
+  learning_analytics: LearningAnalytic[];
+}

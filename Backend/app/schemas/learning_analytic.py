@@ -14,10 +14,14 @@ class TopicPerformance(BaseModel):
     note: Optional[str] = None
 
 
+from app.schemas.subject import SubjectResponse
+
+
 class LearningAnalyticResponse(BaseModel):
     id: int
     student_id: int
     subject_id: int
+    subject: Optional[SubjectResponse] = None
     average_score: float
     quizzes_completed: int
     weak_topics: List[Dict[str, Any]] = []

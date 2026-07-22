@@ -16,6 +16,10 @@ export const userApi = {
 
   /** Lấy thông tin tài khoản đang đăng nhập. */
   getMe: () => apiClient.get<User>("/auth/me"),
+
+  /** Lấy chi tiết hồ sơ cá nhân & báo cáo học tập/phân tích học lực của học sinh. */
+  getProfile: () => apiClient.get<StudentProfileDetail>("/users/profile"),
 };
 
+import { StudentProfileDetail } from "@/types/user";
 export default userApi;

@@ -348,3 +348,32 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
     off_days_str = ", ".join(off_dates_list) if off_dates_list else "Không có"
     schedule_text = f"Ngày rảnh: {format_available_schedule(available_schedule)}"
 
+
+def generate_lecture_material_agent(
+    plan_title: str,
+    system_instruction: str,
+    context_str: Optional[str] = None,
+) -> str:
+    """
+    AI Lecture Generation Agent: Generates detailed, structured lecture materials (markdown)
+    for a study plan using RAG context or general domain knowledge.
+    """
+    if context_str:
+        user_message = (
+            f"Dưới đây là các đoạn văn bản trích xuất từ giáo trình/tài liệu tham khảo liên quan:\n\n"
+            f"{context_str}\n\n"
+            f"Dựa trên các tài liệu trên và kiến thức chuyên môn của bạn, hãy viết tài liệu bài học "
+            f"hoàn chỉnh, sâu sắc và cực kỳ chi tiết cho chủ đề: \"{plan_title}\"."
+        )
+    else:
+        user_message = (
+            f"Hãy viết một bài giảng/tài liệu học tập hoàn chỉnh, chi tiết và sâu sắc cho chủ đề: \"{plan_title}\"."
+        )
+
+    return generate_content_deepseek(
+        messages=[{"role": "user", "content": user_message}],
+        system_instruction=system_instruction,
+        temperature=0.3,
+    )
+
+

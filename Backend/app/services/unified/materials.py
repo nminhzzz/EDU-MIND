@@ -12,7 +12,6 @@ import asyncio
 from app.core.logging import get_logger
 from app.database.mongodb import get_mongodb_db
 from app.database.mysql import SessionLocal
-from app.infrastructure.ai import generate_content_deepseek
 from app.repositories.plan_repository import plan_repository
 from app.repositories.quiz_repository import quiz_repository
 from app.repositories.subject_repository import subject_repository
@@ -128,29 +127,15 @@ async def _generate_and_save_rag_content(db, plan, subject_id: int, sys_instruct
         logger.error("[BG] RAG search failed for plan %d: %s", plan.id, exc)
         materials = []
 
-    if materials:
-        context_str = _build_rag_context(materials)
-        user_message = _build_lecture_user_message(plan.title, context_str)
-        logger.info(
-            "[BG] Generating lecture for plan %d from %d RAG chunk(s).",
-            plan.id,
-            len(materials),
-        )
-    else:
-        logger.warning(
-            "[BG] No RAG materials found for plan %d (subject=%d) — "
-            "falling back to AI knowledge-based generation.",
-            plan.id,
-            subject_id,
-        )
-        user_message = _build_lecture_user_message_no_rag(plan.title)
+    from app.agents.roadmap_planner.agent import generate_lecture_material_agent
 
+    context_str = _build_rag_context(materials) if materials else None
     try:
         rag_content = await asyncio.to_thread(
-            generate_content_deepseek,
-            messages=[{"role": "user", "content": user_message}],
+            generate_lecture_material_agent,
+            plan_title=plan.title,
             system_instruction=sys_instruction,
-            temperature=0.3,
+            context_str=context_str,
         )
         plan_repository.save_rag_content(db, plan, rag_content)
         db.commit()

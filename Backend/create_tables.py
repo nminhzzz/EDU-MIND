@@ -29,7 +29,6 @@ from sqlalchemy import text
 from app.database.mysql import Base, engine
 
 # Import every model so SQLAlchemy registers all tables on Base.metadata
-from app.models.ai_recommendation_review import AIRecommendationReview  # noqa: F401
 from app.models.classroom import Classroom  # noqa: F401
 from app.models.classroom_student import ClassroomStudent  # noqa: F401
 from app.models.learning_analytic import LearningAnalytic  # noqa: F401
