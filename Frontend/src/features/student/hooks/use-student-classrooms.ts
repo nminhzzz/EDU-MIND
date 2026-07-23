@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { classroomService } from "@/features/student/services/classroom";
 import type { Classroom } from "@/features/student/types";
 
@@ -20,6 +20,10 @@ export function useStudentClassrooms() {
       setClassroomsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchClassrooms();
+  }, [fetchClassrooms]);
 
   return {
     classrooms,

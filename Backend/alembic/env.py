@@ -32,7 +32,7 @@ import app.models.study_plan_progress         # noqa: F401
 import app.models.quiz                        # noqa: F401
 import app.models.quiz_attempt                # noqa: F401
 import app.models.learning_analytic           # noqa: F401
-import app.models.ai_recommendation_review    # noqa: F401
+import app.models.classroom_chat_read_cursor   # noqa: F401
 import app.models.notification                # noqa: F401
 
 # ── Alembic config ────────────────────────────────────────────────────────────

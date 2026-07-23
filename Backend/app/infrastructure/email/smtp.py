@@ -81,36 +81,4 @@ async def send_deadline_reminder_email(
     await _send(to, subject, body)
 
 
-async def send_recommendation_approved_email(
-    to: str,
-    full_name: str,
-    recommendation: str,
-) -> None:
-    """Sent when a teacher approves an AI study recommendation."""
-    subject = "Đề xuất ôn tập AI của bạn đã được giáo viên phê duyệt"
-    body = (
-        f"Xin chào {full_name},\n\n"
-        "Giáo viên vừa phê duyệt đề xuất ôn tập AI dành cho bạn:\n\n"
-        f"    {recommendation}\n\n"
-        "Một lịch ôn tập mới đã được thêm vào kế hoạch học tập của bạn. "
-        "Hãy kiểm tra và hoàn thành đúng hạn!\n\n"
-        "— Đội ngũ AI Learning Assistant"
-    )
-    await _send(to, subject, body)
 
-
-async def send_recommendation_rejected_email(
-    to: str,
-    full_name: str,
-    teacher_feedback: str,
-) -> None:
-    """Sent when a teacher rejects an AI study recommendation."""
-    subject = "Giáo viên đã điều chỉnh đề xuất ôn tập AI của bạn"
-    body = (
-        f"Xin chào {full_name},\n\n"
-        "Giáo viên đã xem xét và điều chỉnh đề xuất ôn tập AI dành cho bạn.\n\n"
-        f"Phản hồi của giáo viên:\n    {teacher_feedback}\n\n"
-        "Hãy tiếp tục học tập theo hướng dẫn của giáo viên!\n\n"
-        "— Đội ngũ AI Learning Assistant"
-    )
-    await _send(to, subject, body)

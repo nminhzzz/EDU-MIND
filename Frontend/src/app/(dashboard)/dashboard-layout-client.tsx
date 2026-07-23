@@ -8,6 +8,7 @@ import { Header } from "@/components/shared/header";
 import { X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FloatingTutorChat } from "@/components/student/floating-tutor-chat";
+import { FloatingClassroomChat } from "@/components/student/floating-classroom-chat";
 
 export function DashboardLayoutClient({
   children,
@@ -103,8 +104,11 @@ export function DashboardLayoutClient({
         </main>
       </div>
 
-      {/* Floating Tutor Chat widget (Student only) */}
+      {/* Floating Chat Widgets */}
       {user?.role === "student" && <FloatingTutorChat />}
+      {(user?.role === "student" || user?.role === "teacher") && (
+        <FloatingClassroomChat />
+      )}
     </div>
   );
 }

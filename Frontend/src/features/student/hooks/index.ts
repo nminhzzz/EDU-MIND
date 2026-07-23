@@ -17,3 +17,6 @@ export { useTaskStudy } from "./use-task-study";
 export type { TaskStudyTab } from "./use-task-study";
 export { useTodayTasks } from "./use-today-tasks";
 export { useTutorChat } from "./use-tutor-chat";
+export { useClassroomChat } from "./use-classroom-chat";
+export { useClassroomUnread } from "./use-classroom-unread";
+

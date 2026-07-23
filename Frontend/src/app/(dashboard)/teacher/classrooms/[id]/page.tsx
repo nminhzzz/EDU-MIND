@@ -22,6 +22,7 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";

@@ -60,3 +60,15 @@ class ClassroomDetailResponse(ClassroomResponse):
     teacher: Optional[UserResponse] = None
     students: Optional[List[UserResponse]] = None
     subject: Optional[SubjectResponse] = None
+
+
+class ClassroomChatMessageResponse(BaseModel):
+    id: int
+    classroom_id: int
+    sender_id: int
+    content: str
+    created_at: datetime
+    sender: UserResponse
+
+    class Config:
+        from_attributes = True

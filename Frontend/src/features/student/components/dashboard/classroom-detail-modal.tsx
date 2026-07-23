@@ -63,8 +63,8 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-xl p-8 max-h-[85vh] overflow-y-auto text-left">
-              <div className="flex items-center justify-between mb-6 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-xl p-8 max-h-[90vh] overflow-y-auto text-left">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-100 dark:border-zinc-800">
                 <div>
                   <h2 className="text-lg font-black text-zinc-900 dark:text-white">{classroom.class_name}</h2>
                   <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md inline-block mt-1">
@@ -94,7 +94,7 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                    Tài liệu môn học học tập
+                    Tài liệu môn học
                   </span>
 
                   {loading ? (
@@ -102,7 +102,7 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
                       Đang đồng bộ tài liệu từ kho...
                     </div>
                   ) : docs.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-850 rounded-xl">
+                    <div className="py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
                       Giáo viên chưa chia sẻ tài liệu nào cho môn học này.
                     </div>
                   ) : (

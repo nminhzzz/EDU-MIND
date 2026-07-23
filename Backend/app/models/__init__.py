@@ -13,6 +13,8 @@ from app.models.student_preference import StudentPreference
 from app.models.subject import Subject
 from app.models.classroom import Classroom
 from app.models.classroom_student import ClassroomStudent
+from app.models.classroom_chat_message import ClassroomChatMessage
+from app.models.classroom_chat_read_cursor import ClassroomChatReadCursor
 from app.models.study_document import StudyDocument
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
@@ -38,6 +40,8 @@ __all__ = [
     "Subject",
     "Classroom",
     "ClassroomStudent",
+    "ClassroomChatMessage",
+    "ClassroomChatReadCursor",
     "StudyDocument",
     "StudyGoal",
     "StudyPlan",

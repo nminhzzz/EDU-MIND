@@ -95,6 +95,26 @@ export const classroomApi = {
       headers: { "Content-Type": "multipart/form-data" },
       timeout: 180_000,
     }),
+
+  getChatMessages: (classroomId: number) =>
+    apiClient.get<ClassroomChatMessage[]>(`/classrooms/${classroomId}/chat/messages`),
+
+  getUnreadCounts: () =>
+    apiClient.get<Record<number, number>>("/classrooms/unread-counts"),
+
+  markChatRead: (classroomId: number) =>
+    apiClient.post<{ status: string; last_read_message_id: number }>(
+      `/classrooms/${classroomId}/chat/mark-read`
+    ),
 };
+
+export interface ClassroomChatMessage {
+  id: number;
+  classroom_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  sender: User;
+}
 
 export default classroomApi;
