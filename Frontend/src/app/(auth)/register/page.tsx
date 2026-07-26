@@ -57,20 +57,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-zinc-50 via-zinc-100 to-indigo-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 relative overflow-hidden">
-      {/* Background Decorative Blobs */}
-      <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-500/5 blur-[120px] pointer-events-none" />
-
-      <div className="w-full max-w-md z-10">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background">
+      <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/">
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-black text-2xl shadow-lg shadow-indigo-500/20 mb-4 logo-em"
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-primary-foreground font-black text-2xl shadow-sm mb-5 logo-em"
             >
               EM
             </motion.div>
@@ -78,16 +74,16 @@ export default function RegisterPage() {
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 dark:from-white dark:via-zinc-200 dark:to-white bg-clip-text text-transparent"
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="text-2xl md:text-3xl font-bold tracking-tight text-foreground text-balance"
           >
             Tạo tài khoản mới
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm"
+            transition={{ delay: 0.25, duration: 0.4 }}
+            className="text-muted-foreground mt-2 text-sm"
           >
             Đồng hành cùng AI trên lộ trình chinh phục tri thức
           </motion.p>
@@ -95,25 +91,25 @@ export default function RegisterPage() {
 
         {/* Card Form */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.4 }}
-          className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl dark:shadow-zinc-950/50"
+          className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-sm"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Vai trò Selection Tabs */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block">
+              <label className="text-sm font-medium text-foreground block">
                 Bạn là:
               </label>
-              <div className="grid grid-cols-2 gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-950/80 rounded-2xl relative">
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted rounded-lg relative">
                 <button
                   type="button"
                   onClick={() => setRole("student")}
-                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${
+                  className={`relative py-2 text-sm font-medium rounded-md transition-all cursor-pointer z-10 ${
                     role === "student"
-                      ? "text-indigo-600 dark:text-white bg-white dark:bg-zinc-800 shadow"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      ? "text-foreground bg-card shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Học sinh
@@ -121,10 +117,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setRole("teacher")}
-                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${
+                  className={`relative py-2 text-sm font-medium rounded-md transition-all cursor-pointer z-10 ${
                     role === "teacher"
-                      ? "text-indigo-600 dark:text-white bg-white dark:bg-zinc-800 shadow"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      ? "text-foreground bg-card shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Giáo viên
@@ -135,13 +131,13 @@ export default function RegisterPage() {
             {/* Full Name Input */}
             <div className="space-y-1.5">
               <label
-                className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block"
+                className="text-sm font-medium text-foreground block"
                 htmlFor="fullName"
               >
                 Họ và Tên
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-400 pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted-foreground pointer-events-none">
                   <UserIcon className="h-5 w-5" />
                 </span>
                 <input
@@ -152,7 +148,7 @@ export default function RegisterPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={isLoading}
-                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-shadow disabled:opacity-50"
                 />
               </div>
             </div>
@@ -160,13 +156,13 @@ export default function RegisterPage() {
             {/* Email Input */}
             <div className="space-y-1.5">
               <label
-                className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block"
+                className="text-sm font-medium text-foreground block"
                 htmlFor="email"
               >
                 Địa chỉ Email
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-400 pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted-foreground pointer-events-none">
                   <Mail className="h-5 w-5" />
                 </span>
                 <input
@@ -177,7 +173,7 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-shadow disabled:opacity-50"
                 />
               </div>
             </div>
@@ -185,13 +181,13 @@ export default function RegisterPage() {
             {/* Password Input */}
             <div className="space-y-1.5">
               <label
-                className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block"
+                className="text-sm font-medium text-foreground block"
                 htmlFor="password"
               >
                 Mật khẩu (tối thiểu 8 ký tự)
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-400 pointer-events-none">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted-foreground pointer-events-none">
                   <Lock className="h-5 w-5" />
                 </span>
                 <input
@@ -203,13 +199,13 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="w-full pl-11 pr-11 py-3 bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50"
+                  className="w-full pl-10 pr-10 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-shadow disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -231,13 +227,13 @@ export default function RegisterPage() {
                   className="space-y-1.5 overflow-hidden"
                 >
                   <label
-                    className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block"
+                    className="text-sm font-medium text-foreground block"
                     htmlFor="grade"
                   >
                     Khối lớp học
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-400 pointer-events-none">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted-foreground pointer-events-none">
                       <GraduationCap className="h-5 w-5" />
                     </span>
                     <select
@@ -245,7 +241,7 @@ export default function RegisterPage() {
                       value={grade}
                       onChange={(e) => setGrade(e.target.value as StudentGrade)}
                       disabled={isLoading}
-                      className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50 appearance-none"
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-shadow disabled:opacity-50 appearance-none"
                     >
                       <optgroup label="Cấp 2 (Trung học cơ sở)">
                         <option value="grade_6">Khối lớp 6</option>
@@ -274,7 +270,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="relative w-full mt-2 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 overflow-hidden active:scale-[0.98]"
+              className="w-full mt-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 active:scale-[0.99]"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -288,12 +284,12 @@ export default function RegisterPage() {
           </form>
 
           {/* Footer Links */}
-          <div className="text-center mt-6 pt-6">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <div className="text-center mt-6 pt-6 border-t border-border">
+            <p className="text-sm text-muted-foreground">
               Đã có tài khoản?{" "}
               <Link
                 href={ROUTES.LOGIN}
-                className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="font-semibold text-primary hover:underline"
               >
                 Đăng nhập ngay
               </Link>

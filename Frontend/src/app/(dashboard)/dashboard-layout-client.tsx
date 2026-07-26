@@ -35,9 +35,9 @@ export function DashboardLayoutClient({
   // Màn hình chờ tải thông tin đăng nhập
   if (isLoading) {
     return (
-      <div className="w-screen h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <Loader2 className="w-10 h-10 text-indigo-600 dark:text-indigo-400 animate-spin" />
-        <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-4">
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <span className="text-sm font-medium text-muted-foreground mt-4">
           Đang tải dữ liệu phiên đăng nhập...
         </span>
       </div>
@@ -50,7 +50,7 @@ export function DashboardLayoutClient({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors duration-200">
+    <div className="min-h-screen bg-background text-foreground">
       {/* 1. Sidebar cố định cho màn hình Desktop (md trở lên) */}
       <div className="hidden md:block">
         <Sidebar />
@@ -74,13 +74,13 @@ export function DashboardLayoutClient({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-zinc-900 z-40 md:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 w-64 bg-card z-40 md:hidden flex flex-col"
             >
               {/* Nút đóng Sidebar di động */}
-              <div className="h-16 flex items-center justify-end px-6 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="h-16 flex items-center justify-end px-6 border-b border-border">
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-zinc-500 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
+                  className="p-2 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   <X className="w-6 h-6" />
                 </button>

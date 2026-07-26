@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Menu, Sun, Moon, Bell, ChevronDown, User, LogOut } from "lucide-react";
+import { cn } from "@/utils/cn";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -18,7 +20,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDarkSystem = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
+
     if (savedTheme === "dark" || (!savedTheme && isDarkSystem)) {
       setTheme("dark");
       document.documentElement.classList.add("dark");
@@ -51,72 +53,93 @@ export function Header({ onMenuToggle }: HeaderProps) {
     }
   };
 
+  const roleLabel =
+    user?.role === "admin"
+      ? "Quản trị viên"
+      : user?.role === "teacher"
+        ? "Giáo viên"
+        : "Học sinh";
+
+  const iconBtn =
+    "flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer";
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-6">
-      {/* Nút Toggle Sidebar (Chỉ ẩn hiện trên Mobile) */}
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-4 md:px-6">
+      {/* Mobile menu toggle */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 cursor-pointer"
+        aria-label="Mở menu"
+        className={cn(iconBtn, "md:hidden")}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu className="h-5 w-5" />
       </button>
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-4">
-        {/* Nút Dark Mode */}
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+          className={iconBtn}
+          aria-label="Chuyển chế độ Sáng/Tối"
           title="Chuyển chế độ Sáng/Tối"
         >
-          {theme === "light" ? "Giao diện: Tối" : "Giao diện: Sáng"}
+          {theme === "light" ? (
+            <Moon className="h-[18px] w-[18px]" />
+          ) : (
+            <Sun className="h-[18px] w-[18px]" />
+          )}
         </button>
 
-        {/* Nút Thông báo */}
-        <button 
-          className="px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer relative"
-          title="Thông báo"
-        >
-          Thông báo
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+        {/* Notifications */}
+        <button className={cn(iconBtn, "relative")} aria-label="Thông báo" title="Thông báo">
+          <Bell className="h-[18px] w-[18px]" />
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
         </button>
 
-        {/* Khung User Profile Dropdown */}
-        <div className="relative">
+        {/* Profile dropdown */}
+        <div className="relative pl-1 md:pl-2 md:ml-1 md:border-l md:border-border">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 pl-3 border-l border-zinc-200 dark:border-zinc-800 cursor-pointer focus:outline-none hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2.5 rounded-lg py-1 pl-1 pr-2 hover:bg-muted transition-colors cursor-pointer focus:outline-none"
+            aria-haspopup="menu"
+            aria-expanded={dropdownOpen}
           >
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs animate-pulse">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-muted text-primary font-bold text-xs">
               {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
             </div>
-            <div className="hidden lg:flex flex-col text-left">
-              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 max-w-[120px] truncate">
+            <div className="hidden lg:flex flex-col text-left leading-tight">
+              <span className="max-w-[130px] truncate text-xs font-semibold text-foreground">
                 {user?.full_name || "User"}
               </span>
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                {user?.role === "teacher" ? "Giáo viên" : "Học sinh"}
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {roleLabel}
               </span>
             </div>
+            <ChevronDown className="hidden lg:block h-4 w-4 text-muted-foreground" />
           </button>
 
           {dropdownOpen && (
             <>
-              {/* Overlay để đóng dropdown */}
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setDropdownOpen(false)}
-              />
-              <div className="absolute right-0 mt-2.5 w-48 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800/80 rounded-2xl shadow-xl z-50 p-2 py-1.5 animate-fadeIn">
+              <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+              <div
+                role="menu"
+                className="absolute right-0 z-50 mt-2 w-52 origin-top-right rounded-xl border border-border bg-popover p-1.5 shadow-lg animate-scale-in"
+              >
+                <div className="px-3 py-2 border-b border-border mb-1">
+                  <p className="truncate text-sm font-semibold text-popover-foreground">
+                    {user?.full_name || "User"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
+                </div>
                 {user?.role === "student" && (
                   <Link
                     href="/student/profile"
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-colors"
+                    role="menuitem"
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-popover-foreground hover:bg-muted transition-colors"
                   >
+                    <User className="h-4 w-4 text-muted-foreground" />
                     Xem Profile
                   </Link>
                 )}
@@ -125,8 +148,10 @@ export function Header({ onMenuToggle }: HeaderProps) {
                     setDropdownOpen(false);
                     handleLogout();
                   }}
-                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                 >
+                  <LogOut className="h-4 w-4" />
                   Đăng xuất
                 </button>
               </div>

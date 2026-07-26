@@ -27,9 +27,9 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-background`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans">
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <AuthProvider>
           {children}
           <Toaster position="top-right" richColors closeButton />
