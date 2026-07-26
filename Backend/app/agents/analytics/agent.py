@@ -52,7 +52,12 @@ Yêu cầu đánh giá:
     )
 
     try:
-        data = json.loads(response_text)
+        cleaned = response_text.strip()
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and start < end:
+            cleaned = cleaned[start : end + 1]
+        data = json.loads(cleaned)
         return LearningAnalyticsResponse(**data)
     except Exception as e:
         raise RuntimeError(
