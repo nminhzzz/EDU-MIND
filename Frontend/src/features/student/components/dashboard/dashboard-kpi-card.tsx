@@ -23,14 +23,14 @@ export function DashboardKpiCard({
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: animationDelay }}
-      className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-2xl shadow-sm transition-all hover:border-zinc-300 dark:hover:border-zinc-700"
+      className="bg-card border border-border p-6 rounded-xl shadow-sm transition-colors hover:border-ring/40"
     >
-      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide block">
         {label}
       </span>
-      <div className="text-3xl font-black text-zinc-900 dark:text-white mt-1">{value}</div>
+      <div className="text-3xl font-bold text-foreground mt-1 tracking-tight">{value}</div>
       {children}
-      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 block font-medium">
+      <span className="text-xs text-muted-foreground mt-2 block">
         {subtitle}
       </span>
     </motion.div>

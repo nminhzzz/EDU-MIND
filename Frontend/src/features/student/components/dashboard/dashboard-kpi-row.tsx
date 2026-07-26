@@ -24,9 +24,9 @@ export function DashboardKpiRow({ stats, statsLoading }: DashboardKpiRowProps) {
         subtitle={`Đã xong ${stats?.overall?.done_plans || 0} / ${stats?.overall?.total_plans || 0} nhiệm vụ.`}
         animationDelay={0.05}
       >
-        <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full mt-3 overflow-hidden">
+        <div className="w-full bg-muted h-1.5 rounded-full mt-3 overflow-hidden">
           <div
-            className="bg-indigo-600 dark:bg-indigo-400 h-full rounded-full transition-all duration-500"
+            className="bg-primary h-full rounded-full transition-all duration-500"
             style={{ width: `${stats?.overall?.progress_pct || 0}%` }}
           />
         </div>

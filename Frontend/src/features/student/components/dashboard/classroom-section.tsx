@@ -19,27 +19,27 @@ export function ClassroomSection({
   onSelectClassroom,
 }: ClassroomSectionProps) {
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-4">
-      <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
-        <h2 className="font-extrabold text-sm text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-indigo-500" />
+    <div className="bg-card border border-border p-6 rounded-xl shadow-sm space-y-4">
+      <div className="flex items-center justify-between pb-4 border-b border-border">
+        <h2 className="font-semibold text-sm text-foreground flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-primary" />
           Lớp học tôi đã tham gia
         </h2>
-        <span className="text-xs font-mono text-zinc-400 dark:text-zinc-500">
+        <span className="text-xs font-mono text-muted-foreground">
           {classrooms.length} lớp đã gia nhập
         </span>
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-xs font-mono text-zinc-400">
+        <div className="py-8 text-center text-xs font-mono text-muted-foreground">
           Đang tải danh sách lớp học...
         </div>
       ) : classrooms.length === 0 ? (
-        <div className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400 space-y-3">
+        <div className="py-8 text-center text-sm text-muted-foreground space-y-3">
           <p>Bạn chưa tham gia lớp học nào.</p>
           <button
             onClick={onJoinClick}
-            className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            className="px-4 py-2 bg-primary/10 hover:bg-primary/15 text-primary rounded-lg text-xs font-medium transition-colors cursor-pointer"
           >
             Gia nhập lớp học ngay
           </button>
