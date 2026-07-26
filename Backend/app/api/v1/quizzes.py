@@ -4,7 +4,7 @@ API quản lý Đề thi và Chấm bài (Quizzes & Question Bank).
 
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File, Form
@@ -251,6 +251,9 @@ async def generate_classroom_quiz_api(
             difficulty=body.difficulty,
             total_questions=body.total_questions,
             deadline=body.deadline,
+            time_limit_minutes=body.time_limit_minutes,
+            max_tab_violations=body.max_tab_violations,
+            document_id=body.document_id,
             include_essay=body.include_essay,
             essay_count=body.essay_count,
         )
@@ -277,6 +280,8 @@ async def generate_classroom_quiz_from_file_api(
     difficulty: str = Form("medium"),
     total_questions: int = Form(5),
     deadline: Optional[datetime] = Form(None),
+    time_limit_minutes: Optional[int] = Form(30),
+    max_tab_violations: Optional[int] = Form(3),
     include_essay: bool = Form(False),
     essay_count: int = Form(0),
     db: Session = Depends(get_db),
@@ -300,6 +305,8 @@ async def generate_classroom_quiz_from_file_api(
             difficulty=difficulty,
             total_questions=total_questions,
             deadline=deadline,
+            time_limit_minutes=time_limit_minutes,
+            max_tab_violations=max_tab_violations,
             include_essay=include_essay,
             essay_count=essay_count,
         )
@@ -410,6 +417,16 @@ def submit_quiz(
             detail="Chỉ học sinh mới có thể nộp bài và làm đề thi.",
         )
 
+    quiz_obj = quiz_repository.get(db, quiz_id)
+    if quiz_obj and quiz_obj.deadline:
+        now = datetime.now(timezone.utc)
+        dl = quiz_obj.deadline if quiz_obj.deadline.tzinfo else quiz_obj.deadline.replace(tzinfo=timezone.utc)
+        if now > dl:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Đề thi đã quá hạn chót nộp bài. Bạn không thể nộp bài làm nữa.",
+            )
+
     try:
         attempt, subject_id = submit_student_quiz(
             db=db,
@@ -455,7 +472,21 @@ def get_quiz_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    quiz_obj = quiz_repository.get(db, quiz_id)
+    if not quiz_obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy đề thi.")
+
+    if quiz_obj.deadline and current_user.role == UserRole.STUDENT:
+        now = datetime.now(timezone.utc)
+        dl = quiz_obj.deadline if quiz_obj.deadline.tzinfo else quiz_obj.deadline.replace(tzinfo=timezone.utc)
+        if now > dl:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Đề thi đã quá hạn chót nộp bài. Bạn không thể làm đề thi này nữa.",
+            )
+
     try:
         return get_quiz(db, quiz_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+

@@ -17,13 +17,13 @@ class QuizOption(BaseModel):
 
 class QuizQuestionItem(BaseModel):
     question_text: str = Field(description="Nội dung câu hỏi")
-    question_type: str = Field(description="'mcq', 'true_false', hoặc 'essay'")
+    question_type: str = Field(default="mcq", description="'mcq', 'true_false', hoặc 'essay'")
     options: Optional[List[QuizOption]] = Field(default=None, description="Danh sách các lựa chọn trả lời (bỏ qua nếu là tự luận)")
     correct_answer: str = Field(
-        description="Đáp án đúng khớp với key (trắc nghiệm) hoặc Đáp án mẫu chi tiết (tự luận)"
+        default="", description="Đáp án đúng khớp với key (trắc nghiệm) hoặc Đáp án mẫu chi tiết (tự luận)"
     )
-    explanation: str = Field(description="Giải thích đáp án hoặc tiêu chí chấm điểm tự luận")
-    difficulty: str = Field(description="'easy', 'medium', hoặc 'hard'")
+    explanation: str = Field(default="", description="Giải thích đáp án hoặc tiêu chí chấm điểm tự luận")
+    difficulty: str = Field(default="medium", description="'easy', 'medium', hoặc 'hard'")
 
 
 class QuizResponse(BaseModel):

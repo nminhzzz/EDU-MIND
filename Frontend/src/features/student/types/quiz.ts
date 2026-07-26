@@ -19,6 +19,8 @@ export interface StudentQuiz {
   total_questions: number;
   questions: StudentQuizQuestion[];
   deadline?: string;
+  time_limit_minutes?: number;
+  max_tab_violations?: number;
   classroom_id?: number;
   latest_attempt?: any;
 }

@@ -29,16 +29,12 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 _MAX_RETRY_ATTEMPTS = 3
-_BATCH_THRESHOLD = 8          # questions above this trigger parallel batching
+_BATCH_THRESHOLD = 50          # questions above this trigger parallel batching
 _MIN_ACCEPTABLE_RATIO = 0.7   # accept at least 70 % of requested questions
 _OPTION_KEYS = ["A", "B", "C", "D", "E", "F"]
 
 _SYSTEM_INSTRUCTION_GENERATE = (
     "Bạn là trợ lý AI thiết kế câu hỏi kiểm tra học tập chuẩn chất lượng cao."
-)
-_SYSTEM_INSTRUCTION_CORRECT = (
-    "Bạn là trợ lý AI thiết kế câu hỏi kiểm tra chuyên nghiệp. "
-    "Chỉ trả về đối tượng JSON hoàn chỉnh sau sửa lỗi."
 )
 _SECURITY_DIRECTIVE = (
     "\n\n⚠️ BẢO MẬT BẮT BUỘC (PROMPT INJECTION DEFENSE):\n"
@@ -421,10 +417,10 @@ def _generate_quiz_batched(
     shared_kwargs = {"subject": subject, "topic": topic, "difficulty": difficulty, "context": context}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(generate_quiz, **shared_kwargs, **batch1_kwargs)
-        future2 = executor.submit(generate_quiz, **shared_kwargs, **batch2_kwargs)
-        res1 = future1.result()
-        res2 = future2.result()
+        future1 = executor.submit(generate_quiz, **shared_kwargs, **batch1_kwargs, is_subbatch=True)
+        future2 = executor.submit(generate_quiz, **shared_kwargs, **batch2_kwargs, is_subbatch=True)
+        res1 = future1.result(timeout=100)
+        res2 = future2.result(timeout=100)
 
     return _merge_batch_results(res1, res2, total_questions, subject, topic)
 
@@ -442,6 +438,7 @@ def generate_quiz(
     question_type: str = "mcq",
     context: str = "",
     essay_count: int = 0,
+    is_subbatch: bool = False,
 ) -> QuizResponse:
     """
     Generate a structured quiz using the NVIDIA NIM LLM.
@@ -534,81 +531,5 @@ def generate_quiz(
 
     raise RuntimeError(
         f"Quiz generation failed after {_MAX_RETRY_ATTEMPTS} attempts. "
-        f"Last error: {last_error}"
-    )
-
-
-def correct_quiz_questions(
-    original_quiz: dict,
-    feedback: str,
-    context: str,
-) -> QuizResponse:
-    """
-    Apply corrective feedback from the QC Reviewer Agent to a flawed quiz.
-
-    Sends the original quiz, the reviewer's feedback, and the source context
-    back to the LLM with instructions to fix only the flagged questions while
-    keeping valid questions intact.  Auto-retries up to three times.
-
-    Args:
-        original_quiz: The full quiz dict as originally generated.
-        feedback:      The QC Reviewer's textual feedback describing errors.
-        context:       The RAG source material used during original generation.
-
-    Returns:
-        A corrected ``QuizResponse`` with duplicates removed.
-
-    Raises:
-        RuntimeError: When all retry attempts fail.
-    """
-    original_quiz_str = json.dumps(original_quiz, ensure_ascii=False, indent=2)
-
-    prompt = (
-        "Bạn là Trợ lý AI Soạn đề (Quiz Generator Agent).\n"
-        "Thẩm định viên (QC Reviewer Agent) đã đánh giá bộ đề thi do bạn sinh ra và phát hiện "
-        "một số lỗi cần sửa đổi.\n\n"
-        f"TÀI LIỆU GỐC (CONTEXT):\n"
-        f"----------------------------------\n"
-        f"{context}\n"
-        f"----------------------------------\n\n"
-        f"BỘ ĐỀ THI LỖI BAN ĐẦU:\n"
-        f"----------------------------------\n"
-        f"{original_quiz_str}\n"
-        f"----------------------------------\n\n"
-        f"Ý KIẾN PHẢN HỒI CỦA THẨM ĐỊNH VIÊN (FEEDBACK):\n"
-        f"----------------------------------\n"
-        f"{feedback}\n"
-        f"----------------------------------\n\n"
-        "YÊU CẦU:\n"
-        "Hãy sửa đổi, bổ sung và viết lại các câu hỏi bị thẩm định viên báo lỗi để hoàn thiện "
-        "bộ đề thi chất lượng cao nhất.\n"
-        "Trả về toàn bộ bộ đề thi (gồm cả các câu không bị lỗi giữ nguyên và các câu đã sửa) "
-        "khớp chính xác 100% với JSON Schema yêu cầu."
-    )
-    messages = [{"role": "user", "content": prompt}]
-
-    last_error: Exception | None = None
-    for attempt in range(_MAX_RETRY_ATTEMPTS):
-        try:
-            raw_response = generate_content_deepseek(
-                messages=messages,
-                system_instruction=_SYSTEM_INSTRUCTION_CORRECT,
-                response_schema=QuizResponse,
-                temperature=0.2 + attempt * 0.1,
-            )
-            quiz = _parse_and_validate_quiz(raw_response)
-            return quiz
-
-        except Exception as exc:
-            last_error = exc
-            logger.warning(
-                "Correct Quiz Questions: attempt %d/%d failed: %s",
-                attempt + 1,
-                _MAX_RETRY_ATTEMPTS,
-                exc,
-            )
-
-    raise RuntimeError(
-        f"Quiz correction failed after {_MAX_RETRY_ATTEMPTS} attempts. "
         f"Last error: {last_error}"
     )

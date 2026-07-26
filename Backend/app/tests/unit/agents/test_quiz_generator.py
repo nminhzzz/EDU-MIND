@@ -1,8 +1,7 @@
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from app.agents.quiz_generator.agent import generate_quiz, correct_quiz_questions
-from app.agents.quiz_generator.reviewer import review_generated_quiz, QuizReviewResponse
+from app.agents.quiz_generator.agent import generate_quiz
 from app.agents.quiz_generator.schemas import QuizResponse
 from app.services.quiz_service import generate_and_save_quiz
 from app.models.subject import Subject
@@ -102,101 +101,13 @@ def test_generate_quiz_parse_error(mock_generate):
     assert "Quiz generation failed after 3 attempts" in str(excinfo.value)
 
 
-# ── 2. UNIT TESTS: QC REVIEWER ─────────────────────────────────────────────
-
-
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
-def test_review_generated_quiz_valid(mock_generate):
-    mock_review_data = {
-        "is_valid": True,
-        "feedback": "Đề thi hoàn hảo, các câu hỏi bám sát tài liệu.",
-        "error_question_indices": [],
-    }
-    mock_generate.return_value = json.dumps(mock_review_data)
-
-    quiz_data = {"title": "Java Test", "questions": []}
-    result = review_generated_quiz(quiz_data=quiz_data, context="Tài liệu Java...")
-
-    assert isinstance(result, QuizReviewResponse)
-    assert result.is_valid is True
-    assert len(result.error_question_indices) == 0
-
-
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
-def test_review_generated_quiz_invalid(mock_generate):
-    mock_review_data = {
-        "is_valid": False,
-        "feedback": "Câu số 2 bị trùng lặp kiến thức.",
-        "error_question_indices": [1],
-    }
-    mock_generate.return_value = json.dumps(mock_review_data)
-
-    quiz_data = {"title": "Java Test", "questions": []}
-    result = review_generated_quiz(quiz_data=quiz_data, context="Tài liệu Java...")
-
-    assert isinstance(result, QuizReviewResponse)
-    assert result.is_valid is False
-    assert result.error_question_indices == [1]
-    assert "trùng lặp" in result.feedback
-
-
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
-def test_review_generated_quiz_fallback(mock_generate):
-    # Thẩm định viên trả về text lỗi làm crash việc parse JSON
-    mock_generate.return_value = "Lỗi hệ thống LLM"
-
-    quiz_data = {"title": "Java Test", "questions": []}
-    result = review_generated_quiz(quiz_data=quiz_data, context="Tài liệu Java...")
-
-    # Phải tự động fallback đánh dấu không hợp lệ để sinh lại đề
-    assert result.is_valid is False
-    assert "Lỗi parse kết quả thẩm định" in result.feedback
-    assert result.error_question_indices == []
-
-
-# ── 3. UNIT TESTS: CORRECT QUIZ QUESTIONS ──────────────────────────────────
-
-
-@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
-def test_correct_quiz_questions(mock_generate):
-    mock_corrected_response = {
-        "title": "Java Test Corrected",
-        "questions": [
-            {
-                "question_text": "Câu hỏi đã sửa đổi",
-                "question_type": "mcq",
-                "options": [
-                    {"key": "A", "value": "Đúng"},
-                    {"key": "B", "value": "Sai"},
-                ],
-                "correct_answer": "A",
-                "explanation": "Giải thích mới",
-                "difficulty": "medium",
-            }
-        ],
-    }
-    mock_generate.return_value = json.dumps(mock_corrected_response)
-
-    result = correct_quiz_questions(
-        original_quiz={"title": "Original"},
-        feedback="Sửa lại câu 1 cho rõ ràng",
-        context="Tài liệu...",
-    )
-
-    assert isinstance(result, QuizResponse)
-    assert result.title == "Java Test Corrected"
-    assert result.questions[0].question_text == "Câu hỏi đã sửa đổi"
-
-
-# ── 4. INTEGRATION TESTS (MULTI-AGENT WORKFLOW) ────────────────────────────
+# ── 2. INTEGRATION TESTS (GENERATION WORKFLOW) ────────────────────────────
 
 
 @patch("app.services.quiz.generation.vector_search_materials")
 @patch("app.agents.quiz_generator.agent.generate_content_deepseek")
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 @pytest.mark.asyncio
 async def test_generate_and_save_quiz_workflow_without_errors(
-    mock_review_llm,
     mock_generator_llm,
     mock_vector_search,
 ):
@@ -220,14 +131,6 @@ async def test_generate_and_save_quiz_workflow_without_errors(
         ],
     }
     mock_generator_llm.return_value = json.dumps(quiz_response)
-
-    # Mock Thẩm định chéo -> Đề thi hợp lệ
-    review_response = {
-        "is_valid": True,
-        "feedback": "Good quiz",
-        "error_question_indices": [],
-    }
-    mock_review_llm.return_value = json.dumps(review_response)
 
     # Mock database session SQLAlchemy
     db_mock = MagicMock()
@@ -253,91 +156,8 @@ async def test_generate_and_save_quiz_workflow_without_errors(
 
 @patch("app.services.quiz.generation.vector_search_materials")
 @patch("app.agents.quiz_generator.agent.generate_content_deepseek")
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
-@pytest.mark.asyncio
-async def test_generate_and_save_quiz_workflow_with_qc_correction(
-    mock_review_llm,
-    mock_generator_llm,
-    mock_vector_search,
-):
-    # Mock RAG
-    mock_vector_search.return_value = [{"topic": "Java", "content": "inheritance..."}]
-
-    # Mock Sinh đề thi ban đầu (LLM mock)
-    original_quiz = {
-        "title": "Original Title",
-        "questions": [
-            {
-                "question_text": "Original Question?",
-                "question_type": "mcq",
-                "options": [{"key": "A", "value": "X"}, {"key": "B", "value": "Y"}],
-                "correct_answer": "A",
-                "explanation": "Old explanation",
-                "difficulty": "medium",
-            }
-        ],
-    }
-
-    # Mock Sinh đề thi sửa đổi sau khi QC báo lỗi
-    corrected_quiz = {
-        "title": "Corrected Title",
-        "questions": [
-            {
-                "question_text": "Corrected Question?",
-                "question_type": "mcq",
-                "options": [
-                    {"key": "A", "value": "Corrected X"},
-                    {"key": "B", "value": "Corrected Y"},
-                ],
-                "correct_answer": "A",
-                "explanation": "Corrected explanation",
-                "difficulty": "medium",
-            }
-        ],
-    }
-
-    # generate_content_deepseek sẽ được gọi 2 lần: lần 1 sinh đề ban đầu, lần 2 sinh đề sau khi sửa đổi.
-    mock_generator_llm.side_effect = [
-        json.dumps(original_quiz),
-        json.dumps(corrected_quiz),
-    ]
-
-    # QC Reviewer thẩm định trả về lỗi -> is_valid=False
-    review_response = {
-        "is_valid": False,
-        "feedback": "Đáp án chưa chuẩn xác, hãy viết lại.",
-        "error_question_indices": [0],
-    }
-    mock_review_llm.return_value = json.dumps(review_response)
-
-    db_mock = MagicMock()
-    subject_mock = MagicMock(spec=Subject)
-    subject_mock.name = "Java Programming"
-    db_mock.query().filter().first.return_value = subject_mock
-
-    db_quiz = await generate_and_save_quiz(
-        db=db_mock,
-        db_mongo=MagicMock(),
-        student_id=1,
-        subject_id=1,
-        topic="Inheritance",
-        difficulty="medium",
-        total_questions=1,
-    )
-
-    # Đề thi được lưu phải là đề thi đã được sửa đổi (Corrected Title)
-    assert db_quiz.title == "Corrected Title"
-    assert db_quiz.questions[0]["question_text"] == "Corrected Question?"
-    assert db_mock.add.called
-    assert db_mock.commit.called
-
-
-@patch("app.services.quiz.generation.vector_search_materials")
-@patch("app.agents.quiz_generator.agent.generate_content_deepseek")
-@patch("app.agents.quiz_generator.reviewer.generate_content_deepseek")
 @pytest.mark.asyncio
 async def test_generate_and_save_quiz_auto_healing(
-    mock_review_llm,
     mock_generator_llm,
     mock_vector_search,
 ):
@@ -369,10 +189,6 @@ async def test_generate_and_save_quiz_auto_healing(
         ],
     }
     mock_generator_llm.return_value = json.dumps(quiz_response)
-
-    # QC Reviewer duyệt
-    review_response = {"is_valid": True, "feedback": "", "error_question_indices": []}
-    mock_review_llm.return_value = json.dumps(review_response)
 
     db_mock = MagicMock()
     subject_mock = MagicMock(spec=Subject)

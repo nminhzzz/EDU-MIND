@@ -6,12 +6,11 @@ Tests can patch `quiz_generator` instead of deep agent module paths.
 
 from typing import Any
 
-from app.agents.quiz_generator.agent import correct_quiz_questions, generate_quiz
-from app.agents.quiz_generator.reviewer import review_generated_quiz
+from app.agents.quiz_generator.agent import generate_quiz
 
 
 class QuizGeneratorPort:
-    """Thin adapter over the quiz generator + QC reviewer agents."""
+    """Thin adapter over the quiz generator agent."""
 
     def generate(
         self,
@@ -32,16 +31,6 @@ class QuizGeneratorPort:
             question_type=question_type,
             context=context,
             essay_count=essay_count,
-        )
-
-    def review(self, *, quiz_data: dict, context: str) -> Any:
-        return review_generated_quiz(quiz_data=quiz_data, context=context)
-
-    def correct(self, *, original_quiz: dict, feedback: str, context: str) -> Any:
-        return correct_quiz_questions(
-            original_quiz=original_quiz,
-            feedback=feedback,
-            context=context,
         )
 
 

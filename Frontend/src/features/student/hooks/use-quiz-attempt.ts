@@ -32,9 +32,10 @@ export function useQuizAttempt(quizId: string | number | undefined) {
 
   const lastViolationTimeRef = useRef<number>(0);
 
-  // Easy: 60s/câu, Hard: 120s/câu, Medium: 90s/câu
-  const secondsPerQuestion = quiz ? (quiz.difficulty === "easy" ? 60 : quiz.difficulty === "hard" ? 120 : 90) : 90;
-  const timeLimit = quiz ? quiz.total_questions * secondsPerQuestion : 0;
+  // Cấu hình thời gian & giới hạn vi phạm
+  const timeLimit = quiz
+    ? (quiz.time_limit_minutes ? quiz.time_limit_minutes * 60 : quiz.total_questions * (quiz.difficulty === "easy" ? 60 : quiz.difficulty === "hard" ? 120 : 90))
+    : 0;
   const timeRemaining = quiz ? Math.max(0, timeLimit - duration) : 0;
 
   const handleUploadEssay = useCallback(async (file: File) => {
@@ -61,12 +62,21 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     } catch {
       try {
         const quizRes = await quizService.getById(quizId);
-        setQuiz(normalizeQuiz(quizRes.data));
+        const quizData = normalizeQuiz(quizRes.data);
+
+        if (quizData.deadline && new Date(quizData.deadline).getTime() < Date.now()) {
+          toast.error("Đề thi này đã quá hạn chót nộp bài! Bạn không thể làm nữa.");
+          router.push(ROUTES.STUDENT_QUIZZES);
+          return;
+        }
+
+        setQuiz(quizData);
         setIsReview(false);
         setDuration(0);
         setTabViolations(0);
-      } catch {
-        toast.error("Không thể tải thông tin đề thi.");
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || "Không thể tải thông tin đề thi.";
+        toast.error(msg);
         router.push(ROUTES.STUDENT_QUIZZES);
       }
     } finally {
@@ -172,13 +182,16 @@ export function useQuizAttempt(quizId: string | number | undefined) {
       if (now - lastViolationTimeRef.current < 1000) return;
       lastViolationTimeRef.current = now;
 
+      const maxAllowed = quiz.max_tab_violations ?? 3;
       setTabViolations((prev) => {
         const next = prev + 1;
-        if (next >= 3) {
-          toast.error("Bạn đã vi phạm quy chế thi (thoát tab quá 3 lần). Bài thi sẽ tự động được nộp!");
+        if (maxAllowed > 0 && next >= maxAllowed) {
+          toast.error(`Bạn đã vi phạm quy chế thi (thoát tab quá ${maxAllowed} lần). Bài thi sẽ tự động được nộp!`);
           handleSubmit(true);
+        } else if (maxAllowed > 0) {
+          toast.warning(`Cảnh báo: Bạn vừa rời khỏi màn hình làm bài thi ${next}/${maxAllowed} lần!`);
         } else {
-          toast.warning(`Cảnh báo: Bạn vừa rời khỏi màn hình làm bài thi ${next}/3 lần!`);
+          toast.warning(`Cảnh báo: Bạn vừa rời khỏi màn hình làm bài thi ${next} lần!`);
         }
         return next;
       });

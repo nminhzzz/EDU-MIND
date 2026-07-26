@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 import { AddStudentModal } from "@/components/teacher/add-student-modal";
+import { StudentAnalyticsModal } from "@/components/teacher/student-analytics-modal";
+import { StudentQuizAttemptsModal } from "@/components/teacher/student-quiz-attempts-modal";
 import { QuizResultTable } from "@/components/teacher/quiz-result-table";
 import { StudentProgressTable } from "@/components/teacher/student-progress-table";
 import { quizService } from "@/features/student/services/quiz";
@@ -35,6 +37,7 @@ import classroomApi, {
   ClassroomDetail,
   ClassroomQuizAttempt,
   ClassroomStudentProgress,
+  StudyDocumentItem,
 } from "@/services/classroom";
 import { parseApiError } from "@/utils/api-error";
 import { User } from "@/types/user";
@@ -65,18 +68,41 @@ export default function ClassroomDetailPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [analyticsStudent, setAnalyticsStudent] = useState<{ id: number; name: string } | null>(null);
+  const [attemptsStudent, setAttemptsStudent] = useState<{ id: number; name: string } | null>(null);
 
   // Modal tạo đề thi AI:
   const [showGenModal, setShowGenModal] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [genMode, setGenMode] = useState<"topic" | "file">("topic");
+  const [genMode, setGenMode] = useState<"select_doc" | "file">("select_doc");
+  const [docsList, setDocsList] = useState<StudyDocumentItem[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(5);
   const [deadline, setDeadline] = useState("");
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(30);
+  const [maxTabViolations, setMaxTabViolations] = useState(3);
   const [includeEssay, setIncludeEssay] = useState(false);
   const [essayCount, setEssayCount] = useState(2);
+
+  useEffect(() => {
+    if (showGenModal && classroom?.subject?.id) {
+      setLoadingDocs(true);
+      classroomApi
+        .getSubjectDocuments(classroom.subject.id)
+        .then((res) => {
+          const docs = res.data || [];
+          setDocsList(docs);
+          if (docs.length > 0) {
+            setSelectedDocId(docs[0].id);
+          }
+        })
+        .catch((err) => console.error("Lỗi lấy danh sách tài liệu môn học:", err))
+        .finally(() => setLoadingDocs(false));
+    }
+  }, [showGenModal, classroom?.subject?.id]);
 
   const handlePreviewQuiz = async (quizId: number) => {
     setLoadingPreviewId(quizId);
@@ -177,8 +203,8 @@ export default function ClassroomDetailPage() {
 
   const handleGenerateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (genMode === "topic" && !topic.trim()) {
-      toast.error("Vui lòng nhập chủ đề kiểm tra.");
+    if (genMode === "select_doc" && !selectedDocId) {
+      toast.error("Vui lòng chọn 1 tài liệu giảng dạy đã upload.");
       return;
     }
     if (genMode === "file" && !uploadedFile) {
@@ -197,10 +223,11 @@ export default function ClassroomDetailPage() {
         const formData = new FormData();
         formData.append("file", uploadedFile);
         formData.append("subject_id", String(classroom.subject.id));
-        if (topic.trim()) formData.append("topic", topic.trim());
         formData.append("difficulty", difficulty);
         formData.append("total_questions", String(totalQuestions));
         if (deadline) formData.append("deadline", deadline);
+        formData.append("time_limit_minutes", String(timeLimitMinutes));
+        formData.append("max_tab_violations", String(maxTabViolations));
         formData.append("include_essay", String(includeEssay));
         if (includeEssay) formData.append("essay_count", String(essayCount));
 
@@ -208,17 +235,18 @@ export default function ClassroomDetailPage() {
       } else {
         res = await classroomApi.generateQuiz(classroomId, {
           subject_id: classroom.subject.id,
-          topic,
+          document_id: selectedDocId || undefined,
           difficulty,
           total_questions: totalQuestions,
           deadline: deadline || undefined,
+          time_limit_minutes: timeLimitMinutes,
+          max_tab_violations: maxTabViolations,
           include_essay: includeEssay,
           essay_count: includeEssay ? essayCount : 0,
         });
       }
       toast.success("Đã dùng AI sinh đề và giao bài kiểm tra thành công!");
       setShowGenModal(false);
-      setTopic("");
       setUploadedFile(null);
       setDeadline("");
       setIncludeEssay(false);
@@ -383,19 +411,49 @@ export default function ClassroomDetailPage() {
                       </p>
                       <p className="text-xs text-zinc-400 mt-0.5">{student.email}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveStudent(student.id)}
-                      disabled={removingId === student.id}
-                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:opacity-50"
-                      title="Xóa khỏi lớp"
-                    >
-                      {removingId === student.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <UserMinus className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAttemptsStudent({
+                            id: student.id,
+                            name: student.full_name || `Học sinh #${student.id}`,
+                          })
+                        }
+                        className="px-3 py-1.5 text-xs font-bold rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title="Xem danh sách các bài thi đã làm"
+                      >
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        Bài thi đã làm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAnalyticsStudent({
+                            id: student.id,
+                            name: student.full_name || `Học sinh #${student.id}`,
+                          })
+                        }
+                        className="px-3 py-1.5 text-xs font-bold rounded-lg text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title="Xem & Chỉnh sửa báo cáo học lực"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5" />
+                        Báo cáo học lực
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveStudent(student.id)}
+                        disabled={removingId === student.id}
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Xóa khỏi lớp"
+                      >
+                        {removingId === student.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <UserMinus className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -532,87 +590,88 @@ export default function ClassroomDetailPage() {
             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl gap-1">
               <button
                 type="button"
-                onClick={() => setGenMode("topic")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  genMode === "topic"
+                onClick={() => setGenMode("select_doc")}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  genMode === "select_doc"
                     ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
                     : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                 }`}
               >
-                Nhập chủ đề chữ
+                <FileText className="w-4 h-4" />
+                Tài liệu đã upload
               </button>
               <button
                 type="button"
                 onClick={() => setGenMode("file")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   genMode === "file"
                     ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
                     : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                 }`}
               >
-                <UploadCloud className="w-3.5 h-3.5" />
-                Tải file (PDF/Word)
+                <UploadCloud className="w-4 h-4" />
+                Tải file mới (PDF/Word)
               </button>
             </div>
 
             <form onSubmit={handleGenerateQuiz} className="space-y-4 text-left">
-              {genMode === "file" ? (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                      Chọn file tài liệu (PDF, Word, TXT):
-                    </label>
-                    <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
-                      <FileText className="w-6 h-6 text-violet-500" />
-                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                        {uploadedFile ? uploadedFile.name : "Nhấp để chọn file PDF, .docx hoặc .txt"}
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-medium">
-                        Hệ thống sẽ trích xuất nội dung và sinh câu hỏi RAG bám sát tài liệu này
-                      </span>
-                      <input
-                        type="file"
-                        accept=".pdf,.docx,.doc,.txt"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            setUploadedFile(e.target.files[0]);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                      Tên/Chủ đề đề thi (Không bắt buộc):
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Mặc định lấy theo tên file..."
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
-                    />
-                  </div>
+              {genMode === "select_doc" ? (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Chọn tài liệu giảng dạy đã upload:
+                  </label>
+                  {loadingDocs ? (
+                    <div className="py-3 text-xs text-zinc-400 font-medium flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                      Đang tải danh sách tài liệu...
+                    </div>
+                  ) : docsList.length === 0 ? (
+                    <div className="p-3 border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      Chưa có tài liệu nào được upload cho môn học này. Vui lòng chọn "Tải file mới".
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedDocId || ""}
+                      onChange={(e) => setSelectedDocId(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                      required
+                    >
+                      {docsList.map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          📄 {doc.title} ({doc.file_type.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Chủ đề kiểm tra:
+                    Chọn file tài liệu (PDF, Word, TXT):
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Lượng giác, Đạo hàm, Mảng trong Java..."
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
-                    required={genMode === "topic"}
-                  />
+                  <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
+                    <FileText className="w-6 h-6 text-violet-500" />
+                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      {uploadedFile ? uploadedFile.name : "Nhấp để chọn file PDF, .docx hoặc .txt"}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-medium">
+                      Hệ thống sẽ trích xuất nội dung và sinh câu hỏi RAG bám sát tài liệu này
+                    </span>
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.doc,.txt"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadedFile(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
                     Độ khó:
@@ -620,7 +679,7 @@ export default function ClassroomDetailPage() {
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                   >
                     <option value="easy">Dễ</option>
                     <option value="medium">Trung bình</option>
@@ -635,12 +694,49 @@ export default function ClassroomDetailPage() {
                   <select
                     value={totalQuestions}
                     onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                   >
                     <option value={5}>5 câu</option>
                     <option value={10}>10 câu</option>
                     <option value={15}>15 câu</option>
                     <option value={20}>20 câu</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Time Limit & Max Tab Violations */}
+              <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Thời gian làm (Phút):
+                  </label>
+                  <select
+                    value={timeLimitMinutes}
+                    onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value={15}>15 phút</option>
+                    <option value={30}>30 phút (Mặc định)</option>
+                    <option value={45}>45 phút</option>
+                    <option value={60}>60 phút</option>
+                    <option value={90}>90 phút</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                    Giới hạn vi phạm tab:
+                  </label>
+                  <select
+                    value={maxTabViolations}
+                    onChange={(e) => setMaxTabViolations(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value={1}>Tối đa 1 lần</option>
+                    <option value={3}>Tối đa 3 lần (Mặc định)</option>
+                    <option value={5}>Tối đa 5 lần</option>
+                    <option value={10}>Tối đa 10 lần</option>
+                    <option value={0}>Không giới hạn</option>
                   </select>
                 </div>
               </div>
@@ -718,6 +814,25 @@ export default function ClassroomDetailPage() {
         onClose={() => setPreviewQuiz(null)}
         quiz={previewQuiz}
         onSaveSuccess={fetchAll}
+      />
+
+      {/* Student Analytics Modal */}
+      <StudentAnalyticsModal
+        open={!!analyticsStudent}
+        onClose={() => setAnalyticsStudent(null)}
+        classroomId={classroomId}
+        studentId={analyticsStudent?.id || 0}
+        studentName={analyticsStudent?.name || ""}
+        subjectName={classroom?.subject?.name}
+      />
+
+      {/* Student Quiz Attempts Modal */}
+      <StudentQuizAttemptsModal
+        open={!!attemptsStudent}
+        onClose={() => setAttemptsStudent(null)}
+        classroomId={classroomId}
+        studentId={attemptsStudent?.id || 0}
+        studentName={attemptsStudent?.name || ""}
       />
     </div>
   );

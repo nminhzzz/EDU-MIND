@@ -40,9 +40,14 @@ class Quiz(Base):
     classroom_id = Column(
         BigInteger, ForeignKey("classrooms.id", ondelete="SET NULL"), nullable=True
     )
+    document_id = Column(
+        BigInteger, ForeignKey("study_documents.id", ondelete="SET NULL"), nullable=True
+    )
 
     title = Column(String(255), nullable=False)
     deadline = Column(DateTime, nullable=True)
+    time_limit_minutes = Column(Integer, nullable=True, default=30)
+    max_tab_violations = Column(Integer, nullable=True, default=3)
 
     difficulty = Column(
         Enum("easy", "medium", "hard", name="quiz_difficulty"),

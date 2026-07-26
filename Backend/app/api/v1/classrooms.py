@@ -25,6 +25,8 @@ from app.schemas.classroom import (
     ClassroomStudentAdd,
 )
 from app.schemas.teacher import TeacherClassroomStudentResponse
+from app.schemas.learning_analytic import LearningAnalyticResponse, LearningAnalyticUpdate
+from app.repositories.analytic_repository import analytic_repository
 from app.services.classroom_service import (
     add_student_to_classroom,
     create_classroom,
@@ -248,6 +250,76 @@ def api_remove_student_from_classroom(
         current_user_role=current_user.role,
     )
     return {"message": "Đã xóa học sinh khỏi lớp học thành công."}
+
+
+@router.get(
+    "/{classroom_id}/students/{student_id}/analytics",
+    response_model=LearningAnalyticResponse,
+    summary="Giáo viên xem báo cáo đánh giá học lực của học sinh theo môn học",
+)
+def api_get_student_classroom_analytics(
+    classroom_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LearningAnalyticResponse:
+    classroom = classroom_repository.get(db, classroom_id)
+    if not classroom:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lớp học không tồn tại.",
+        )
+
+    if current_user.role != "admin" and classroom.teacher_id != current_user.id and current_user.id != student_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo học lực này.",
+        )
+
+    analytic = analytic_repository.ensure_for_student_subject(db, student_id, classroom.subject_id)
+    db.commit()
+    db.refresh(analytic)
+    return analytic
+
+
+@router.put(
+    "/{classroom_id}/students/{student_id}/analytics",
+    response_model=LearningAnalyticResponse,
+    summary="Giáo viên cập nhật/đè đánh giá học lực của học sinh",
+)
+def api_update_student_classroom_analytics(
+    classroom_id: int,
+    student_id: int,
+    body: LearningAnalyticUpdate,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+) -> LearningAnalyticResponse:
+    classroom = classroom_repository.get(db, classroom_id)
+    if not classroom:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lớp học không tồn tại.",
+        )
+
+    if current_teacher.role != "admin" and classroom.teacher_id != current_teacher.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ giáo viên chủ quản lớp học mới có quyền sửa đánh giá.",
+        )
+
+    analytic = analytic_repository.ensure_for_student_subject(db, student_id, classroom.subject_id)
+
+    if body.ai_feedback is not None:
+        analytic.ai_feedback = body.ai_feedback
+    if body.weak_topics is not None:
+        analytic.weak_topics = body.weak_topics
+    if body.strong_topics is not None:
+        analytic.strong_topics = body.strong_topics
+
+    db.commit()
+    db.refresh(analytic)
+    return analytic
+
 
 
 from app.models.classroom_chat_message import ClassroomChatMessage

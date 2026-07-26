@@ -35,6 +35,7 @@ export interface ClassroomQuizAttempt {
   correct_count: number;
   wrong_count: number;
   duration_seconds: number;
+  tab_violations_count?: number;
   submitted_at: string;
 }
 
@@ -75,16 +76,19 @@ export const classroomApi = {
     classroomId: number,
     payload: {
       subject_id: number;
-      topic: string;
+      topic?: string;
+      document_id?: number;
       difficulty: string;
       total_questions: number;
       deadline?: string;
+      time_limit_minutes?: number;
+      max_tab_violations?: number;
       include_essay?: boolean;
       essay_count?: number;
     },
   ) =>
     apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate`, payload, {
-      timeout: 120_000,
+      timeout: 300_000,
     }),
 
   generateQuizFromFile: (
@@ -93,8 +97,11 @@ export const classroomApi = {
   ) =>
     apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate-from-file`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
-      timeout: 180_000,
+      timeout: 300_000,
     }),
+
+  getSubjectDocuments: (subjectId: number) =>
+    apiClient.get<StudyDocumentItem[]>(`/documents/?subject_id=${subjectId}`),
 
   getChatMessages: (classroomId: number) =>
     apiClient.get<ClassroomChatMessage[]>(`/classrooms/${classroomId}/chat/messages`),
@@ -106,7 +113,38 @@ export const classroomApi = {
     apiClient.post<{ status: string; last_read_message_id: number }>(
       `/classrooms/${classroomId}/chat/mark-read`
     ),
+
+  getStudentAnalytics: (classroomId: number, studentId: number) =>
+    apiClient.get<StudentAnalyticData>(
+      `/classrooms/${classroomId}/students/${studentId}/analytics`
+    ),
+
+  updateStudentAnalytics: (
+    classroomId: number,
+    studentId: number,
+    payload: {
+      ai_feedback?: string | null;
+      weak_topics?: { topic: string; score?: number }[];
+      strong_topics?: { topic: string; score?: number }[];
+    }
+  ) =>
+    apiClient.put<StudentAnalyticData>(
+      `/classrooms/${classroomId}/students/${studentId}/analytics`,
+      payload
+    ),
 };
+
+export interface StudentAnalyticData {
+  id: number;
+  student_id: number;
+  subject_id: number;
+  average_score: number;
+  quizzes_completed: number;
+  weak_topics: { topic: string; score?: number }[];
+  strong_topics: { topic: string; score?: number }[];
+  ai_feedback: string | null;
+  updated_at: string | null;
+}
 
 export interface ClassroomChatMessage {
   id: number;
@@ -115,6 +153,16 @@ export interface ClassroomChatMessage {
   content: string;
   created_at: string;
   sender: User;
+}
+
+export interface StudyDocumentItem {
+  id: number;
+  title: string;
+  description?: string;
+  file_type: string;
+  file_path: string;
+  subject_id: number;
+  created_at: string;
 }
 
 export default classroomApi;

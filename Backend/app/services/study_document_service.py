@@ -251,7 +251,7 @@ def _fetch_cloudinary_bytes(doc: StudyDocument) -> bytes:
     last_error: Exception | None = None
     for url in dict.fromkeys(candidates):
         try:
-            with urllib.request.urlopen(url, timeout=45) as resp:
+            with urllib.request.urlopen(url, timeout=10) as resp:
                 data = resp.read()
                 if data:
                     return data
@@ -270,17 +270,22 @@ def read_study_document_file(doc: StudyDocument) -> tuple[bytes, str, str]:
     media_type = _media_type_for(doc.file_type)
     filename = f"{doc.title}.{doc.file_type}"
 
-    if doc.file_path.startswith("/static/"):
-        path = _local_disk_path(doc)
-        if not os.path.isfile(path):
-            raise FileNotFoundError(f"Không tìm thấy file local: {path}")
-        with open(path, "rb") as handle:
-            return handle.read(), media_type, filename
-
     if doc.file_path.startswith("http"):
         return _fetch_cloudinary_bytes(doc), media_type, filename
 
-    raise FileNotFoundError("Đường dẫn tài liệu không hợp lệ.")
+    rel = doc.file_path.removeprefix("/static/").removeprefix("static/").removeprefix("uploads/")
+    possible_paths = [
+        os.path.join(_uploads_root(), rel),
+        doc.file_path,
+        os.path.join(os.getcwd(), doc.file_path),
+    ]
+
+    for p in possible_paths:
+        if os.path.isfile(p):
+            with open(p, "rb") as handle:
+                return handle.read(), media_type, filename
+
+    raise FileNotFoundError(f"Tài liệu '{doc.title}' không tìm thấy tập tin thực tế trên hệ thống (đường dẫn: {doc.file_path}).")
 
 
 def get_study_document_for_user(

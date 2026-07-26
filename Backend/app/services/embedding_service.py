@@ -346,3 +346,23 @@ async def vector_search_materials(
 async def invalidate_rag_cache(subject_id: int) -> None:
     """Remove all cached RAG search results for *subject_id*."""
     await invalidate_pattern(f"rag:{subject_id}:*")
+
+
+async def get_document_chunks_from_mongo(db_mongo: Any, document_id: int) -> List[str]:
+    """Fetch pre-chunked text content directly from MongoDB for document_id in 0.01s."""
+    if db_mongo is None:
+        return []
+    try:
+        cursor = db_mongo.study_material_embeddings.find(
+            {"$or": [{"metadata.document_id": document_id}, {"document_id": document_id}]},
+            {"content": 1, "text": 1, "_id": 0}
+        )
+        chunks = []
+        async for doc in cursor:
+            text = doc.get("content") or doc.get("text") or ""
+            if text.strip():
+                chunks.append(text.strip())
+        return chunks
+    except Exception as exc:
+        logger.warning("Failed to fetch chunks from MongoDB for doc #%s: %s", document_id, exc)
+        return []

@@ -309,44 +309,35 @@ Chỉ trả về JSON thuần túy, không kèm markdown, không kèm lời dẫ
         }
     ]
 
-    # Gọi NVIDIA NIM API qua OpenAI SDK để sinh JSON có cấu trúc
-    logger.debug("roadmap_planner: Calling generate_content_deepseek...")
-    response_text = generate_content_deepseek(
-        messages=messages,
-        system_instruction=system_instruction,
-        response_schema=UnifiedGoalPlanResponse,
-        temperature=0.2,
-        tools=None,
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            logger.debug("roadmap_planner: Calling generate_content_deepseek (attempt %d/3)...", attempt + 1)
+            response_text = generate_content_deepseek(
+                messages=messages,
+                system_instruction=system_instruction,
+                response_schema=UnifiedGoalPlanResponse,
+                temperature=0.2 + attempt * 0.1,
+                tools=None,
+            )
+            data = _parse_llm_roadmap_json(response_text)
+            data = normalize_roadmap_keys(data)
+            _reassign_daily_schedule_dates(
+                data,
+                current_dt=current_dt,
+                deadline=deadline,
+                off_days=off_days,
+            )
+            return UnifiedGoalPlanResponse(**data)
+        except ValueError as ve:
+            raise ve
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Roadmap Planner: attempt %d/3 failed: %s", attempt + 1, exc)
+
+    raise RuntimeError(
+        f"Không thể lập lộ trình học tập sau 3 lần thử. Lỗi cuối: {last_error}"
     )
-
-    try:
-        data = _parse_llm_roadmap_json(response_text)
-        data = normalize_roadmap_keys(data)
-        _reassign_daily_schedule_dates(
-            data,
-            current_dt=current_dt,
-            deadline=deadline,
-            off_days=off_days,
-        )
-        return UnifiedGoalPlanResponse(**data)
-    except ValueError as ve:
-        raise ve
-    except Exception as e:
-        raise RuntimeError(
-            f"Lỗi phân tích cú pháp kết quả từ Unified Super Agent: {e}. "
-            f"Kết quả gốc: {response_text[:500]}"
-        )
-    off_dates_list = []
-    temp_dt = current_dt
-    while temp_dt <= deadline:
-        weekday_key = temp_dt.strftime("%a").lower()
-        if weekday_key in off_days:
-            vn_name = WEEKDAY_VN.get(weekday_key, weekday_key)
-            off_dates_list.append(f"{temp_dt.strftime('%Y-%m-%d')} ({vn_name})")
-        temp_dt += timedelta(days=1)
-
-    off_days_str = ", ".join(off_dates_list) if off_dates_list else "Không có"
-    schedule_text = f"Ngày rảnh: {format_available_schedule(available_schedule)}"
 
 
 def generate_lecture_material_agent(

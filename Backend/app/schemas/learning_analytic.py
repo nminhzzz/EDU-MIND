@@ -1,32 +1,32 @@
 """
-Pydantic schemas for the LearningAnalytic model.
+Pydantic schemas for Learning Analytics and Teacher Evaluation Overrides.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
-from pydantic import BaseModel
 
-
-class TopicPerformance(BaseModel):
-    """Represents a weak or strong topic identified by the AI analytics agent."""
+class TopicScoreItem(BaseModel):
     topic: str
-    average_score: Optional[float] = None
-    note: Optional[str] = None
-
-
-from app.schemas.subject import SubjectResponse
+    score: float
 
 
 class LearningAnalyticResponse(BaseModel):
     id: int
     student_id: int
     subject_id: int
-    subject: Optional[SubjectResponse] = None
     average_score: float
     quizzes_completed: int
     weak_topics: List[Dict[str, Any]] = []
     strong_topics: List[Dict[str, Any]] = []
     ai_feedback: Optional[str] = None
+    updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LearningAnalyticUpdate(BaseModel):
+    ai_feedback: Optional[str] = Field(None, description="Lời nhận xét đánh giá")
+    weak_topics: Optional[List[Dict[str, Any]]] = Field(None, description="Danh sách chủ đề yếu")
+    strong_topics: Optional[List[Dict[str, Any]]] = Field(None, description="Danh sách chủ đề mạnh")
