@@ -79,6 +79,35 @@ def blacklist_token(jti: str, expire_seconds: int) -> None:
         logger.error("Redis blacklist write failed: %s", exc)
 
 
+def set_user_active_session(user_id: int, jti: str, expire_seconds: int) -> None:
+    """
+    Set the single active session JTI for a user in Redis.
+    Revokes/blacklists any previous active session JTI for this user instantly.
+    """
+    if not user_id or not jti:
+        return
+    try:
+        r = _get_redis()
+        key = f"active_session:{user_id}"
+        prev_jti = r.get(key)
+        if prev_jti and prev_jti != jti:
+            blacklist_token(prev_jti, expire_seconds)
+        r.setex(key, expire_seconds, jti)
+    except Exception as exc:
+        logger.error("Redis set active session failed: %s", exc)
+
+
+def get_user_active_session(user_id: int) -> Optional[str]:
+    """Get current active session JTI for user from Redis."""
+    if not user_id:
+        return None
+    try:
+        return _get_redis().get(f"active_session:{user_id}")
+    except Exception as exc:
+        logger.error("Redis get active session failed: %s", exc)
+        return None
+
+
 # ---------------------------------------------------------------------------
 # JWT helpers
 # ---------------------------------------------------------------------------
@@ -91,7 +120,7 @@ def _make_token(data: dict, expires_delta: timedelta) -> str:
 
 
 def _decode_token(token: str) -> Optional[dict]:
-    """Decode and verify a JWT; return None if invalid or blacklisted."""
+    """Decode and verify a JWT; return None if invalid, blacklisted, or superseded."""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -99,8 +128,15 @@ def _decode_token(token: str) -> Optional[dict]:
         jti = payload.get("jti")
         if jti and is_token_blacklisted(jti):
             return None
+
+        user_id = payload.get("sub")
+        if jti and user_id:
+            active_jti = get_user_active_session(int(user_id))
+            if active_jti and active_jti != jti:
+                return None
+
         return payload
-    except JWTError:
+    except Exception:
         return None
 
 

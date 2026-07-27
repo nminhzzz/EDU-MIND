@@ -11,6 +11,7 @@ from typing import Callable, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.enums import UserRole
 from app.core.security import (
     blacklist_token,
@@ -19,6 +20,7 @@ from app.core.security import (
     decode_access_token,
     decode_refresh_token,
     hash_password,
+    set_user_active_session,
     verify_password,
 )
 from app.models.user import User
@@ -84,6 +86,16 @@ def authenticate_user(db: Session, body: LoginRequest) -> tuple[str, str]:
 
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Single Active Session: Register access_token JTI in Redis & revoke previous session
+    payload = decode_access_token(access_token)
+    if payload and payload.get("jti"):
+        set_user_active_session(
+            user.id,
+            payload["jti"],
+            settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+
     return access_token, refresh_token
 
 
@@ -123,6 +135,16 @@ def refresh_user_tokens(db: Session, refresh_token: str) -> tuple[str, str]:
 
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Single Active Session: Register new access_token JTI in Redis
+    new_payload = decode_access_token(access_token)
+    if new_payload and new_payload.get("jti"):
+        set_user_active_session(
+            user.id,
+            new_payload["jti"],
+            settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+
     return access_token, new_refresh_token
 
 
