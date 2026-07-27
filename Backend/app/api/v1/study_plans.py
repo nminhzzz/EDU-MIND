@@ -5,7 +5,7 @@ API quản lý kế hoạch học tập chi tiết hàng ngày (Study Plans).
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_student, get_db
@@ -51,11 +51,23 @@ def get_my_plans(
 )
 def get_plan_detail(
     plan_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ):
     try:
-        return get_student_plan(db, plan_id, current_user.id)
+        plan = get_student_plan(db, plan_id, current_user.id)
+        from app.repositories.quiz_repository import quiz_repository
+        has_quiz = bool(quiz_repository.get_by_study_plan_id(db, plan.id))
+        
+        if plan.ai_generated and (not plan.rag_content or not has_quiz):
+            from app.services.unified.materials import generate_single_plan_material_bg
+            background_tasks.add_task(
+                generate_single_plan_material_bg,
+                plan.id,
+                current_user.id,
+            )
+        return plan
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

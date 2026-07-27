@@ -11,17 +11,17 @@ function getOptionStyle(
   isCorrect: boolean,
 ): string {
   if (!isReview && isSelected) {
-    return "border-indigo-600 dark:border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400";
+    return "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-indigo-500/10";
   }
   if (isReview) {
     if (isCorrect) {
-      return "border-emerald-600 dark:border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400";
+      return "border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold shadow-sm shadow-emerald-500/10";
     }
     if (isSelected && !isCorrect) {
-      return "border-red-650 dark:border-red-500 bg-red-50/10 dark:bg-red-950/20 text-red-650 dark:text-red-400";
+      return "border-red-500 bg-red-50/80 dark:bg-red-950/40 text-red-900 dark:text-red-200 font-bold shadow-sm shadow-red-500/10";
     }
   }
-  return "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-350 dark:hover:border-zinc-700";
+  return "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700";
 }
 
 interface QuizQuestionPanelProps {
@@ -266,9 +266,9 @@ export function QuizQuestionPanel({
                       <h4 className="text-xs font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider">
                         Gợi ý đáp án / Bài mẫu gợi ý
                       </h4>
-                      <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-semibold whitespace-pre-wrap">
+                      <div className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-semibold whitespace-pre-wrap">
                         <MathRenderer content={question.correct_answer || ""} />
-                      </p>
+                      </div>
                     </div>
 
                     {question.explanation && (
@@ -276,9 +276,9 @@ export function QuizQuestionPanel({
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                           Tiêu chí chấm điểm
                         </span>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
+                        <div className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
                           <MathRenderer content={question.explanation || ""} />
-                        </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -296,12 +296,34 @@ export function QuizQuestionPanel({
                       key={opt.key}
                       onClick={() => onSelectOption(questionIndex, opt.key)}
                       disabled={isReview}
-                      className={`w-full flex items-start gap-4 p-4 border rounded-xl text-left transition-all ${optionStyle}`}
+                      className={`w-full flex items-center gap-3.5 p-4 border rounded-2xl text-left transition-all shadow-sm ${
+                        !isReview && isSelected ? "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-indigo-500/10" : optionStyle
+                      }`}
                     >
-                      <span className="font-extrabold text-sm">{opt.key}.</span>
-                      <span className="text-sm font-semibold">
-                        <MathRenderer content={opt.value || ""} />
+                      <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black transition-all shrink-0 ${
+                        isSelected && !isReview
+                          ? "bg-indigo-600 border border-indigo-600 text-white shadow-md shadow-indigo-500/25"
+                          : isReview && isCorrect
+                          ? "bg-emerald-600 text-white"
+                          : isReview && isSelected && !isCorrect
+                          ? "bg-red-600 text-white"
+                          : "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
+                      }`}>
+                        {opt.key}
                       </span>
+                      <div className="flex-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                        <MathRenderer content={opt.value || ""} />
+                      </div>
+                      {isReview && isCorrect && (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                          Đáp án đúng ✓
+                        </span>
+                      )}
+                      {isReview && isSelected && !isCorrect && (
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 shrink-0">
+                          Bạn đã chọn (Sai) ✗
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -311,9 +333,9 @@ export function QuizQuestionPanel({
                     <h4 className="text-xs font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider">
                       Giải thích đáp án AI
                     </h4>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
+                    <div className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
                       <MathRenderer content={question.explanation || ""} />
-                    </p>
+                    </div>
                   </div>
                 )}
               </div>

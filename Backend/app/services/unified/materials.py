@@ -171,7 +171,7 @@ async def _generate_quiz_for_plan(db, db_mongo, plan, student_id: int, subject_i
             subject_id=subject_id,
             topic=plan.title,
             difficulty="medium",
-            total_questions=5,
+            total_questions=10,
             study_plan_id=plan.id,
         )
         logger.info("[BG] Quiz generated for plan %d using its rag_content", plan.id)
@@ -219,16 +219,15 @@ async def generate_materials_and_quizzes_for_plans_bg(
             len(plans),
         )
 
-        # Phase 1: generate lecture content for all plans first.
+        # Sinh nối tiếp (Tài liệu -> Đề thi) cho từng task để học sinh mở task nào là có ngay bài thi cho task đó
         for plan in plans_to_generate:
-            await _generate_and_save_rag_content(db, plan, subject_id, sys_instruction)
-            await asyncio.sleep(_BATCH_SLEEP_SECONDS)
+            if not plan.rag_content:
+                await _generate_and_save_rag_content(db, plan, subject_id, sys_instruction)
+                await asyncio.sleep(_BATCH_SLEEP_SECONDS)
 
-        # Phase 2: generate quizzes once all lecture content is ready.
-        logger.info("[BG] All RAG materials generated. Starting quiz generation phase...")
-        for plan in plans_to_generate:
-            await _generate_quiz_for_plan(db, db_mongo, plan, student_id, subject_id)
-            await asyncio.sleep(_BATCH_SLEEP_SECONDS)
+            if not quiz_repository.get_by_study_plan_id(db, plan.id):
+                await _generate_quiz_for_plan(db, db_mongo, plan, student_id, subject_id)
+                await asyncio.sleep(_BATCH_SLEEP_SECONDS)
 
         logger.info("[BG] Finished background generation for goal %d", goal_id)
 
@@ -238,3 +237,37 @@ async def generate_materials_and_quizzes_for_plans_bg(
         )
     finally:
         db.close()
+
+
+async def generate_single_plan_material_bg(plan_id: int, student_id: int) -> None:
+    """
+    Background task: generate lecture content (rag_content) and quiz for a SINGLE plan on-demand.
+    Triggered when a student clicks on a daily task whose material or quiz is not yet ready.
+    """
+    db = SessionLocal()
+    db_mongo = get_mongodb_db()
+    try:
+        plan = plan_repository.get(db, plan_id)
+        if not plan:
+            return
+
+        subject_id = plan.subject_id
+        subject_obj = subject_repository.get(db, subject_id) if subject_id else None
+        subject_name = subject_obj.name if subject_obj else ""
+        sys_instruction = _lecture_system_instruction(_is_theory_subject(subject_name))
+
+        if not plan.rag_content:
+            logger.info("[BG] On-demand generating material for plan %d: %s", plan.id, plan.title)
+            await _generate_and_save_rag_content(db, plan, subject_id or 0, sys_instruction)
+            db.refresh(plan)
+
+        if not quiz_repository.get_by_study_plan_id(db, plan.id):
+            logger.info("[BG] On-demand generating quiz for plan %d: %s", plan.id, plan.title)
+            await _generate_quiz_for_plan(db, db_mongo, plan, student_id, subject_id or 0)
+
+        logger.info("[BG] On-demand generation completed for plan %d", plan.id)
+    except Exception as exc:
+        logger.exception("[BG] Error in on-demand generation for plan %d: %s", plan_id, exc)
+    finally:
+        db.close()
+

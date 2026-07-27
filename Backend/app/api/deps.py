@@ -112,6 +112,7 @@ class TokenUser:
 
     id: int
     role: UserRole
+    sid: Optional[str] = None
 
 
 def _invalid_credentials() -> HTTPException:
@@ -134,11 +135,12 @@ def get_token_user(token: str = Depends(get_token_from_request)) -> TokenUser:
 
     user_id = payload.get("sub")
     role = payload.get("role")
+    sid = payload.get("sid")
     if user_id is None or role is None:
         raise _invalid_credentials()
 
     try:
-        return TokenUser(id=int(user_id), role=UserRole(role))
+        return TokenUser(id=int(user_id), role=UserRole(role), sid=sid)
     except ValueError as exc:
         raise _invalid_credentials() from exc
 

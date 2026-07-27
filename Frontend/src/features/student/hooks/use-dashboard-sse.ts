@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { useSSE } from "./use-sse";
 import type { StudentDashboardStats } from "@/features/student/types";
 
-type DashboardSSEPayload = StudentDashboardStats & { error?: string };
+type DashboardSSEPayload = StudentDashboardStats & { error?: string; message?: string };
 
 export function useDashboardSSE() {
   const [stats, setStats] = useState<StudentDashboardStats | null>(null);
@@ -13,6 +14,13 @@ export function useDashboardSSE() {
 
   const handleMessage = useCallback((parsed: DashboardSSEPayload) => {
     if (parsed.error) {
+      if (parsed.error === "SESSION_REVOKED") {
+        toast.error(parsed.message || "Tài khoản của bạn vừa đăng nhập ở một thiết bị khác. Vui lòng đăng nhập lại.");
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return;
+      }
       setStatsError(parsed.error);
     } else {
       setStats(parsed);

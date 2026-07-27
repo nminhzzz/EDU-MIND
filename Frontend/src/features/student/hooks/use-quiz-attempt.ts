@@ -57,8 +57,21 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     setLoading(true);
     try {
       const reviewRes = await quizService.getReview(quizId);
-      setQuiz(normalizeQuiz(reviewRes.data));
+      const quizData = normalizeQuiz(reviewRes.data);
+      setQuiz(quizData);
       setIsReview(true);
+
+      // Nạp danh sách câu trả lời học sinh đã chọn từ lượt làm bài gần nhất
+      const userAnswers = quizData.latest_attempt?.answers || (quizData.latest_attempt as any)?.student_answers;
+      if (userAnswers && Array.isArray(userAnswers)) {
+        const answersMap: Record<number, string> = {};
+        userAnswers.forEach((sa: any) => {
+          if (sa.question_index !== undefined && sa.answer !== undefined) {
+            answersMap[sa.question_index] = sa.answer;
+          }
+        });
+        setSelectedAnswers(answersMap);
+      }
     } catch {
       try {
         const quizRes = await quizService.getById(quizId);

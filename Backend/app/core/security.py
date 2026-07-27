@@ -79,26 +79,23 @@ def blacklist_token(jti: str, expire_seconds: int) -> None:
         logger.error("Redis blacklist write failed: %s", exc)
 
 
-def set_user_active_session(user_id: int, jti: str, expire_seconds: int) -> None:
+def set_user_active_session(user_id: int, sid: str, expire_seconds: int) -> None:
     """
-    Set the single active session JTI for a user in Redis.
-    Revokes/blacklists any previous active session JTI for this user instantly.
+    Set the single active session ID (sid) for a user in Redis.
+    Supercedes any previous active session ID for this user instantly.
     """
-    if not user_id or not jti:
+    if not user_id or not sid:
         return
     try:
         r = _get_redis()
         key = f"active_session:{user_id}"
-        prev_jti = r.get(key)
-        if prev_jti and prev_jti != jti:
-            blacklist_token(prev_jti, expire_seconds)
-        r.setex(key, expire_seconds, jti)
+        r.setex(key, expire_seconds, sid)
     except Exception as exc:
         logger.error("Redis set active session failed: %s", exc)
 
 
 def get_user_active_session(user_id: int) -> Optional[str]:
-    """Get current active session JTI for user from Redis."""
+    """Get current active session ID (sid) for user from Redis."""
     if not user_id:
         return None
     try:
@@ -120,7 +117,7 @@ def _make_token(data: dict, expires_delta: timedelta) -> str:
 
 
 def _decode_token(token: str) -> Optional[dict]:
-    """Decode and verify a JWT; return None if invalid, blacklisted, or superseded."""
+    """Decode and verify a JWT; return None if invalid, blacklisted, or superseded by a newer login."""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -129,10 +126,11 @@ def _decode_token(token: str) -> Optional[dict]:
         if jti and is_token_blacklisted(jti):
             return None
 
+        sid = payload.get("sid")
         user_id = payload.get("sub")
-        if jti and user_id:
-            active_jti = get_user_active_session(int(user_id))
-            if active_jti and active_jti != jti:
+        if sid and user_id:
+            active_sid = get_user_active_session(int(user_id))
+            if active_sid and active_sid != sid:
                 return None
 
         return payload

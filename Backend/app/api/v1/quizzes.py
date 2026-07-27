@@ -118,7 +118,7 @@ async def generate_quiz_for_plan(
             subject_id=plan.subject_id,
             topic=plan.title,
             difficulty="medium",
-            total_questions=5,
+            total_questions=10,
             study_plan_id=study_plan_id,
         )
         commit_or_rollback(db)

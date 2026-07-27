@@ -73,26 +73,40 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
     }
   };
 
-  // Kiểm tra xem đã có đề thi trắc nghiệm được liên kết sẵn với task này chưa
+  // Kiểm tra xem đã có đề thi trắc nghiệm được liên kết sẵn với task này chưa (polling 4s/lần nếu chưa có)
   useEffect(() => {
     let active = true;
+    let interval: NodeJS.Timeout | null = null;
+    let loaded = false;
+
     const fetchExistingQuiz = async () => {
+      if (loaded) return;
       try {
         const res = await quizService.getByPlanId(studyPlanId);
-        if (active) {
+        if (active && res.data) {
+          loaded = true;
           setQuiz(toStudentQuiz(res.data));
           setStartTime(Date.now());
+          if (interval) clearInterval(interval);
         }
       } catch (err) {
         // 404 -> Chưa có đề thi được sinh sẵn cho nhiệm vụ cụ thể này
-        console.log("Chưa có đề thi liên kết với task:", studyPlanId);
       } finally {
         if (active) setCheckingExisting(false);
       }
     };
+
     fetchExistingQuiz();
+
+    interval = setInterval(() => {
+      if (!loaded && active) {
+        fetchExistingQuiz();
+      }
+    }, 4000);
+
     return () => {
       active = false;
+      if (interval) clearInterval(interval);
     };
   }, [studyPlanId]);
 
@@ -303,7 +317,9 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
                     {q.explanation && (
                       <div className="mt-1 bg-zinc-50 dark:bg-zinc-950/20 p-2 rounded text-zinc-500">
                         <span className="font-bold block text-[8px] uppercase">Giải thích:</span>
-                        <p className="font-semibold">{q.explanation}</p>
+                        <div className="font-semibold">
+                          <MathRenderer content={q.explanation} />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -425,31 +441,36 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
           </div>
         ) : (
           activeQuestion && (
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-zinc-850 dark:text-zinc-100 leading-relaxed">
-                {activeQuestion.question_text}
-              </h4>
-              <div className="space-y-2">
+            <div className="space-y-5">
+              <div className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100 leading-relaxed">
+                <MathRenderer content={activeQuestion.question_text || ""} />
+              </div>
+
+              <div className="space-y-3">
                 {activeQuestion.options?.map((opt) => {
                   const isSelected = selectedAnswers[currentIdx] === opt.key;
                   return (
                     <button
                       key={opt.key}
                       onClick={() => handleSelectAnswer(opt.key)}
-                      className={`w-full p-3 text-left text-xs rounded-xl border transition-all cursor-pointer flex gap-3 ${
+                      className={`w-full p-4 text-left text-sm rounded-2xl border transition-all cursor-pointer flex items-center gap-3.5 shadow-sm ${
                         isSelected
-                          ? "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 font-extrabold"
-                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                          ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-indigo-500/10"
+                          : "bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700"
                       }`}
                     >
-                      <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold border transition-colors ${
-                        isSelected
-                          ? "bg-indigo-600 border-indigo-600 text-white"
-                          : "bg-zinc-50 dark:bg-zinc-855 border-zinc-200 dark:border-zinc-700 text-zinc-400"
-                      }`}>
+                      <span
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black transition-all ${
+                          isSelected
+                            ? "bg-indigo-600 border border-indigo-600 text-white shadow-md shadow-indigo-500/25"
+                            : "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
+                        }`}
+                      >
                         {opt.key}
                       </span>
-                      <span className="flex-1 font-semibold">{opt.value}</span>
+                      <div className="flex-1 font-semibold text-zinc-800 dark:text-zinc-200">
+                        <MathRenderer content={opt.value || ""} />
+                      </div>
                     </button>
                   );
                 })}

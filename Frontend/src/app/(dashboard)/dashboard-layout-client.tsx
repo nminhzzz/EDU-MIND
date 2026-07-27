@@ -20,6 +20,9 @@ export function DashboardLayoutClient({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Kiểm tra xem người dùng có đang ở trong trang làm bài thi cụ thể không (/student/quizzes/[id])
+  const isQuizPage = pathname.startsWith("/student/quizzes/") && pathname !== "/student/quizzes";
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       const params = new URLSearchParams({ redirect: pathname });
@@ -104,9 +107,9 @@ export function DashboardLayoutClient({
         </main>
       </div>
 
-      {/* Floating Chat Widgets */}
-      {user?.role === "student" && <FloatingTutorChat />}
-      {(user?.role === "student" || user?.role === "teacher") && (
+      {/* Floating Chat Widgets — Ẩn hoàn toàn khi học sinh đang trong trang làm bài thi */}
+      {!isQuizPage && user?.role === "student" && <FloatingTutorChat />}
+      {!isQuizPage && (user?.role === "student" || user?.role === "teacher") && (
         <FloatingClassroomChat />
       )}
     </div>

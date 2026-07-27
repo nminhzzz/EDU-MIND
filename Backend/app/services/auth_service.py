@@ -84,17 +84,18 @@ def authenticate_user(db: Session, body: LoginRequest) -> tuple[str, str]:
             detail="Tài khoản đã bị vô hiệu hóa.",
         )
 
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
-    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    import uuid
+    sid = uuid.uuid4().hex
 
-    # Single Active Session: Register access_token JTI in Redis & revoke previous session
-    payload = decode_access_token(access_token)
-    if payload and payload.get("jti"):
-        set_user_active_session(
-            user.id,
-            payload["jti"],
-            settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role, "sid": sid})
+    refresh_token = create_refresh_token(data={"sub": str(user.id), "sid": sid})
+
+    # Single Active Session: Register session ID (sid) in Redis
+    set_user_active_session(
+        user.id,
+        sid,
+        settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
 
     return access_token, refresh_token
 
@@ -131,19 +132,18 @@ def refresh_user_tokens(db: Session, refresh_token: str) -> tuple[str, str]:
             detail="Tài khoản không tồn tại hoặc đã bị khóa.",
         )
 
+    sid = payload.get("sid") or uuid.uuid4().hex
     _revoke_token(refresh_token, decode_refresh_token)
 
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
-    new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role, "sid": sid})
+    new_refresh_token = create_refresh_token(data={"sub": str(user.id), "sid": sid})
 
-    # Single Active Session: Register new access_token JTI in Redis
-    new_payload = decode_access_token(access_token)
-    if new_payload and new_payload.get("jti"):
-        set_user_active_session(
-            user.id,
-            new_payload["jti"],
-            settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
+    # Single Active Session: Maintain session ID (sid) in Redis
+    set_user_active_session(
+        user.id,
+        sid,
+        settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
 
     return access_token, new_refresh_token
 
