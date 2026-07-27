@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Sun, Moon } from "lucide-react";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -18,7 +19,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDarkSystem = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
+
     if (savedTheme === "dark" || (!savedTheme && isDarkSystem)) {
       setTheme("dark");
       document.documentElement.classList.add("dark");
@@ -66,22 +67,23 @@ export function Header({ onMenuToggle }: HeaderProps) {
       <div className="flex-1" />
 
       <div className="flex items-center gap-4">
-        {/* Nút Dark Mode */}
+        {/* Nút Chuyển đổi Giao diện Sáng / Tối */}
         <button
           onClick={toggleTheme}
-          className="px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
-          title="Chuyển chế độ Sáng/Tối"
+          className="flex items-center gap-2 px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all cursor-pointer shadow-sm active:scale-95"
+          title="Chuyển đổi giao diện Sáng / Tối"
         >
-          {theme === "light" ? "Giao diện: Tối" : "Giao diện: Sáng"}
-        </button>
-
-        {/* Nút Thông báo */}
-        <button 
-          className="px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer relative"
-          title="Thông báo"
-        >
-          Thông báo
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          {theme === "light" ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-500 fill-amber-500/20" />
+              <span>Giao diện: Sáng</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-indigo-400 fill-indigo-400/20" />
+              <span>Giao diện: Tối</span>
+            </>
+          )}
         </button>
 
         {/* Khung User Profile Dropdown */}
@@ -106,8 +108,8 @@ export function Header({ onMenuToggle }: HeaderProps) {
           {dropdownOpen && (
             <>
               {/* Overlay để đóng dropdown */}
-              <div 
-                className="fixed inset-0 z-40" 
+              <div
+                className="fixed inset-0 z-40"
                 onClick={() => setDropdownOpen(false)}
               />
               <div className="absolute right-0 mt-2.5 w-48 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800/80 rounded-2xl shadow-xl z-50 p-2 py-1.5 animate-fadeIn">

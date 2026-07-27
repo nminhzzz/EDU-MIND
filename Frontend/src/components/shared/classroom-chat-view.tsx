@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useClassroomChat } from "@/features/student/hooks/use-classroom-chat";
-import { Send, Loader2, Sparkles, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import { Send, Loader2, Sparkles, Wifi, WifiOff, Users, MessageSquare } from "lucide-react";
 
 interface ClassroomChatViewProps {
   classroomId: number;
@@ -11,7 +11,16 @@ interface ClassroomChatViewProps {
 
 export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
   const { user: currentUser } = useAuth();
-  const { messages, loading, connected, sendMessage } = useClassroomChat(classroomId);
+  const {
+    messages,
+    loading,
+    connected,
+    onlineCount,
+    typingUsers,
+    sendMessage,
+    sendTyping,
+  } = useClassroomChat(classroomId);
+
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -22,7 +31,7 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, loading]);
+  }, [messages, loading, typingUsers]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +39,11 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
     if (!trimmed) return;
     sendMessage(trimmed);
     setInputText("");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    sendTyping();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -50,7 +64,7 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
 
   return (
     <div className="flex flex-col h-[480px] bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden text-left">
-      {/* 1. Header Bar: Connection Status indicator */}
+      {/* 1. Header Bar: Connection & Online Presence indicator */}
       <div className="px-4 py-2.5 bg-white dark:bg-zinc-900 border-b border-zinc-150 dark:border-zinc-800/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200">Phòng thảo luận lớp</span>
@@ -65,6 +79,13 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
               Đang kết nối lại...
             </span>
           )}
+        </div>
+
+        {/* Online Count Badge */}
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+          <Users className="w-3 h-3" />
+          <span>{onlineCount > 0 ? `${onlineCount} đang online` : "Chờ kết nối"}</span>
         </div>
       </div>
 
@@ -135,6 +156,15 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
             );
           })
         )}
+
+        {/* Typing indicator signal */}
+        {typingUsers.length > 0 && (
+          <div className="flex items-center gap-2 text-[10px] text-indigo-600 dark:text-indigo-400 font-medium italic animate-pulse px-2">
+            <MessageSquare className="w-3 h-3 animate-bounce" />
+            <span>{typingUsers.join(", ")} đang gõ...</span>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -143,7 +173,7 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
         <textarea
           rows={1}
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Nhập nội dung thảo luận với lớp học..."
           className="flex-1 max-h-24 min-h-[38px] p-2.5 text-xs bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none font-medium text-zinc-800 dark:text-zinc-100"
@@ -159,3 +189,4 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
     </div>
   );
 }
+

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -25,7 +27,7 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-code, pre {
+code,
+pre {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
 }
-

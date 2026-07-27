@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { userApi } from "@/services/user";
 import { StudentProfileDetail, StudentGrade } from "@/types/user";
-import { 
-  User, Mail, GraduationCap, Clock, Calendar, Brain, Award, AlertTriangle, 
-  Sparkles, CheckCircle2, BookOpen, Compass, ChevronRight, BarChart3, Loader2 
+import {
+  User, Mail, GraduationCap, Clock, Calendar, Brain, Award, AlertTriangle,
+  Sparkles, CheckCircle2, BookOpen, Compass, ChevronRight, BarChart3, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -74,8 +74,8 @@ export default function StudentProfilePage() {
   // Format schedule
   const activeDays = preference?.available_schedule
     ? Object.entries(preference.available_schedule)
-        .filter(([_, active]) => active)
-        .map(([day]) => WEEKDAY_VN[day] || day)
+      .filter(([_, active]) => active)
+      .map(([day]) => WEEKDAY_VN[day] || day)
     : [];
 
   return (
@@ -137,8 +137,8 @@ export default function StudentProfilePage() {
                     {preference?.preferred_study_time === "morning"
                       ? "Buổi Sáng"
                       : preference?.preferred_study_time === "afternoon"
-                      ? "Buổi Chiều"
-                      : "Buổi Tối"}
+                        ? "Buổi Chiều"
+                        : "Buổi Tối"}
                   </p>
                 </div>
               </div>
@@ -180,11 +180,11 @@ export default function StudentProfilePage() {
                   const score = analytic.average_score;
                   const isHigh = score >= 8.0;
                   const isMedium = score >= 5.0;
-                  const ringColor = isHigh 
-                    ? "text-emerald-500 dark:text-emerald-400" 
-                    : isMedium 
-                    ? "text-indigo-500 dark:text-indigo-400" 
-                    : "text-amber-500 dark:text-amber-400";
+                  const ringColor = isHigh
+                    ? "text-emerald-500 dark:text-emerald-400"
+                    : isMedium
+                      ? "text-indigo-500 dark:text-indigo-400"
+                      : "text-amber-500 dark:text-amber-400";
 
                   return (
                     <div key={analytic.id} className="p-5 rounded-2xl border border-zinc-150 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-5">

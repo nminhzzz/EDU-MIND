@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  MessageSquare, 
-  X, 
-  Send, 
-  Bot, 
-  User, 
-  Loader2, 
-  Plus, 
-  History, 
-  ChevronLeft, 
-  Trash2 
+import {
+  MessageSquare,
+  X,
+  Send,
+  Bot,
+  User,
+  Loader2,
+  Plus,
+  History,
+  ChevronLeft,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/features/student/hooks/use-chat";
@@ -24,7 +24,7 @@ export function FloatingTutorChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [showSessionsList, setShowSessionsList] = useState(false);
   const [showNewChatForm, setShowNewChatForm] = useState(false);
-  
+
   const chat = useChat();
   const [subjectId, setSubjectId] = useState("");
   const [newTitle, setNewTitle] = useState("");
@@ -49,21 +49,21 @@ export function FloatingTutorChat() {
       const selectedSub = chat.subjects.find((s) => s.id === Number(subjectId));
       const subName = selectedSub ? selectedSub.name : "";
       const finalTitle = newTitle.trim() || `Thảo luận môn ${subName}`;
-      
+
       const payload = {
         subject_id: Number(subjectId),
         title: finalTitle,
       };
 
       const res = await chatService.createSession(payload);
-      
+
       const newSession: ChatSession = {
         session_id: res.data,
         title: payload.title,
         subject_id: payload.subject_id,
         created_at: new Date().toISOString(),
       };
-      
+
       handleSessionCreated(newSession);
       setSubjectId("");
       setNewTitle("");
@@ -127,8 +127,8 @@ export function FloatingTutorChat() {
                     {showNewChatForm
                       ? "Trò chuyện mới"
                       : showSessionsList
-                      ? "Lịch sử trò chuyện"
-                      : chat.activeSession?.title || "Gia sư ảo AI"}
+                        ? "Lịch sử trò chuyện"
+                        : chat.activeSession?.title || "Gia sư ảo AI"}
                   </span>
                 </div>
               </div>
@@ -216,11 +216,10 @@ export function FloatingTutorChat() {
                     chat.sessions.map((session) => (
                       <div
                         key={session.session_id}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
-                          chat.activeSession?.session_id === session.session_id
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${chat.activeSession?.session_id === session.session_id
                             ? "bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200"
                             : "bg-white border-zinc-200/80 dark:bg-zinc-900 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                        }`}
+                          }`}
                         onClick={() => {
                           chat.loadMessages(session);
                           setShowSessionsList(false);
@@ -271,16 +270,14 @@ export function FloatingTutorChat() {
                         chat.messages.map((msg, idx) => (
                           <div
                             key={idx}
-                            className={`flex items-start gap-2.5 ${
-                              msg.role === "user" ? "flex-row-reverse" : ""
-                            }`}
+                            className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""
+                              }`}
                           >
                             <div
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold border shrink-0 ${
-                                msg.role === "user"
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold border shrink-0 ${msg.role === "user"
                                   ? "bg-indigo-600 border-indigo-700 text-white"
                                   : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-indigo-600"
-                              }`}
+                                }`}
                             >
                               {msg.role === "user" ? (
                                 <User className="w-3.5 h-3.5" />
@@ -289,11 +286,10 @@ export function FloatingTutorChat() {
                               )}
                             </div>
                             <div
-                              className={`max-w-[78%] p-2.5 rounded-xl text-xs leading-relaxed ${
-                                msg.role === "user"
+                              className={`max-w-[78%] p-2.5 rounded-xl text-xs leading-relaxed ${msg.role === "user"
                                   ? "bg-indigo-600 text-white rounded-tr-none whitespace-pre-wrap break-words"
                                   : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none markdown-container"
-                              }`}
+                                }`}
                             >
                               {msg.role === "user" ? (
                                 msg.content

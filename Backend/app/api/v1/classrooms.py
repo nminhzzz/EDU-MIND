@@ -472,7 +472,7 @@ async def websocket_classroom_chat(
     
     # Register connection in ConnectionManager
     from app.services.classroom_chat_service import classroom_chat_manager
-    await classroom_chat_manager.connect(classroom_id, websocket)
+    await classroom_chat_manager.connect(classroom_id, websocket, user_id)
     
     # Get user model for broadcast sender info
     user = db.query(User).filter(User.id == user_id).first()
@@ -485,6 +485,21 @@ async def websocket_classroom_chat(
         while True:
             # Receive message from client
             data = await websocket.receive_json()
+            msg_type = data.get("type", "message")
+
+            if msg_type == "ping":
+                await websocket.send_json({"type": "pong"})
+                continue
+
+            if msg_type == "typing":
+                await classroom_chat_manager.broadcast(classroom_id, {
+                    "type": "typing",
+                    "classroom_id": classroom_id,
+                    "user_id": user_id,
+                    "user_name": user.full_name,
+                })
+                continue
+
             content = data.get("content", "").strip()
             if not content:
                 continue
@@ -500,8 +515,9 @@ async def websocket_classroom_chat(
             db.commit()
             db.refresh(msg)
             
-            # Broadcast to all active clients in room
+            # Broadcast to all active clients in room via Redis Pub/Sub
             broadcast_payload = {
+                "type": "chat_message",
                 "id": msg.id,
                 "classroom_id": msg.classroom_id,
                 "sender_id": msg.sender_id,
@@ -524,3 +540,4 @@ async def websocket_classroom_chat(
     except Exception as e:
         print(f"WS error: {e}")
         await classroom_chat_manager.disconnect(classroom_id, websocket)
+

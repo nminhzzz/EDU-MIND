@@ -37,7 +37,7 @@ export default function AdminUsersPage() {
       const params: Record<string, any> = {};
       if (roleFilter) params.role = roleFilter;
       if (statusFilter) params.is_active = statusFilter === "active";
-      
+
       const res = await apiClient.get<AdminUser[]>("/users/admin/users", { params });
       setUsers(res.data);
     } catch (err: unknown) {
@@ -103,7 +103,7 @@ export default function AdminUsersPage() {
 
   const handleDeleteUser = async (u: AdminUser) => {
     if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản ${u.email} khỏi hệ thống?`)) return;
-    
+
     try {
       await apiClient.delete(`/users/admin/users/${u.id}`);
       toast.success("Đã xóa tài khoản khỏi cơ sở dữ liệu.");
@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
             QUẢN LÝ THÀNH VIÊN
           </h1>
         </div>
-        
+
         <button
           onClick={handleOpenAddModal}
           className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-wider transition-all shadow-lg shadow-indigo-500/15 cursor-pointer flex items-center justify-center"

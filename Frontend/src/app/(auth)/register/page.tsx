@@ -110,22 +110,20 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setRole("student")}
-                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${
-                    role === "student"
+                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${role === "student"
                       ? "text-indigo-600 dark:text-white bg-white dark:bg-zinc-800 shadow"
                       : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
+                    }`}
                 >
                   Học sinh
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole("teacher")}
-                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${
-                    role === "teacher"
+                  className={`relative py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer z-10 ${role === "teacher"
                       ? "text-indigo-600 dark:text-white bg-white dark:bg-zinc-800 shadow"
                       : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
+                    }`}
                 >
                   Giáo viên
                 </button>

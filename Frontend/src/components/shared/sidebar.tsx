@@ -15,7 +15,7 @@ interface SidebarItem {
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  
+
   const role = user?.role || "student";
 
   const studentItems: SidebarItem[] = [
@@ -68,16 +68,15 @@ export function Sidebar() {
       <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-150 relative ${
-                isActive
+              className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-150 relative ${isActive
                   ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/20"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/30"
-              }`}
+                }`}
             >
               {/* Thanh Highlight Active bên cạnh */}
               {isActive && (

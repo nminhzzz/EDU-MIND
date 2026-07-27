@@ -22,6 +22,7 @@ from app.services.auth_service import (
     revoke_user_tokens,
 )
 from app.services.email_service import send_welcome_email
+from typing import Annotated
 
 router = APIRouter()
 
@@ -130,11 +131,15 @@ def logout(
     return {"message": "Đăng xuất thành công!"}
 
 
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
 @router.get(
     "/me",
     response_model=UserResponse,
     summary="Xem thông tin tài khoản đang đăng nhập",
 )
-def get_me(current_user: User = Depends(get_current_user)) -> User:
+def get_me(current_user: CurrentUserDep):
     """Return the currently authenticated user."""
     return current_user
+

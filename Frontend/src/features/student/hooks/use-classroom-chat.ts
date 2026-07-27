@@ -9,10 +9,16 @@ export function useClassroomChat(classroomId: number) {
   const [messages, setMessages] = useState<ClassroomChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectDelayRef = useRef(1000); // Start reconnect delay at 1s
+  const typingTimerRef = useRef<{ [name: string]: NodeJS.Timeout }>({});
+  const lastTypingSentRef = useRef<number>(0);
+  const reconnectDelayRef = useRef(1000);
 
   // 1. Fetch Chat History
   const fetchHistory = useCallback(async () => {
@@ -31,7 +37,6 @@ export function useClassroomChat(classroomId: number) {
   const connectWs = useCallback(() => {
     if (socketRef.current) return;
 
-    // Build the dynamic WebSocket URL
     const apiBase = getApiBaseUrl();
     const wsBase = apiBase.replace(/^http/, "ws");
     const wsUrl = `${wsBase}/classrooms/${classroomId}/chat/ws`;
@@ -43,9 +48,8 @@ export function useClassroomChat(classroomId: number) {
       if (socketRef.current !== ws) return;
       console.log("WebSocket Classroom Chat Connected!");
       setConnected(true);
-      reconnectDelayRef.current = 1000; // Reset delay on success
+      reconnectDelayRef.current = 1000;
 
-      // Heartbeat every 30 seconds to keep connection alive through reverse proxies
       heartbeatIntervalRef.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "ping" }));
@@ -56,13 +60,37 @@ export function useClassroomChat(classroomId: number) {
     ws.onmessage = (event) => {
       if (socketRef.current !== ws) return;
       try {
-        const message = JSON.parse(event.data);
-        // Append new broadcasted message to list
-        if (message && message.id) {
+        const payload = JSON.parse(event.data);
+
+        // Handle online presence payload
+        if (payload && payload.type === "online_presence") {
+          setOnlineUserIds(payload.online_user_ids || []);
+          setOnlineCount(payload.online_count || 0);
+          return;
+        }
+
+        // Handle typing status payload
+        if (payload && payload.type === "typing") {
+          const userName = payload.user_name;
+          if (userName) {
+            setTypingUsers((prev) => Array.from(new Set([...prev, userName])));
+            
+            if (typingTimerRef.current[userName]) {
+              clearTimeout(typingTimerRef.current[userName]);
+            }
+            typingTimerRef.current[userName] = setTimeout(() => {
+              setTypingUsers((prev) => prev.filter((name) => name !== userName));
+              delete typingTimerRef.current[userName];
+            }, 2500);
+          }
+          return;
+        }
+
+        // Handle chat message payload
+        if (payload && payload.id) {
           setMessages((prev) => {
-            // Avoid duplicates
-            if (prev.some((m) => m.id === message.id)) return prev;
-            return [...prev, message];
+            if (prev.some((m) => m.id === payload.id)) return prev;
+            return [...prev, payload];
           });
         }
       } catch (err) {
@@ -76,13 +104,11 @@ export function useClassroomChat(classroomId: number) {
       setConnected(false);
       socketRef.current = null;
 
-      // Clean up heartbeat
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
         heartbeatIntervalRef.current = null;
       }
 
-      // Exponential backoff reconnect
       if (event.code !== 1000) {
         const delay = reconnectDelayRef.current;
         console.log(`Reconnecting to room chat in ${delay}ms...`);
@@ -104,19 +130,29 @@ export function useClassroomChat(classroomId: number) {
   const sendMessage = useCallback((content: string) => {
     const ws = socketRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ content }));
+      ws.send(JSON.stringify({ type: "message", content }));
     } else {
       toast.error("Không có kết nối mạng. Đang tự động kết nối lại...");
     }
   }, []);
 
+  // 4. Send Typing signal (throttled to 1.5s)
+  const sendTyping = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 1500) return;
+    lastTypingSentRef.current = now;
+
+    const ws = socketRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "typing" }));
+    }
+  }, []);
+
   useEffect(() => {
-    // Initial fetch and ws connection
     fetchHistory();
     connectWs();
 
     return () => {
-      // Clean up connection and timeouts on unmount
       if (socketRef.current) {
         socketRef.current.close(1000, "Component unmounted");
         socketRef.current = null;
@@ -127,6 +163,7 @@ export function useClassroomChat(classroomId: number) {
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
+      Object.values(typingTimerRef.current).forEach(clearTimeout);
     };
   }, [classroomId, fetchHistory, connectWs]);
 
@@ -134,7 +171,12 @@ export function useClassroomChat(classroomId: number) {
     messages,
     loading,
     connected,
+    onlineUserIds,
+    onlineCount,
+    typingUsers,
     sendMessage,
+    sendTyping,
     refetchHistory: fetchHistory,
   };
 }
+

@@ -97,7 +97,7 @@ export function DashboardLayoutClient({
       <div className="md:pl-64 flex flex-col min-h-screen">
         {/* Header trên cùng */}
         <Header onMenuToggle={() => setIsMobileMenuOpen(true)} />
-        
+
         {/* Vùng chứa Page nội dung */}
         <main className="flex-1 p-6 overflow-y-auto">
           {children}

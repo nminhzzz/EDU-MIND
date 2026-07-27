@@ -8,6 +8,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    model_config = [
+        "../.env"
+    ]
     PROJECT_NAME: str = "AI Learning Assistant Platform"
     API_V1_STR: str = "/api/v1"
 
@@ -64,6 +67,7 @@ class Settings(BaseSettings):
         """Email is enabled only when SMTP credentials are fully configured."""
         return bool(self.MAIL_SERVER and self.MAIL_USERNAME and self.MAIL_FROM)
 
+
     # ── Cloudinary ───────────────────────────────────────────────────────────
     CLOUDINARY_CLOUD_NAME: str = ""
     CLOUDINARY_API_KEY: str = ""
@@ -75,5 +79,6 @@ class Settings(BaseSettings):
         "extra": "ignore",
     }
 
-
 settings = Settings()
+## Tìm hiểu lru cache
+## Nên có logic validate biến mtr

@@ -16,7 +16,7 @@ export function FloatingClassroomChat() {
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
 
   const { classrooms, classroomsLoading: loading } = useStudentClassrooms();
-  const { unreadCounts, totalUnread, markRead } = useClassroomUnread();
+  const { unreadCounts, totalUnread, markRead } = useClassroomUnread(classrooms);
 
   const handleSelectClassroom = (cls: Classroom) => {
     setSelectedClassroom(cls);

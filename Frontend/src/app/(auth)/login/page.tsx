@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 function LoginForm() {
   const { login, isLoading } = useAuth();
   const searchParams = useSearchParams();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +39,7 @@ function LoginForm() {
     <div className="w-full max-w-md">
       {/* Logo / Header */}
       <div className="text-center mb-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -47,7 +47,7 @@ function LoginForm() {
         >
           EM
         </motion.div>
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
@@ -55,7 +55,7 @@ function LoginForm() {
         >
           Chào mừng quay lại
         </motion.h1>
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -66,7 +66,7 @@ function LoginForm() {
       </div>
 
       {/* Card Form */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1, duration: 0.4 }}
@@ -102,8 +102,8 @@ function LoginForm() {
               <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block" htmlFor="password">
                 Mật khẩu
               </label>
-              <Link 
-                href="/forgot-password" 
+              <Link
+                href="/forgot-password"
                 className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 Quên mật khẩu?
@@ -155,8 +155,8 @@ function LoginForm() {
         <div className="text-center mt-6 pt-6">
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Chưa có tài khoản?{" "}
-            <Link 
-              href={ROUTES.REGISTER} 
+            <Link
+              href={ROUTES.REGISTER}
               className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               Đăng ký ngay
