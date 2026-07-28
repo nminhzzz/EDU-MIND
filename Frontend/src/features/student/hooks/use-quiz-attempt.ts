@@ -31,6 +31,7 @@ export function useQuizAttempt(quizId: string | number | undefined) {
   const [tabViolations, setTabViolations] = useState(0);
 
   const lastViolationTimeRef = useRef<number>(0);
+  const loadedRef = useRef<string | number | null>(null);
 
   // Cấu hình thời gian & giới hạn vi phạm
   const timeLimit = quiz
@@ -51,9 +52,11 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     }
   }, []);
 
-  const loadQuiz = useCallback(async () => {
+  const loadQuiz = useCallback(async (force = false) => {
     if (!quizId) return;
+    if (!force && loadedRef.current === quizId) return;
 
+    loadedRef.current = quizId;
     setLoading(true);
     try {
       const reviewRes = await quizService.getReview(quizId);
@@ -169,7 +172,7 @@ export function useQuizAttempt(quizId: string | number | undefined) {
         essay_file_path: essayFilePath || undefined,
       });
       toast.success(isAutoSubmit ? "Hệ thống đã tự động nộp bài làm!" : "Nộp bài thi thành công!");
-      await loadQuiz();
+      await loadQuiz(true);
     } catch {
       toast.error("Lỗi khi nộp bài thi. Vui lòng thử lại.");
     } finally {
@@ -191,6 +194,15 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     if (loading || isReview || !quiz) return;
 
     const handleViolation = () => {
+      // Tạm dừng cảnh báo rời tab khi học sinh đang làm phần Tự luận hoặc đang tải tệp
+      const mcqCount = quiz.questions.filter((q) => q.question_type !== "essay").length;
+      const currentQ = quiz.questions[currentQuestionIndex];
+      const isEssaySection = !currentQ || currentQ.question_type === "essay" || currentQuestionIndex >= mcqCount;
+
+      if (isEssaySection || uploadingEssay) {
+        return; // Không đếm vi phạm khi ở phần Tự luận
+      }
+
       const now = Date.now();
       if (now - lastViolationTimeRef.current < 1000) return;
       lastViolationTimeRef.current = now;
@@ -227,7 +239,49 @@ export function useQuizAttempt(quizId: string | number | undefined) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleWindowBlur);
     };
-  }, [loading, isReview, quiz, handleSubmit]);
+  }, [loading, isReview, quiz, handleSubmit, currentQuestionIndex, uploadingEssay]);
+
+  // Cảnh báo & Tự động nộp bài khi cố tình rời trang hoặc bấm sang tab khác trong ứng dụng
+  useEffect(() => {
+    if (loading || isReview || !quiz || submitting) return;
+
+    // 1. Cảnh báo khi đóng tab hoặc reload trình duyệt
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "Bạn đang làm bài thi. Nếu rời khỏi, bài làm sẽ tự động nộp!";
+      return e.returnValue;
+    };
+
+    // 2. Chặn các cú nhấp chuột chuyển trang trong ứng dụng (Sidebar, Header, Links)
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("a");
+      if (!target) return;
+
+      const href = target.getAttribute("href");
+      if (href && !href.startsWith("#") && !href.includes(`/student/quizzes/${quizId}`)) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const confirmed = window.confirm(
+          "⚠️ CẢNH BÁO LÀM BÀI THI:\n\nBạn đang trong quá trình làm bài kiểm tra! Bạn có chắc chắn muốn rời khỏi trang này không?\n\nNếu bạn chọn ĐỒNG Ý, bài thi của bạn sẽ tự động được NỘP NGAY LẬP TỨC."
+        );
+
+        if (confirmed) {
+          handleSubmit(true).then(() => {
+            router.push(href);
+          });
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleAnchorClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleAnchorClick, true);
+    };
+  }, [loading, isReview, quiz, submitting, quizId, handleSubmit, router]);
 
   const mcqQuestions = quiz ? quiz.questions.filter((q) => q.question_type !== "essay") : [];
   const essayQuestions = quiz ? quiz.questions.filter((q) => q.question_type === "essay") : [];

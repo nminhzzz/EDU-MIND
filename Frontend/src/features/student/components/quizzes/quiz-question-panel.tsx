@@ -103,13 +103,29 @@ export function QuizQuestionPanel({
               {essayQuestions.map((q, idx) => {
                 const originalIndex = quiz.questions.findIndex((originalQ) => originalQ === q);
                 return (
-                  <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
-                      Câu hỏi tự luận {idx + 1} (Câu {originalIndex + 1} trong đề)
-                    </span>
+                  <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wide">
+                        Câu hỏi tự luận {idx + 1} (Câu {originalIndex + 1} trong đề)
+                      </span>
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
+                        ✓ Cho phép gõ trực tiếp hoặc đính kèm file
+                      </span>
+                    </div>
                     <p className="text-sm font-extrabold text-zinc-850 dark:text-zinc-100 leading-relaxed">
                       {q.question_text}
                     </p>
+                    {/* Direct Essay Answer Input */}
+                    {!isReview && (
+                      <textarea
+                        rows={3}
+                        spellCheck={false}
+                        value={selectedAnswers[originalIndex] || ""}
+                        onChange={(e) => onSelectOption(originalIndex, e.target.value)}
+                        placeholder="Soạn câu trả lời tự luận trực tiếp tại đây..."
+                        className="w-full text-xs font-medium text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 focus:border-violet-500 rounded-xl p-3 focus:outline-none transition-all resize-y min-h-[80px]"
+                      />
+                    )}
                   </div>
                 );
               })}

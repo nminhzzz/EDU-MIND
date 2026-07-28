@@ -7,19 +7,7 @@ from alembic import command
 from alembic.config import Config
 
 # Import all models to register them on Base.metadata
-from app.models.classroom import Classroom  # noqa: F401
-from app.models.classroom_student import ClassroomStudent  # noqa: F401
-from app.models.learning_analytic import LearningAnalytic  # noqa: F401
-from app.models.notification import Notification  # noqa: F401
-from app.models.quiz import Quiz  # noqa: F401
-from app.models.quiz_attempt import QuizAttempt  # noqa: F401
-from app.models.student_preference import StudentPreference  # noqa: F401
-from app.models.study_document import StudyDocument  # noqa: F401
-from app.models.study_goal import StudyGoal  # noqa: F401
-from app.models.study_plan import StudyPlan  # noqa: F401
-from app.models.study_plan_progress import StudyPlanProgress  # noqa: F401
-from app.models.subject import Subject  # noqa: F401
-from app.models.user import User  # noqa: F401
+import app.models  # noqa: F401
 
 def wait_for_db():
     print("Waiting for database connection...")
@@ -37,6 +25,24 @@ def wait_for_db():
     print("Could not connect to database. Exiting.")
     sys.exit(1)
 
+def sync_missing_columns():
+    inspector = inspect(engine)
+    with engine.connect() as conn:
+        for table_name, table in Base.metadata.tables.items():
+            if inspector.has_table(table_name):
+                existing_cols = {c['name'] for c in inspector.get_columns(table_name)}
+                for col in table.columns:
+                    if col.name not in existing_cols:
+                        col_type = col.type.compile(engine.dialect)
+                        nullable = 'NULL' if col.nullable else 'NOT NULL'
+                        default = ''
+                        if col.default is not None and hasattr(col.default, 'arg') and isinstance(col.default.arg, (int, str, float)):
+                            default = f" DEFAULT {repr(col.default.arg)}"
+                        sql = f"ALTER TABLE {table_name} ADD COLUMN {col.name} {col_type} {nullable}{default};"
+                        print(f"Adding missing column: {sql}")
+                        conn.execute(text(sql))
+        conn.commit()
+
 def main():
     wait_for_db()
     
@@ -50,9 +56,11 @@ def main():
         command.stamp(alembic_cfg, "head")
         print("Database initialization completed successfully!")
     else:
-        print("Database already initialized. Running Alembic migrations...")
+        print("Running Alembic migrations and syncing schema...")
+        Base.metadata.create_all(bind=engine)
+        sync_missing_columns()
         command.upgrade(alembic_cfg, "head")
-        print("Database migrations applied successfully!")
+        print("Database migrations and column sync applied successfully!")
 
 if __name__ == "__main__":
     main()

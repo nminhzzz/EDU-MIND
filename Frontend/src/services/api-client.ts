@@ -21,7 +21,7 @@ type QueueItem = {
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: 120_000,
+  timeout: 300_000,
   headers: {
     "Content-Type": "application/json",
   },

@@ -26,7 +26,9 @@ export const quizService = {
     }),
 
   submit: (quizId: string | number, payload: QuizSubmitPayload) =>
-    apiClient.post<QuizAttemptResult>(`/quizzes/${quizId}/submit`, payload),
+    apiClient.post<QuizAttemptResult>(`/quizzes/${quizId}/submit`, payload, {
+      timeout: 300_000,
+    }),
 
   updateQuiz: (quizId: string | number, payload: Partial<StudentQuiz>) =>
     apiClient.put<StudentQuiz>(`/quizzes/${quizId}`, payload),

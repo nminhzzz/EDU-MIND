@@ -393,23 +393,34 @@ def api_mark_classroom_chat_read(
         .scalar() or 0
     )
 
-    cursor = db.query(ClassroomChatReadCursor).filter(
-        ClassroomChatReadCursor.classroom_id == classroom_id,
-        ClassroomChatReadCursor.user_id == current_user.id
-    ).first()
+    try:
+        cursor = db.query(ClassroomChatReadCursor).filter(
+            ClassroomChatReadCursor.classroom_id == classroom_id,
+            ClassroomChatReadCursor.user_id == current_user.id
+        ).first()
 
-    if not cursor:
-        cursor = ClassroomChatReadCursor(
-            classroom_id=classroom_id,
-            user_id=current_user.id,
-            last_read_message_id=max_msg_id,
-        )
-        db.add(cursor)
-    else:
-        if max_msg_id > cursor.last_read_message_id:
+        if not cursor:
+            cursor = ClassroomChatReadCursor(
+                classroom_id=classroom_id,
+                user_id=current_user.id,
+                last_read_message_id=max_msg_id,
+            )
+            db.add(cursor)
+        else:
+            if max_msg_id > cursor.last_read_message_id:
+                cursor.last_read_message_id = max_msg_id
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        cursor = db.query(ClassroomChatReadCursor).filter(
+            ClassroomChatReadCursor.classroom_id == classroom_id,
+            ClassroomChatReadCursor.user_id == current_user.id
+        ).first()
+        if cursor and max_msg_id > cursor.last_read_message_id:
             cursor.last_read_message_id = max_msg_id
+            db.commit()
 
-    db.commit()
     return {"status": "ok", "last_read_message_id": max_msg_id}
 
 

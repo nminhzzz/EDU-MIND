@@ -23,9 +23,9 @@ export type { Subject } from "@/types/subject";
 /** @deprecated Use StudyGoal */
 export type StudyGoalResponse = StudyGoal;
 
-/** AI roadmap generation can take 30–90s (LLM + RAG). Default axios timeout is 30s. */
-const AI_DRAFT_TIMEOUT_MS = 120_000;
-const AI_CONFIRM_TIMEOUT_MS = 60_000;
+/** AI roadmap generation can take 30–120s (LLM + RAG). Tăng timeout lên 300s (5 phút) để phục vụ AI DeepSeek. */
+const AI_DRAFT_TIMEOUT_MS = 300_000;
+const AI_CONFIRM_TIMEOUT_MS = 120_000;
 
 import { StudyPlan } from "./study-plan";
 

@@ -57,34 +57,35 @@ export function FloatingClassroomChat() {
             transition={{ duration: 0.2 }}
             className="w-96 h-[550px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-white/95 dark:bg-zinc-900/95"
           >
-            {/* Main Header Bar */}
-            <div className="h-14 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-violet-600 text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span className="font-extrabold text-xs tracking-wide uppercase">
-                  {selectedClassroom
-                    ? selectedClassroom.class_name
-                    : "Thảo luận Lớp học"}
-                </span>
+            {/* Main Header Bar (Only shown on Classroom List view) */}
+            {!selectedClassroom && (
+              <div className="h-14 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-violet-600 text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  <span className="font-extrabold text-xs tracking-wide uppercase">
+                    Thảo luận Lớp học
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                  title="Đóng"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setSelectedClassroom(null);
-                }}
-                className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
-                title="Đóng"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            )}
 
             {/* Container Body */}
-            <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950/20">
+            <div className="flex-1 overflow-hidden bg-zinc-50 dark:bg-zinc-950/20">
               {selectedClassroom ? (
                 <ClassroomChatPanel
                   classroom={selectedClassroom}
                   onBack={() => setSelectedClassroom(null)}
+                  onClose={() => {
+                    setIsOpen(false);
+                    setSelectedClassroom(null);
+                  }}
                   onMarkRead={markRead}
                 />
               ) : (

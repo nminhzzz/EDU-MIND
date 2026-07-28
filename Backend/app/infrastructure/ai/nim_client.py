@@ -119,7 +119,7 @@ def get_langchain_deepseek(temperature: float = 0.2, **kwargs):
         openai_api_key=settings.DEEPSEEK_API_KEY,
         openai_api_base=settings.AI_BASE_URL,
         temperature=temperature,
-        request_timeout=kwargs.pop("request_timeout", 90),
-        max_retries=kwargs.pop("max_retries", 2),
+        request_timeout=kwargs.pop("request_timeout", 180),
+        max_retries=kwargs.pop("max_retries", 1),
         **kwargs,
     )

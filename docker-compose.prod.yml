@@ -21,12 +21,13 @@ services:
       context: ./Backend
       dockerfile: Dockerfile.prod
     container_name: backend_prod
-    # Cổng 8000 được giữ nội bộ trong docker network, không expose ra máy host
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=mysql+pymysql://root:password@db:3306/learning_db
+      - ENVIRONMENT=production
+      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-password}@db:3306/${MYSQL_DATABASE:-learning_db}
       - MONGODB_URL=mongodb://mongodb:27017/chat_db
       - REDIS_URL=redis://redis:6379/0
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - db
       - mongodb
@@ -40,7 +41,6 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile.prod
     container_name: frontend_prod
-    # Cổng 3000 được giữ nội bộ, người dùng truy cập web qua Nginx (cổng 443)
     environment:
       - NEXT_PUBLIC_API_URL=/api
     depends_on:
@@ -53,8 +53,8 @@ services:
     image: mysql:8.0
     container_name: mysql_db_prod
     environment:
-      - MYSQL_DATABASE=learning_db
-      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-learning_db}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
     # Khóa cổng 3306 ở prod để tránh bị dò quét database từ bên ngoài
     volumes:
       - db_data_prod:/var/lib/mysql
@@ -65,6 +65,8 @@ services:
   mongodb:
     image: mongo:6.0
     container_name: mongodb_chat_prod
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data_prod:/data/db
     networks:

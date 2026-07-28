@@ -19,21 +19,7 @@ from app.core.config import settings
 from app.models.base import Base  # noqa: F401
 
 # Import every model module so their tables are registered on Base.metadata.
-# Add new model files here as the schema grows.
-import app.models.user                        # noqa: F401
-import app.models.student_preference          # noqa: F401
-import app.models.subject                     # noqa: F401
-import app.models.classroom                   # noqa: F401
-import app.models.classroom_student           # noqa: F401
-import app.models.study_document              # noqa: F401
-import app.models.study_goal                  # noqa: F401
-import app.models.study_plan                  # noqa: F401
-import app.models.study_plan_progress         # noqa: F401
-import app.models.quiz                        # noqa: F401
-import app.models.quiz_attempt                # noqa: F401
-import app.models.learning_analytic           # noqa: F401
-import app.models.classroom_chat_read_cursor   # noqa: F401
-import app.models.notification                # noqa: F401
+import app.models  # noqa: F401
 
 # ── Alembic config ────────────────────────────────────────────────────────────
 config = context.config

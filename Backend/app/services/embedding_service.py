@@ -223,14 +223,20 @@ async def _python_cosine_search(
     if not materials:
         return []
 
-    # Keep only documents that have a valid embedding vector
-    valid_docs = [doc for doc in materials if doc.get("embedding")]
-    if not valid_docs:
-        return []
-
     query_np = np.asarray(query_vector, dtype=np.float32)
     query_norm = float(np.linalg.norm(query_np))
     if query_norm == 0.0:
+        return []
+
+    target_dim = len(query_vector)
+    # Keep only documents that have a valid embedding vector matching the query dimension
+    valid_docs = [
+        doc for doc in materials 
+        if doc.get("embedding") 
+        and isinstance(doc["embedding"], (list, tuple)) 
+        and len(doc["embedding"]) == target_dim
+    ]
+    if not valid_docs:
         return []
 
     # Stack all document vectors into a single (N, D) matrix

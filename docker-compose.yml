@@ -9,11 +9,13 @@ services:
     volumes:
       - ./Backend:/app
       - /app/venv # Tránh ghi đè venv từ host vào container
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=mysql+pymysql://root:password@db:3306/learning_db
+      - ENVIRONMENT=development
+      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-password}@db:3306/${MYSQL_DATABASE:-learning_db}
       - MONGODB_URL=mongodb://mongodb:27017/chat_db
       - REDIS_URL=redis://redis:6379/0
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - db
       - mongodb
@@ -37,7 +39,6 @@ services:
       - API_INTERNAL_URL=http://backend:8000/api/v1
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
-
     depends_on:
       - backend
     networks:
@@ -47,8 +48,8 @@ services:
     image: mysql:8.0
     container_name: mysql_db
     environment:
-      - MYSQL_DATABASE=learning_db
-      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-learning_db}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
     ports:
       - "3307:3306"
     volumes:
