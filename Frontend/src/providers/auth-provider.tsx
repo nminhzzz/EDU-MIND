@@ -12,6 +12,7 @@ interface AuthContextType extends AuthState {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateCurrentUser: (partialUser: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +30,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
   const router = useRouter();
+
+  const updateCurrentUser = (partialUser: Partial<User>) => {
+    setState((prev) => {
+      if (!prev.user) return prev;
+      return {
+        ...prev,
+        user: { ...prev.user, ...partialUser },
+      };
+    });
+  };
+
 
   const checkAuth = async () => {
     const AUTH_TIMEOUT_MS = 12_000;
@@ -110,10 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, checkAuth }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, checkAuth, updateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
+
 }
 
 export function useAuthContext() {

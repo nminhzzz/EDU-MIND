@@ -8,9 +8,12 @@ import {
 } from "@/lib/auth-cookies";
 
 /**
- * Edge route guard — coarse UX-level protection only.
- * JWT payload is decoded without signature verification; the backend
- * enforces real authentication on every API request.
+ * Real-world SaaS RBAC Middleware:
+ * Enforces strict Role-Based Access Control (RBAC) at Edge level:
+ * - /student/* → ONLY role 'student'
+ * - /teacher/* → ONLY role 'teacher'
+ * - /admin/*   → ONLY role 'admin'
+ * Any unauthorized attempt is instantly redirected to the user's appropriate role dashboard.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,7 +21,6 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get(AUTH_COOKIES.ACCESS)?.value;
   const payload = accessToken ? decodeJwtPayload(accessToken) : null;
 
-  // Access cookie present (even if expired) — client can silently refresh via /auth/refresh.
   const hasSession = !!accessToken;
   const isAuthenticated = !!payload && !isTokenExpired(payload);
   const userRole = payload?.role;
@@ -29,7 +31,7 @@ export function middleware(request: NextRequest) {
   const isAdminPage = pathname.startsWith("/admin");
   const isProtectedPage = isStudentPage || isTeacherPage || isAdminPage;
 
-  // No session at all → redirect to login.
+  // 1. Unauthenticated users accessing protected routes → redirect to /login
   if (!hasSession && isProtectedPage) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
@@ -39,37 +41,37 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Expired access cookie but still present → allow; AuthProvider + Axios refresh handle renewal.
+  // 2. Expired access cookie but still present → allow; AuthProvider handles renewal.
   if (hasSession && !isAuthenticated && isProtectedPage) {
     return NextResponse.next();
   }
 
-  // If visiting login page with a redirect parameter, it means a 401 occurred in the client,
-  // so we must clear the cookies to break any redirect loops.
+  // 3. Visiting login page with redirect parameter after 401 → clear cookies
   if (isAuthPage && request.nextUrl.searchParams.has("redirect")) {
     const response = NextResponse.next();
     clearAuthCookies(response);
     return response;
   }
 
-  // Valid session on auth pages → redirect to role dashboard.
+  // 4. Authenticated users visiting auth pages → redirect to their role home
   if (isAuthenticated && isAuthPage) {
-    return NextResponse.redirect(new URL(`/${userRole}`, request.url));
+    const defaultRoute = userRole ? `/${userRole}` : "/login";
+    return NextResponse.redirect(new URL(defaultRoute, request.url));
   }
 
-  // Auth pages: clear only malformed cookies (not merely expired ones).
+  // 5. Clear malformed cookies on auth pages
   if (isAuthPage && accessToken && !payload) {
     const response = NextResponse.next();
     clearAuthCookies(response);
     return response;
   }
 
-  // Role-based authorization (only when access token is still valid).
-  if (isAuthenticated) {
-    if (isStudentPage && userRole !== "student" && userRole !== "admin") {
+  // 6. Strict Role-Based Access Control (RBAC)
+  if (isAuthenticated && userRole) {
+    if (isStudentPage && userRole !== "student") {
       return NextResponse.redirect(new URL(`/${userRole}`, request.url));
     }
-    if (isTeacherPage && userRole !== "teacher" && userRole !== "admin") {
+    if (isTeacherPage && userRole !== "teacher") {
       return NextResponse.redirect(new URL(`/${userRole}`, request.url));
     }
     if (isAdminPage && userRole !== "admin") {

@@ -109,3 +109,45 @@ def delete_user_admin(db: Session, user_id: int, current_admin_id: int) -> User:
         )
 
     return user_repository.remove(db, id=user_id)
+
+
+# ── Profile & Avatar Business Services ────────────────────────────────────────
+
+import os
+import uuid
+from fastapi import UploadFile
+from app.schemas.user import UserUpdate
+
+
+def update_user_profile(db: Session, current_user: User, obj_in: UserUpdate) -> User:
+    """Nghiệp vụ cập nhật thông tin hồ sơ người dùng cá nhân."""
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy tài khoản người dùng.",
+        )
+
+    if obj_in.full_name is not None:
+        user.full_name = obj_in.full_name.strip()
+    if obj_in.avatar_url is not None:
+        user.avatar_url = obj_in.avatar_url.strip()
+    if obj_in.grade is not None:
+        user.grade = obj_in.grade
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+
+from app.infrastructure.uploader import upload_file_helper
+
+async def save_avatar_file(user_id: int, file: UploadFile) -> str:
+    """
+    Nghiệp vụ tải & lưu trữ ảnh đại diện cá nhân.
+    Sử dụng Cloudinary (ưu tiên) hoặc lưu cục bộ vào /static/avatars/ (fallback).
+    """
+    return upload_file_helper(file, folder="avatars")
+
+

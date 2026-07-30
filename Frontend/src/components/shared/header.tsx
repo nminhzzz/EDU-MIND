@@ -92,13 +92,22 @@ export function Header({ onMenuToggle }: HeaderProps) {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-3 pl-3 border-l border-zinc-200 dark:border-zinc-800 cursor-pointer focus:outline-none hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs animate-pulse">
-              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
-            </div>
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.full_name || "Avatar"}
+                className="w-8 h-8 rounded-xl object-cover border border-zinc-200 dark:border-zinc-800 shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
+              </div>
+            )}
             <div className="hidden lg:flex flex-col text-left">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 max-w-[120px] truncate">
                 {user?.full_name || "User"}
               </span>
+
               <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                 {user?.role === "teacher" ? "Giáo viên" : "Học sinh"}
               </span>

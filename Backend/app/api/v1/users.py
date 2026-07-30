@@ -104,7 +104,7 @@ def delete_user_admin(
     return {"message": "Đã xóa tài khoản người dùng thành công."}
 
 
-from app.schemas.user import StudentProfileDetailResponse
+from app.schemas.user import StudentProfileDetailResponse, UserUpdate, UserResponse
 from app.models.learning_analytic import LearningAnalytic
 from sqlalchemy.orm import selectinload
 
@@ -117,7 +117,6 @@ def get_student_profile_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Lấy thông tin báo cáo học lực trực tiếp từ DB (siêu tốc 0.01s)
     analytics = (
         db.query(LearningAnalytic)
         .options(selectinload(LearningAnalytic.subject))
@@ -130,3 +129,34 @@ def get_student_profile_detail(
         "preference": current_user.preference,
         "learning_analytics": analytics,
     }
+
+
+@router.patch(
+    "/profile",
+    response_model=UserResponse,
+    summary="Cập nhật thông tin cá nhân của người dùng đang đăng nhập",
+)
+def update_current_user_profile(
+    body: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Router Endpoint: gọi user_service để cập nhật thông tin cá nhân."""
+    return user_service.update_user_profile(
+        db=db, current_user=current_user, obj_in=body
+    )
+
+
+from fastapi import File, UploadFile
+
+@router.post(
+    "/profile/avatar",
+    summary="Upload ảnh đại diện cá nhân từ máy tính",
+)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Router Endpoint: gọi user_service để kiểm tra và lưu tập tin ảnh đại diện."""
+    avatar_url = await user_service.save_avatar_file(user_id=current_user.id, file=file)
+    return {"avatar_url": avatar_url}

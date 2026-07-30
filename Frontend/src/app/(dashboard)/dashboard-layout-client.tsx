@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/shared/sidebar";
 import { Header } from "@/components/shared/header";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FloatingTutorChat } from "@/components/student/floating-tutor-chat";
 import { FloatingClassroomChat } from "@/components/student/floating-classroom-chat";
@@ -20,9 +20,10 @@ export function DashboardLayoutClient({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Kiểm tra xem người dùng có đang ở trong trang làm bài thi cụ thể không (/student/quizzes/[id])
+  // Check if currently on a quiz attempt page (/student/quizzes/[id])
   const isQuizPage = pathname.startsWith("/student/quizzes/") && pathname !== "/student/quizzes";
 
+  // 1. Unauthenticated Guard
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       const params = new URLSearchParams({ redirect: pathname });
@@ -30,40 +31,67 @@ export function DashboardLayoutClient({
     }
   }, [isLoading, isAuthenticated, pathname, router]);
 
-  // Đóng Mobile menu khi chuyển trang
+  // 2. Strict Client-Side Role Guard (RBAC)
+  const isStudentRoute = pathname.startsWith("/student");
+  const isTeacherRoute = pathname.startsWith("/teacher");
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  const isRoleAuthorized = React.useMemo(() => {
+    if (!user?.role) return true; // still loading or unauthenticated
+    if (isStudentRoute && user.role !== "student") return false;
+    if (isTeacherRoute && user.role !== "teacher") return false;
+    if (isAdminRoute && user.role !== "admin") return false;
+    return true;
+  }, [user?.role, isStudentRoute, isTeacherRoute, isAdminRoute]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.role && !isRoleAuthorized) {
+      // Instantly redirect unauthorized user to their correct role home dashboard
+      router.replace(`/${user.role}`);
+    }
+  }, [isLoading, isAuthenticated, user?.role, isRoleAuthorized, router]);
+
+  // Close Mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, []);
+  }, [pathname]);
 
-  // Màn hình chờ tải thông tin đăng nhập
+  // Loading state screen
   if (isLoading) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950">
         <Loader2 className="w-10 h-10 text-indigo-600 dark:text-indigo-400 animate-spin" />
         <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-4">
-          Đang tải dữ liệu phiên đăng nhập...
+          Đang xác thực quyền truy cập...
         </span>
       </div>
     );
   }
 
-  // Nếu không được xác thực, không hiển thị gì trong lúc chuyển hướng
-  if (!isAuthenticated) {
-    return null;
+  // Not authenticated or Role Unauthorized → Return null while redirecting
+  if (!isAuthenticated || !isRoleAuthorized) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 space-y-3">
+        <ShieldAlert className="w-10 h-10 text-rose-500 animate-pulse" />
+        <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">
+          Chuyển hướng về trang của vai trò phù hợp...
+        </span>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors duration-200">
-      {/* 1. Sidebar cố định cho màn hình Desktop (md trở lên) */}
+      {/* 1. Desktop Sidebar (md and above) */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
 
-      {/* 2. Menu Sidebar ngăn kéo cho thiết bị di động (Mobile Drawer) */}
+      {/* 2. Mobile Drawer Sidebar */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            {/* Backdrop làm mờ */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -71,7 +99,7 @@ export function DashboardLayoutClient({
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-black z-30 md:hidden"
             />
-            {/* Thanh Sidebar di động trượt từ bên trái */}
+            {/* Sliding Mobile Sidebar */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -79,7 +107,6 @@ export function DashboardLayoutClient({
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
               className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-zinc-900 z-40 md:hidden flex flex-col"
             >
-              {/* Nút đóng Sidebar di động */}
               <div className="h-16 flex items-center justify-end px-6 border-b border-zinc-200 dark:border-zinc-800">
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -96,18 +123,18 @@ export function DashboardLayoutClient({
         )}
       </AnimatePresence>
 
-      {/* 3. Phần nội dung chính (Main Content Area) */}
+      {/* 3. Main Content Area */}
       <div className="md:pl-64 flex flex-col min-h-screen">
-        {/* Header trên cùng */}
+        {/* Header */}
         <Header onMenuToggle={() => setIsMobileMenuOpen(true)} />
 
-        {/* Vùng chứa Page nội dung */}
+        {/* Page Content */}
         <main className="flex-1 p-6 overflow-y-auto">
           {children}
         </main>
       </div>
 
-      {/* Floating Chat Widgets — Ẩn hoàn toàn khi học sinh đang trong trang làm bài thi */}
+      {/* Floating Chat Widgets — Hide during active quiz attempts & for non-student roles */}
       {!isQuizPage && user?.role === "student" && <FloatingTutorChat />}
       {!isQuizPage && (user?.role === "student" || user?.role === "teacher") && (
         <FloatingClassroomChat />
