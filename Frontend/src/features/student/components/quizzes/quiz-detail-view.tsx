@@ -61,6 +61,7 @@ export function QuizDetailView({
           score={quiz.latest_attempt.score ?? 0}
           correctCount={quiz.latest_attempt.correct_count ?? 0}
           totalQuestions={quiz.questions.length}
+          submittedAt={quiz.latest_attempt.submitted_at}
         />
       )}
 

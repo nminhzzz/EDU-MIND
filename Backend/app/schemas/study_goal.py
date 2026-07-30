@@ -42,6 +42,7 @@ from app.schemas.unified_goal import UnifiedGoalPlanResponse
 # ── Request tạo bản nháp / tinh chỉnh lộ trình nháp ───────────
 class StudyGoalDraftCreate(BaseModel):
     subject_id: int
+    classroom_id: Optional[int] = Field(None, description="ID lớp học để lập lộ trình học tập bám sát tài liệu của lớp")
     target_score: float = Field(
         ..., ge=0, le=10, description="Điểm mục tiêu (thang 10)"
     )
@@ -52,6 +53,7 @@ class StudyGoalDraftCreate(BaseModel):
 # ── Request xác nhận và lưu chính thức lộ trình ──────────────
 class StudyGoalConfirm(BaseModel):
     subject_id: int
+    classroom_id: Optional[int] = Field(None, description="ID lớp học")
     target_score: float = Field(..., ge=0, le=10)
     deadline: date
     available_schedule: Optional[Dict[str, Any]] = None

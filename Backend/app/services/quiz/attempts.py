@@ -2,11 +2,15 @@
 Quiz attempt submission and attempt history queries.
 """
 
+import logging
+
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.enums import UserRole
 from app.database.unit_of_work import commit_or_rollback
@@ -39,6 +43,44 @@ def resolve_quiz_display_title(quiz) -> str:
     return f"Đề luyện thi {subject_name}"
 
 
+def process_ai_quiz_assessment_background(
+    attempt_id: int,
+    quiz_title: str,
+    questions_list: List[Dict[str, Any]],
+    answers_json: List[Dict[str, Any]],
+    score: float,
+    correct_count: int,
+    wrong_count: int,
+) -> None:
+    """
+    Background Task: Generate AI Diagnostic Assessment asynchronously and update QuizAttempt.ai_assessment in MySQL.
+    """
+    from app.database.mysql import SessionLocal
+    from app.models.quiz_attempt import QuizAttempt as DBQuizAttempt
+
+    db = SessionLocal()
+    try:
+        logger.info("Chạy ngầm AI Assessment cho attempt_id=%d...", attempt_id)
+        ai_assessment = generate_ai_attempt_feedback(
+            quiz_title=quiz_title,
+            questions_list=questions_list,
+            answers_json=answers_json,
+            score=score,
+            correct_count=correct_count,
+            wrong_count=wrong_count,
+        )
+        attempt = db.query(DBQuizAttempt).filter(DBQuizAttempt.id == attempt_id).first()
+        if attempt:
+            attempt.ai_assessment = ai_assessment
+            db.commit()
+            logger.info("Đã hoàn tất sinh AI Assessment ngầm cho attempt_id=%d!", attempt_id)
+    except Exception as exc:
+        db.rollback()
+        logger.error("Lỗi khi sinh AI Assessment ngầm cho attempt_id=%d: %s", attempt_id, exc)
+    finally:
+        db.close()
+
+
 def submit_quiz_attempt(
     db: Session,
     quiz_id: int,
@@ -47,10 +89,10 @@ def submit_quiz_attempt(
     duration_seconds: int,
     essay_file_path: Optional[str] = None,
     tab_violations_count: int = 0,
-) -> QuizAttempt:
+) -> Tuple[QuizAttempt, str, List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
-    Auto-grade a quiz submission, store the attempt, and optionally mark the
-    associated daily study plan as done when score >= 8.0.
+    Auto-grade a quiz submission instantly (<50ms), store the attempt with ai_assessment=None,
+    and return metadata for background AI evaluation.
     """
     quiz = quiz_repository.get(db, quiz_id)
     if not quiz:
@@ -58,15 +100,6 @@ def submit_quiz_attempt(
 
     score, correct_count, wrong_count, answers_json = grade_submission(
         quiz.questions or [], submitted_answers, essay_file_path
-    )
-
-    ai_assessment = generate_ai_attempt_feedback(
-        quiz_title=quiz.title or "Đề thi",
-        questions_list=quiz.questions or [],
-        answers_json=answers_json,
-        score=score,
-        correct_count=correct_count,
-        wrong_count=wrong_count,
     )
 
     db_attempt = attempt_repository.stage_attempt(
@@ -79,7 +112,7 @@ def submit_quiz_attempt(
         wrong_count=wrong_count,
         duration_seconds=duration_seconds,
         tab_violations_count=tab_violations_count,
-        ai_assessment=ai_assessment,
+        ai_assessment=None,
     )
     commit_or_rollback(db)
     db.refresh(db_attempt)
@@ -92,7 +125,7 @@ def submit_quiz_attempt(
             )
             commit_or_rollback(db)
 
-    return db_attempt
+    return db_attempt, quiz.title or "Đề thi", quiz.questions or [], answers_json
 
 
 def get_classroom_quiz_attempts(

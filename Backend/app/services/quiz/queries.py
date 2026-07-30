@@ -43,22 +43,6 @@ def get_quiz_review(db: Session, quiz_id: int, current_user: User) -> Quiz:
             .order_by(QuizAttempt.submitted_at.desc())
             .first()
         )
-        if latest_attempt and not latest_attempt.ai_assessment:
-            try:
-                from app.services.quiz.grading import generate_ai_attempt_feedback
-                ai_assessment = generate_ai_attempt_feedback(
-                    quiz_title=quiz.title,
-                    questions_list=quiz.questions or [],
-                    answers_json=latest_attempt.answers or [],
-                    score=float(latest_attempt.score),
-                    correct_count=latest_attempt.correct_count,
-                    wrong_count=latest_attempt.wrong_count,
-                )
-                latest_attempt.ai_assessment = ai_assessment
-                db.commit()
-                db.refresh(latest_attempt)
-            except Exception as exc:
-                pass
 
     quiz.latest_attempt = latest_attempt
     return quiz
@@ -83,11 +67,11 @@ def submit_student_quiz(
     duration_seconds: int,
     essay_file_path: Optional[str] = None,
     tab_violations_count: int = 0,
-) -> Tuple[QuizAttempt, Optional[int]]:
+) -> Tuple[QuizAttempt, Optional[int], str, list, list]:
     """
-    Submit a quiz attempt and return the attempt plus subject_id for analytics.
+    Submit a quiz attempt and return the attempt, subject_id, quiz_title, questions_list, and answers_json.
     """
-    attempt = submit_quiz_attempt(
+    attempt, quiz_title, questions_list, answers_json = submit_quiz_attempt(
         db=db,
         quiz_id=quiz_id,
         student_id=student_id,
@@ -98,7 +82,7 @@ def submit_student_quiz(
     )
     quiz = quiz_repository.get(db, quiz_id)
     subject_id = quiz.subject_id if quiz else None
-    return attempt, subject_id
+    return attempt, subject_id, quiz_title, questions_list, answers_json
 
 
 def get_student_assigned_quizzes_service(db: Session, student_id: int) -> list[Quiz]:

@@ -128,6 +128,22 @@ def generate_content_deepseek(
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
+    sys_instruction_text = formatted_messages[0]["content"] if formatted_messages else ""
+    user_msgs_text = json.dumps(formatted_messages[1:], ensure_ascii=False, indent=2) if len(formatted_messages) > 1 else ""
+
+    print(
+        f"\n============================== [PROMPT SENT TO LANGCHAIN LLM] ==============================\n"
+        f"SYSTEM INSTRUCTION / PROMPT:\n{sys_instruction_text}\n\n"
+        f"USER MESSAGES:\n{user_msgs_text}\n"
+        f"================================================================================================",
+        flush=True,
+    )
+    logger.info(
+        "PROMPT SENT TO LANGCHAIN LLM:\n%s\n%s",
+        sys_instruction_text,
+        user_msgs_text,
+    )
+
     if tools:
         return llm.bind_tools(tools).invoke(formatted_messages).content
 

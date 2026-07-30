@@ -16,6 +16,7 @@ import {
   Loader2,
   Plus,
   Save,
+  Sparkles,
   Trash2,
   Trophy,
   UploadCloud,
@@ -23,6 +24,7 @@ import {
   UserPlus,
   Users,
   MessageSquare,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
@@ -52,10 +54,10 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "classroom_quizzes", label: "Đề thi & Bài tập", icon: ClipboardList },
 ];
 
-export default function ClassroomDetailPage() {
+export default function TeacherClassroomDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const classroomId = Number(params.id);
+  const classroomId = Number(params?.id);
 
   const [classroom, setClassroom] = useState<ClassroomDetail | null>(null);
   const [progress, setProgress] = useState<ClassroomStudentProgress[]>([]);
@@ -76,9 +78,10 @@ export default function ClassroomDetailPage() {
   const [generating, setGenerating] = useState(false);
   const [genMode, setGenMode] = useState<"select_doc" | "file">("select_doc");
   const [docsList, setDocsList] = useState<StudyDocumentItem[]>([]);
-  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
   const [loadingDocs, setLoadingDocs] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [difficulty, setDifficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(5);
   const [deadline, setDeadline] = useState("");
@@ -96,7 +99,7 @@ export default function ClassroomDetailPage() {
           const docs = res.data || [];
           setDocsList(docs);
           if (docs.length > 0) {
-            setSelectedDocId(docs[0].id);
+            setSelectedDocIds([docs[0].id]);
           }
         })
         .catch((err) => console.error("Lỗi lấy danh sách tài liệu môn học:", err))
@@ -203,12 +206,12 @@ export default function ClassroomDetailPage() {
 
   const handleGenerateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (genMode === "select_doc" && !selectedDocId) {
-      toast.error("Vui lòng chọn 1 tài liệu giảng dạy đã upload.");
+    if (genMode === "select_doc" && selectedDocIds.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 tài liệu giảng dạy đã upload.");
       return;
     }
-    if (genMode === "file" && !uploadedFile) {
-      toast.error("Vui lòng chọn 1 file tài liệu (PDF, Word hoặc TXT).");
+    if (genMode === "file" && uploadedFiles.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 file tài liệu (PDF, Word hoặc TXT).");
       return;
     }
     if (!classroom?.subject?.id) {
@@ -219,9 +222,12 @@ export default function ClassroomDetailPage() {
     setGenerating(true);
     try {
       let res;
-      if (genMode === "file" && uploadedFile) {
+      if (genMode === "file" && uploadedFiles.length > 0) {
         const formData = new FormData();
-        formData.append("file", uploadedFile);
+        uploadedFiles.forEach((f) => formData.append("files", f));
+        if (uploadedFiles[0]) {
+          formData.append("file", uploadedFiles[0]);
+        }
         formData.append("subject_id", String(classroom.subject.id));
         formData.append("difficulty", difficulty);
         formData.append("total_questions", String(totalQuestions));
@@ -230,12 +236,15 @@ export default function ClassroomDetailPage() {
         formData.append("max_tab_violations", String(maxTabViolations));
         formData.append("include_essay", String(includeEssay));
         if (includeEssay) formData.append("essay_count", String(essayCount));
+        if (customPrompt.trim()) formData.append("custom_prompt", customPrompt.trim());
 
         res = await classroomApi.generateQuizFromFile(classroomId, formData);
       } else {
         res = await classroomApi.generateQuiz(classroomId, {
           subject_id: classroom.subject.id,
-          document_id: selectedDocId || undefined,
+          document_ids: selectedDocIds,
+          document_id: selectedDocIds[0] || undefined,
+          custom_prompt: customPrompt.trim() || undefined,
           difficulty,
           total_questions: totalQuestions,
           deadline: deadline || undefined,
@@ -247,7 +256,9 @@ export default function ClassroomDetailPage() {
       }
       toast.success("Đã dùng AI sinh đề và giao bài kiểm tra thành công!");
       setShowGenModal(false);
-      setUploadedFile(null);
+      setUploadedFiles([]);
+      setSelectedDocIds([]);
+      setCustomPrompt("");
       setDeadline("");
       setIncludeEssay(false);
       setEssayCount(2);
@@ -566,244 +577,349 @@ export default function ClassroomDetailPage() {
 
       {/* AI Quiz Generation Modal */}
       {showGenModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto"
           >
-            <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              <h3 className="font-black text-base text-zinc-900 dark:text-white flex items-center gap-2">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
+              <h3 className="font-black text-lg text-zinc-900 dark:text-white flex items-center gap-2">
                 <BrainCircuit className="w-5 h-5 text-violet-600" />
                 Tạo đề thi bằng AI
               </h3>
               <button
                 type="button"
                 onClick={() => setShowGenModal(false)}
-                className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400 text-sm font-bold cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-bold cursor-pointer p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
               >
-                Đóng
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl gap-1">
-              <button
-                type="button"
-                onClick={() => setGenMode("select_doc")}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  genMode === "select_doc"
-                    ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                Tài liệu đã upload
-              </button>
-              <button
-                type="button"
-                onClick={() => setGenMode("file")}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  genMode === "file"
-                    ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                <UploadCloud className="w-4 h-4" />
-                Tải file mới (PDF/Word)
-              </button>
-            </div>
-
-            <form onSubmit={handleGenerateQuiz} className="space-y-4 text-left">
-              {genMode === "select_doc" ? (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Chọn tài liệu giảng dạy đã upload:
-                  </label>
-                  {loadingDocs ? (
-                    <div className="py-3 text-xs text-zinc-400 font-medium flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
-                      Đang tải danh sách tài liệu...
-                    </div>
-                  ) : docsList.length === 0 ? (
-                    <div className="p-3 border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-medium">
-                      Chưa có tài liệu nào được upload cho môn học này. Vui lòng chọn "Tải file mới".
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedDocId || ""}
-                      onChange={(e) => setSelectedDocId(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
-                      required
-                    >
-                      {docsList.map((doc) => (
-                        <option key={doc.id} value={doc.id}>
-                          📄 {doc.title} ({doc.file_type.toUpperCase()})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Chọn file tài liệu (PDF, Word, TXT):
-                  </label>
-                  <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
-                    <FileText className="w-6 h-6 text-violet-500" />
-                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                      {uploadedFile ? uploadedFile.name : "Nhấp để chọn file PDF, .docx hoặc .txt"}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-medium">
-                      Hệ thống sẽ trích xuất nội dung và sinh câu hỏi RAG bám sát tài liệu này
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf,.docx,.doc,.txt"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setUploadedFile(e.target.files[0]);
-                        }
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Độ khó:
-                  </label>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value="easy">Dễ</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="hard">Khó</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Số câu hỏi:
-                  </label>
-                  <select
-                    value={totalQuestions}
-                    onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value={5}>5 câu</option>
-                    <option value={10}>10 câu</option>
-                    <option value={15}>15 câu</option>
-                    <option value={20}>20 câu</option>
-                  </select>
-                </div>
+            {/* Scrollable Form Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Mode Switcher Tabs */}
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setGenMode("select_doc")}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    genMode === "select_doc"
+                      ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Tài liệu đã upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGenMode("file")}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    genMode === "file"
+                      ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  Tải file mới (PDF/Word/TXT)
+                </button>
               </div>
 
-              {/* Time Limit & Max Tab Violations */}
-              <div className="grid grid-cols-2 gap-3 border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Thời gian làm (Phút):
-                  </label>
-                  <select
-                    value={timeLimitMinutes}
-                    onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value={15}>15 phút</option>
-                    <option value={30}>30 phút (Mặc định)</option>
-                    <option value={45}>45 phút</option>
-                    <option value={60}>60 phút</option>
-                    <option value={90}>90 phút</option>
-                  </select>
-                </div>
+              <form id="gen-quiz-form" onSubmit={handleGenerateQuiz} className="space-y-5 text-left">
+                {genMode === "select_doc" ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                        Chọn tài liệu đã upload (Cho phép chọn nhiều):
+                      </label>
+                      {docsList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedDocIds.length === docsList.length) {
+                              setSelectedDocIds([]);
+                            } else {
+                              setSelectedDocIds(docsList.map((d) => d.id));
+                            }
+                          }}
+                          className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+                        >
+                          {selectedDocIds.length === docsList.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                        </button>
+                      )}
+                    </div>
+                    {loadingDocs ? (
+                      <div className="py-4 text-xs text-zinc-400 font-medium flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
+                        Đang tải danh sách tài liệu...
+                      </div>
+                    ) : docsList.length === 0 ? (
+                      <div className="p-4 border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        Chưa có tài liệu nào được upload cho môn học này. Vui lòng chuyển sang tab "Tải file mới".
+                      </div>
+                    ) : (
+                      <div className="max-h-44 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 space-y-1.5 bg-zinc-50/50 dark:bg-zinc-950/20">
+                        {docsList.map((doc) => {
+                          const isSelected = selectedDocIds.includes(doc.id);
+                          return (
+                            <label
+                              key={doc.id}
+                              className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border ${
+                                isSelected
+                                  ? "bg-violet-50/80 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700/60"
+                                  : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800/80 hover:border-zinc-300"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isSelected) {
+                                    setSelectedDocIds(selectedDocIds.filter((id) => id !== doc.id));
+                                  } else {
+                                    setSelectedDocIds([...selectedDocIds, doc.id]);
+                                  }
+                                }}
+                                className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500 border-zinc-300 cursor-pointer"
+                              />
+                              <FileText className="w-4 h-4 text-violet-500 shrink-0" />
+                              <div className="flex-1 min-w-0 text-left">
+                                <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">{doc.title}</p>
+                                <p className="text-[10px] text-zinc-400 font-medium uppercase">{doc.file_type}</p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Chọn các file tài liệu (PDF, Word, TXT - Cho phép chọn nhiều file):
+                    </label>
+                    <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-5 flex flex-col items-center justify-center space-y-1.5 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
+                      <UploadCloud className="w-7 h-7 text-violet-500" />
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        Nhấp để chọn 1 hoặc nhiều file PDF, .docx, .txt
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        Hệ thống sẽ tổng hợp bối cảnh từ tất cả các file được chọn để sinh đề thi RAG
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.docx,.doc,.txt"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            const newFiles = Array.from(e.target.files);
+                            setUploadedFiles((prev) => [...prev, ...newFiles]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                    Giới hạn vi phạm tab:
-                  </label>
-                  <select
-                    value={maxTabViolations}
-                    onChange={(e) => setMaxTabViolations(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value={1}>Tối đa 1 lần</option>
-                    <option value={3}>Tối đa 3 lần (Mặc định)</option>
-                    <option value={5}>Tối đa 5 lần</option>
-                    <option value={10}>Tối đa 10 lần</option>
-                    <option value={0}>Không giới hạn</option>
-                  </select>
-                </div>
-              </div>
+                    {uploadedFiles.length > 0 && (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-zinc-500 uppercase">
+                          <span>Tệp đính kèm ({uploadedFiles.length}):</span>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedFiles([])}
+                            className="text-red-500 hover:underline cursor-pointer"
+                          >
+                            Xóa tất cả
+                          </button>
+                        </div>
+                        {uploadedFiles.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs"
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText className="w-4 h-4 text-violet-500 shrink-0" />
+                              <span className="font-bold text-zinc-800 dark:text-zinc-200 truncate">{file.name}</span>
+                              <span className="text-[10px] text-zinc-400 font-medium">({(file.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setUploadedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-zinc-400 hover:text-red-500 p-1 cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-650 dark:text-zinc-400 uppercase">
-                    Bao gồm câu hỏi tự luận:
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={includeEssay}
-                    onChange={(e) => setIncludeEssay(e.target.checked)}
-                    className="w-4 h-4 text-violet-600 focus:ring-violet-500 border-zinc-300 rounded cursor-pointer"
+                {/* Custom Prompt Input */}
+                <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-4">
+                  <label className="block text-xs font-bold text-violet-600 dark:text-violet-400 uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" />
+                    Chỉ thị / Mô tả chi tiết đề thi muốn AI tạo (Không bắt buộc):
+                  </label>
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Ví dụ: Tập trung 60% vào chương 2, cho 2 câu hỏi tình huống nâng cao, lời giải giải thích ngắn gọn..."
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white resize-none"
                   />
                 </div>
 
-                {includeEssay && (
+                {/* Configurations Grid: 2 Columns */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-100 dark:border-zinc-800 pt-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                      Số câu hỏi tự luận:
+                      Độ khó:
                     </label>
                     <select
-                      value={essayCount}
-                      onChange={(e) => setEssayCount(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                     >
-                      <option value={1}>1 câu</option>
-                      <option value={2}>2 câu (Mặc định)</option>
-                      <option value={3}>3 câu</option>
-                      <option value={4}>4 câu</option>
+                      <option value="easy">Dễ (Nhận biết & Khái niệm)</option>
+                      <option value="medium">Trung bình (Vận dụng & Tổng hợp)</option>
+                      <option value="hard">Khó (Suy luận & Tình huống)</option>
+                    </select>
+                    <p className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">
+                      {difficulty === "easy"
+                        ? "💡 Trích xuất định nghĩa & khái niệm trực tiếp"
+                        : difficulty === "hard"
+                        ? "🧠 Phân tích tình huống thực tế & phát hiện lỗi ẩn"
+                        : "⚙️ Tổng hợp kiến thức & phân biệt khái niệm"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Số câu hỏi:
+                    </label>
+                    <select
+                      value={totalQuestions}
+                      onChange={(e) => setTotalQuestions(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                    >
                       <option value={5}>5 câu</option>
+                      <option value={10}>10 câu</option>
+                      <option value={15}>15 câu</option>
+                      <option value={20}>20 câu</option>
                     </select>
                   </div>
-                )}
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-                  Hạn chót nộp bài (Không bắt buộc):
-                </label>
-                <input
-                  type="datetime-local"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-sm focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
-                />
-              </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Thời gian làm (Phút):
+                    </label>
+                    <select
+                      value={timeLimitMinutes}
+                      onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                    >
+                      <option value={15}>15 phút</option>
+                      <option value={30}>30 phút (Mặc định)</option>
+                      <option value={45}>45 phút</option>
+                      <option value={60}>60 phút</option>
+                      <option value={90}>90 phút</option>
+                    </select>
+                  </div>
 
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Giới hạn vi phạm tab:
+                    </label>
+                    <select
+                      value={maxTabViolations}
+                      onChange={(e) => setMaxTabViolations(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                    >
+                      <option value={1}>Tối đa 1 lần</option>
+                      <option value={3}>Tối đa 3 lần (Mặc định)</option>
+                      <option value={5}>Tối đa 5 lần</option>
+                      <option value={10}>Tối đa 10 lần</option>
+                      <option value={0}>Không giới hạn</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Essay & Deadline Section */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-100 dark:border-zinc-800 pt-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase">
+                        Bao gồm câu hỏi tự luận:
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={includeEssay}
+                        onChange={(e) => setIncludeEssay(e.target.checked)}
+                        className="w-4 h-4 text-violet-600 focus:ring-violet-500 border-zinc-300 rounded cursor-pointer"
+                      />
+                    </div>
+
+                    {includeEssay && (
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-bold text-zinc-400 uppercase">
+                          Số câu hỏi tự luận:
+                        </label>
+                        <select
+                          value={essayCount}
+                          onChange={(e) => setEssayCount(Number(e.target.value))}
+                          className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                        >
+                          <option value={1}>1 câu</option>
+                          <option value={2}>2 câu (Mặc định)</option>
+                          <option value={3}>3 câu</option>
+                          <option value={4}>4 câu</option>
+                          <option value={5}>5 câu</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+                      Hạn chót nộp bài (Không bắt buộc):
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Sticky Modal Footer Button */}
+            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
               <button
                 type="submit"
+                form="gen-quiz-form"
                 disabled={generating}
-                className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-violet-500/20"
+                className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"
               >
                 {generating ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     Đang thiết kế đề thi AI...
                   </>
                 ) : (
                   <>
-                    <BrainCircuit className="w-4 h-4" />
+                    <BrainCircuit className="w-5 h-5" />
                     Sinh đề & Giao bài ngay
                   </>
                 )}
               </button>
-            </form>
+            </div>
           </motion.div>
         </div>
       )}
@@ -1138,9 +1254,9 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                     {qIdx + 1}
                   </span>
                   <div className="space-y-1">
-                    <p className="text-sm font-extrabold text-zinc-900 dark:text-white leading-relaxed">
+                    <div className="text-sm font-extrabold text-zinc-900 dark:text-white leading-relaxed">
                       <MathRenderer content={q.question_text || ""} />
-                    </p>
+                    </div>
                     {isEssay && (
                       <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 px-1.5 py-0.5 rounded">
                         Tự luận

@@ -19,6 +19,9 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
     step,
     setStep,
     subjects,
+    classrooms,
+    selectedClassroomId,
+    handleClassroomChange,
     loading,
     goals,
     goalsLoading,
@@ -76,10 +79,13 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
         {step === "create_goal" && (
           <GoalsCreateStep
             subjects={subjects}
+            classrooms={classrooms}
+            selectedClassroomId={selectedClassroomId}
             selectedSubjectId={selectedSubjectId}
             targetScore={targetScore}
             deadline={deadline}
             loading={loading}
+            onClassroomChange={handleClassroomChange}
             onSubjectChange={setSelectedSubjectId}
             onTargetScoreChange={setTargetScore}
             onDeadlineChange={setDeadline}

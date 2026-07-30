@@ -15,9 +15,13 @@ Responsibilities:
 
 import concurrent.futures
 import json
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from app.agents.prompts import QUIZ_GENERATOR_SYSTEM_PROMPT
+from app.agents.quiz_generator.prompts import (
+    QUIZ_GENERATOR_SYSTEM_PROMPT,
+    _build_generation_prompt,
+    _build_ratio_prompt,
+)
 from app.agents.quiz_generator.schemas import QuizQuestionItem, QuizResponse
 from app.core.logging import get_logger
 from app.infrastructure.ai import generate_content_deepseek
@@ -206,86 +210,7 @@ def remove_duplicate_questions(
     return unique
 
 
-# ---------------------------------------------------------------------------
-# Private helpers — prompt construction
-# ---------------------------------------------------------------------------
 
-
-def _build_ratio_prompt(
-    question_type: str,
-    total_questions: int,
-    essay_count: int,
-) -> Tuple[str, int]:
-    """
-    Build the ratio-constraint section for mixed-type quizzes.
-
-    Returns a tuple of ``(ratio_prompt_str, resolved_essay_count)``.
-    When ``question_type`` is not ``"mixed"`` the prompt is empty and
-    ``essay_count`` is returned unchanged.
-    """
-    if question_type != "mixed":
-        return "", essay_count
-
-    if essay_count <= 0:
-        essay_count = max(1, round(total_questions * 0.3))
-
-    mcq_count = max(0, total_questions - essay_count)
-    ratio_prompt = (
-        f"\n⚠️ ĐẶC BIỆT LƯU Ý VỀ TỶ LỆ CÂU HỎI:\n"
-        f"- Tổng số câu hỏi trong đề phải khớp chính xác {total_questions} câu.\n"
-        f"- Đề thi phải chứa chính xác {mcq_count} câu hỏi trắc nghiệm (mcq) đầu tiên, "
-        f"và chính xác {essay_count} câu hỏi tự luận (essay) ở cuối.\n"
-        f"- Hãy đảm bảo thuộc tính `question_type` được thiết lập chính xác tương ứng "
-        f"(mcq cho trắc nghiệm và essay cho tự luận).\n"
-        f"- Tuyệt đối bắt buộc tuân thủ đúng số lượng tỷ lệ này!"
-    )
-    return ratio_prompt, essay_count
-
-
-def _build_generation_prompt(
-    subject: str,
-    topic: str,
-    difficulty: str,
-    total_questions: int,
-    question_type: str,
-    essay_count: int,
-    context: str,
-) -> str:
-    """
-    Assemble the full user prompt for quiz generation.
-
-    Combines the base system prompt, an optional ratio constraint section
-    (for mixed question types), a prompt injection defence directive, and
-    the RAG context when one is provided.
-    """
-    ratio_prompt, _ = _build_ratio_prompt(question_type, total_questions, essay_count)
-
-    base_prompt = (
-        QUIZ_GENERATOR_SYSTEM_PROMPT.format(
-            subject=subject,
-            topic=topic,
-            difficulty=difficulty,
-            total_questions=total_questions,
-            question_type=question_type,
-        )
-        + ratio_prompt
-    )
-
-    if not context:
-        return base_prompt
-
-    return (
-        f"{base_prompt}{_SECURITY_DIRECTIVE}\n"
-        f"TÀI LIỆU THAM KHẢO ĐƯỢC CUNG CẤP (RAG CONTEXT):\n"
-        f"----------------------------------\n"
-        f"{context}\n"
-        f"----------------------------------\n"
-        f"Yêu cầu bắt buộc: Hãy thiết kế các câu hỏi bám sát các nội dung, kiến thức được đề cập "
-        f"trong Tài liệu tham khảo trên. \n"
-        f"Nếu Tài liệu tham khảo không chứa thông tin hoặc không đủ thông tin về chủ đề '{topic}', "
-        f"hãy tự động sử dụng kiến thức học thuật chuyên môn chuẩn của bạn để soạn thảo đầy đủ số "
-        f"lượng câu hỏi chất lượng cao nhất.\n"
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +324,7 @@ def _generate_quiz_batched(
     question_type: str,
     context: str,
     essay_count: int,
+    custom_prompt: Optional[str] = None,
 ) -> QuizResponse:
     """
     Generate a quiz by splitting the request into two concurrent batches.
@@ -414,7 +340,13 @@ def _generate_quiz_batched(
     batch1_kwargs, batch2_kwargs = _compute_batch_params(
         total_questions, question_type, essay_count
     )
-    shared_kwargs = {"subject": subject, "topic": topic, "difficulty": difficulty, "context": context}
+    shared_kwargs = {
+        "subject": subject,
+        "topic": topic,
+        "difficulty": difficulty,
+        "context": context,
+        "custom_prompt": custom_prompt,
+    }
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         future1 = executor.submit(generate_quiz, **shared_kwargs, **batch1_kwargs, is_subbatch=True)
@@ -439,6 +371,7 @@ def generate_quiz(
     context: str = "",
     essay_count: int = 0,
     is_subbatch: bool = False,
+    custom_prompt: Optional[str] = None,
 ) -> QuizResponse:
     """
     Generate a structured quiz using the NVIDIA NIM LLM.
@@ -456,6 +389,7 @@ def generate_quiz(
         question_type:   ``"mcq"``, ``"essay"``, or ``"mixed"``.
         context:         Optional RAG text to ground questions in source material.
         essay_count:     Number of essay questions (only relevant for ``"mixed"``).
+        custom_prompt:   Optional custom prompt/instructions from the teacher.
 
     Returns:
         A validated ``QuizResponse`` containing the requested questions.
@@ -472,6 +406,7 @@ def generate_quiz(
             question_type=question_type,
             context=context,
             essay_count=essay_count,
+            custom_prompt=custom_prompt,
         )
 
     # Resolve essay_count early so the prompt builder sees the final value.
@@ -486,6 +421,7 @@ def generate_quiz(
         question_type=question_type,
         essay_count=essay_count,
         context=context,
+        custom_prompt=custom_prompt,
     )
     messages = [{"role": "user", "content": prompt}]
 

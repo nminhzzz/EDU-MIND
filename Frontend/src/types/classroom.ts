@@ -8,6 +8,11 @@ export interface Classroom {
   description: string | null;
   created_at: string;
   student_count?: number;
+  subject?: {
+    id: number;
+    name: string;
+    code: string;
+  } | null;
 }
 
 export interface ClassroomStudent {

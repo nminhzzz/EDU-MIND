@@ -51,6 +51,8 @@ async def create_or_update_unified_draft(
         subject_obj=subject,
         target_score=body.target_score,
         deadline=body.deadline,
+        classroom_id=body.classroom_id,
+        db=db,
     )
     return {
         "message": "Sinh lộ trình nháp hợp nhất thành công!",

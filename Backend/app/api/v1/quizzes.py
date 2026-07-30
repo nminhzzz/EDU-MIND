@@ -41,6 +41,9 @@ from app.models.quiz import Quiz
 
 router = APIRouter()
 
+# Deduplicate self-healing background tasks cho AI assessment
+_ai_assessment_healing: set[int] = set()
+
 
 async def _analytics_background(
     student_id: int, subject_id: int, quiz_id: int, score: float
@@ -254,6 +257,8 @@ async def generate_classroom_quiz_api(
             time_limit_minutes=body.time_limit_minutes,
             max_tab_violations=body.max_tab_violations,
             document_id=body.document_id,
+            document_ids=body.document_ids,
+            custom_prompt=body.custom_prompt,
             include_essay=body.include_essay,
             essay_count=body.essay_count,
         )
@@ -270,20 +275,22 @@ async def generate_classroom_quiz_api(
     "/classrooms/{classroom_id}/generate-from-file",
     response_model=QuizDetailResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Giáo viên sinh đề thi tự động từ file tải lên (PDF/Word/TXT) bằng AI RAG",
+    summary="Giáo viên sinh đề thi tự động từ nhiều file tải lên (PDF/Word/TXT) bằng AI RAG",
 )
 async def generate_classroom_quiz_from_file_api(
     classroom_id: int,
-    file: UploadFile = File(...),
+    files: Optional[List[UploadFile]] = File(default=None),
+    file: Optional[UploadFile] = File(default=None),
     subject_id: int = Form(...),
-    topic: Optional[str] = Form(None),
-    difficulty: str = Form("medium"),
-    total_questions: int = Form(5),
-    deadline: Optional[datetime] = Form(None),
-    time_limit_minutes: Optional[int] = Form(30),
-    max_tab_violations: Optional[int] = Form(3),
-    include_essay: bool = Form(False),
-    essay_count: int = Form(0),
+    topic: Optional[str] = Form(default=None),
+    difficulty: str = Form(default="medium"),
+    total_questions: int = Form(default=5),
+    deadline: Optional[datetime] = Form(default=None),
+    time_limit_minutes: Optional[int] = Form(default=30),
+    max_tab_violations: Optional[int] = Form(default=3),
+    custom_prompt: Optional[str] = Form(default=None),
+    include_essay: bool = Form(default=False),
+    essay_count: int = Form(default=0),
     db: Session = Depends(get_db),
     current_teacher: User = Depends(get_current_teacher),
 ):
@@ -293,20 +300,30 @@ async def generate_classroom_quiz_from_file_api(
     if classroom.teacher_id != current_teacher.id and current_teacher.role != "admin":
         raise HTTPException(status_code=403, detail="Bạn không phải là giáo viên của lớp học này.")
 
+    upload_files = files or ([file] if file else [])
+    if not upload_files:
+        raise HTTPException(status_code=400, detail="Vui lòng tải lên ít nhất 1 tệp tài liệu (PDF, Word, TXT).")
+
     try:
-        file_bytes = await file.read()
-        return await generate_classroom_quiz_from_file(
+        from app.services.quiz.generation import generate_classroom_quiz_from_files
+
+        file_tuples = []
+        for f in upload_files:
+            content = await f.read()
+            file_tuples.append((content, f.filename or "tai_lieu.pdf"))
+
+        return await generate_classroom_quiz_from_files(
             db=db,
             subject_id=subject_id,
             classroom_id=classroom_id,
-            file_bytes=file_bytes,
-            filename=file.filename or "tai_lieu.pdf",
+            files=file_tuples,
             topic=topic,
             difficulty=difficulty,
             total_questions=total_questions,
             deadline=deadline,
             time_limit_minutes=time_limit_minutes,
             max_tab_violations=max_tab_violations,
+            custom_prompt=custom_prompt,
             include_essay=include_essay,
             essay_count=essay_count,
         )
@@ -388,11 +405,37 @@ async def upload_essay_file(
 )
 def get_quiz_review_by_id(
     quiz_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        return get_quiz_review(db, quiz_id, current_user)
+        quiz = get_quiz_review(db, quiz_id, current_user)
+
+        # Self-healing: nếu ai_assessment bị null do background task lỗi trước đó,
+        # tự động kích hoạt lại background task (chỉ 1 lần duy nhất mỗi attempt)
+        if (
+            current_user.role == UserRole.STUDENT
+            and hasattr(quiz, "latest_attempt")
+            and quiz.latest_attempt
+            and quiz.latest_attempt.ai_assessment is None
+            and quiz.latest_attempt.id not in _ai_assessment_healing
+        ):
+            from app.services.quiz.attempts import process_ai_quiz_assessment_background
+            attempt = quiz.latest_attempt
+            _ai_assessment_healing.add(attempt.id)
+            background_tasks.add_task(
+                process_ai_quiz_assessment_background,
+                attempt.id,
+                quiz.title or "Đề thi",
+                quiz.questions or [],
+                attempt.answers or [],
+                float(attempt.score),
+                attempt.correct_count,
+                attempt.wrong_count,
+            )
+
+        return quiz
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except PermissionError as exc:
@@ -428,7 +471,7 @@ def submit_quiz(
             )
 
     try:
-        attempt, subject_id = submit_student_quiz(
+        attempt, subject_id, quiz_title, questions_list, answers_json = submit_student_quiz(
             db=db,
             quiz_id=quiz_id,
             student_id=current_user.id,
@@ -437,6 +480,19 @@ def submit_quiz(
             essay_file_path=body.essay_file_path,
             tab_violations_count=body.tab_violations_count,
         )
+
+        from app.services.quiz.attempts import process_ai_quiz_assessment_background
+        background_tasks.add_task(
+            process_ai_quiz_assessment_background,
+            attempt.id,
+            quiz_title,
+            questions_list,
+            answers_json,
+            float(attempt.score),
+            attempt.correct_count,
+            attempt.wrong_count,
+        )
+
         if subject_id is not None:
             background_tasks.add_task(
                 _analytics_background,

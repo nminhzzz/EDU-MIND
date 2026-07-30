@@ -32,6 +32,8 @@ class ClassroomQuizCreateRequest(BaseModel):
     subject_id: int = Field(description="ID môn học")
     topic: Optional[str] = Field(None, description="Chủ đề kiến thức cần kiểm tra")
     document_id: Optional[int] = Field(None, description="ID tài liệu đã upload trên hệ thống")
+    document_ids: Optional[List[int]] = Field(None, description="Danh sách ID tài liệu chọn để sinh đề")
+    custom_prompt: Optional[str] = Field(None, description="Yêu cầu/chỉ thị riêng của giáo viên cho AI")
     difficulty: str = Field(default="medium", description="Độ khó: easy, medium, hard")
     total_questions: int = Field(default=5, description="Số lượng câu hỏi cần tạo")
     deadline: Optional[datetime] = Field(None, description="Hạn chót nộp bài (ISO-8601)")

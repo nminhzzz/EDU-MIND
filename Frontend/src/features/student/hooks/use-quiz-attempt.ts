@@ -104,6 +104,59 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     loadQuiz();
   }, [loadQuiz]);
 
+  // Polling ngầm để cập nhật nhận xét AI khi bài làm vừa được chấm xong
+  const [needsAiPolling, setNeedsAiPolling] = useState(false);
+
+  useEffect(() => {
+    // Kích hoạt polling khi vào review mode mà chưa có ai_assessment
+    if (isReview && quiz?.latest_attempt && !quiz.latest_attempt.ai_assessment) {
+      const submittedAt = quiz.latest_attempt.submitted_at as string | undefined;
+      if (submittedAt) {
+        // Backend trả submitted_at dạng UTC nhưng thiếu 'Z' → append 'Z' để JS parse đúng timezone
+        const utcDate = submittedAt.endsWith("Z") ? submittedAt : submittedAt + "Z";
+        const elapsed = Date.now() - new Date(utcDate).getTime();
+        if (elapsed < 120_000) {
+          setNeedsAiPolling(true);
+        }
+      }
+    }
+  }, [isReview, quiz?.latest_attempt?.ai_assessment]);
+
+  useEffect(() => {
+    if (!needsAiPolling || !quiz) return;
+
+    let pollCount = 0;
+    const maxPolls = 30;
+    let cancelled = false;
+
+    const timer = setInterval(async () => {
+      if (cancelled) return;
+      pollCount++;
+      if (pollCount > maxPolls) {
+        clearInterval(timer);
+        setNeedsAiPolling(false);
+        return;
+      }
+
+      try {
+        const reviewRes = await quizService.getReview(quiz.id);
+        const quizData = normalizeQuiz(reviewRes.data);
+        if (quizData.latest_attempt?.ai_assessment) {
+          setQuiz(quizData);
+          clearInterval(timer);
+          setNeedsAiPolling(false);
+        }
+      } catch {
+        // Ignored polling errors
+      }
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [needsAiPolling, quiz?.id]);
+
   // Tick elapsed time
   useEffect(() => {
     if (loading || isReview || !quiz) return;

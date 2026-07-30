@@ -14,6 +14,14 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.infrastructure.ai import generate_content_deepseek
 
+from app.agents.auto_grading.prompts import (
+    ESSAY_GRADER_SYSTEM_INSTRUCTION,
+    MULTIMODAL_OCR_PROMPT,
+    QUIZ_ASSESSMENT_SYSTEM_INSTRUCTION,
+    build_essay_grader_prompt,
+    build_quiz_assessment_prompt,
+)
+
 logger = get_logger(__name__)
 
 
@@ -34,7 +42,7 @@ def extract_multimodal_file(file_path: str, mime_type: str) -> str:
                 {
                     "parts": [
                         {
-                            "text": "Hãy trích xuất và chép lại chính xác, đầy đủ toàn bộ nội dung văn bản, lời giải, câu trả lời tự luận của học sinh trong tệp tài liệu/hình ảnh này. Chỉ trả về phần văn bản trích xuất được, không bình luận thêm."
+                            "text": MULTIMODAL_OCR_PROMPT
                         },
                         {
                             "inlineData": {
@@ -72,33 +80,13 @@ def grade_essay_with_ai(
     """
     AI Grader Agent chấm điểm câu tự luận của học sinh đối chiếu với đáp án mẫu và tiêu chí Rubric.
     """
-    system_instruction = (
-        "Bạn là giám khảo chấm thi tự luận chuyên nghiệp và công tâm. "
-        "Hãy so sánh câu trả lời của Học sinh với Đáp án mẫu để chấm điểm."
+    system_instruction = ESSAY_GRADER_SYSTEM_INSTRUCTION
+    prompt = build_essay_grader_prompt(
+        question_text=question_text,
+        student_answer=student_answer,
+        model_answer=model_answer,
+        explanation=explanation,
     )
-
-    prompt = f"""Hãy đánh giá câu trả lời tự luận dưới đây của Học sinh đối chiếu với Đáp án mẫu.
-
-CÂU HỎI:
-{question_text}
-
-ĐÁP ÁN MẪU (MODEL ANSWER):
-{model_answer}
-
-TIÊU CHÍ CHẤM ĐIỂM (RUBRIC):
-{explanation or "Chấm điểm dựa trên độ chính xác, tính logic và mức độ hoàn thành ý trả lời."}
-
-BÀI LÀM CỦA HỌC SINH (TRÍCH XUẤT TỪ FILE):
-{student_answer}
-
-YÊU CẦU:
-Chỉ ra điểm số (từ 0.0 đến 10.0) và viết một nhận xét ngắn gọn (dưới 3 câu) về bài làm của học sinh.
-Trả về dữ liệu dưới định dạng JSON sau:
-{{
-    "score": 8.5,
-    "feedback": "Nhận xét của bạn..."
-}}
-"""
     try:
         class EssayGradeSchema(BaseModel):
             score: float = Field(description="Điểm số thang 10, từ 0.0 đến 10.0")
@@ -138,11 +126,7 @@ def generate_quiz_assessment_with_ai(
     AI Diagnostic Agent: Phân tích kết quả bài thi của học sinh, đưa ra Lời phê tổng thể cá nhân hóa,
     điểm mạnh và lỗ hổng kiến thức cần củng cố.
     """
-    system_instruction = (
-        "Bạn là một Giám khảo & Giáo viên Chuyên môn xuất sắc. "
-        "Hãy phân tích chi tiết từng câu hỏi trong đề thi để chỉ ra ĐÍCH XÁC các chủ đề/khái niệm kiến thức học sinh đã nắm vững (strengths) "
-        "và các lỗ hổng kiến thức học sinh làm sai (weaknesses)."
-    )
+    system_instruction = QUIZ_ASSESSMENT_SYSTEM_INSTRUCTION
 
     q_summaries = []
     for ans in answers_json:
@@ -161,29 +145,13 @@ def generate_quiz_assessment_with_ai(
         )
 
     summary_text = "\n\n".join(q_summaries)
-    prompt = f"""Hãy phân tích kết quả bài kiểm tra môn học dưới đây của Học sinh:
-
-THÔNG TIN BÀI THI:
-- Tiêu đề đề thi: {quiz_title}
-- Điểm số đạt được: {score:.1f}/10
-- Số câu đúng: {correct_count}/{len(questions_list)}
-
-CHI TIẾT CÁC CÂU HỎI VÀ KẾT QUẢ BÀI LÀM:
-{summary_text}
-
-YÊU CẦU ĐÁNH GIÁ CHUYÊN SÂU:
-1. `overall_feedback`: Viết Lời phê chuyên môn cá nhân hóa (2-3 câu), nhận xét sát thực tế về tư duy và mức độ làm bài của học sinh đối với đề thi '{quiz_title}'.
-2. `strengths`: Danh sách 1-3 khái niệm/kiến thức CỤ THỂ MÔN HỌC mà học sinh đã làm đúng và thể hiện nắm vững.
-3. `weaknesses`: Danh sách 1-3 khái niệm/lỗ hổng kiến thức CỤ THỂ DỰA TRÊN CÁC CÂU SAI mà học sinh còn nhầm lẫn.
-4. `recommendation`: Lời khuyên bước ôn tập cụ thể tiếp theo.
-
-Trả về dữ liệu dưới định dạng JSON:
-{{
-  "overall_feedback": "Lời phê ngắn gọn...",
-  "strengths": ["Kiến thức đúng 1"],
-  "weaknesses": ["Lỗ hổng kiến thức 1"],
-  "recommendation": "Gợi ý ôn tập..."
-}}"""
+    prompt = build_quiz_assessment_prompt(
+        quiz_title=quiz_title,
+        score=score,
+        questions_count=len(questions_list),
+        correct_count=correct_count,
+        summary_text=summary_text,
+    )
 
     try:
         class QuizAssessmentSchema(BaseModel):

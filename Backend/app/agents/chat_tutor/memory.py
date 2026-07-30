@@ -11,6 +11,10 @@ from bson import ObjectId
 from app.infrastructure.ai import generate_content_deepseek
 from app.core.logging import get_logger
 from app.database.mongodb import get_mongodb_db
+from app.agents.chat_tutor.prompts import (
+    SUMMARY_SYSTEM_INSTRUCTION,
+    build_summarize_prompt,
+)
 
 logger = get_logger(__name__)
 
@@ -138,26 +142,12 @@ async def summarize_session_if_needed(session_id: str) -> None:
         return
 
     conversation_text = "\n".join(messages_to_sum)
-    if current_summary:
-        prompt = (
-            f"Tóm tắt bối cảnh cũ trước đó:\n{current_summary}\n\n"
-            f"Các tin nhắn hội thoại mới diễn ra tiếp theo:\n{conversation_text}\n\n"
-            "Hãy gộp và cập nhật một tóm tắt hội thoại mới, ngắn gọn, súc tích bằng tiếng Việt, "
-            "ghi nhận đầy đủ các thông tin cốt lõi (chủ đề thảo luận, kiến thức học sinh gặp khó khăn, "
-            "lời khuyên của gia sư). Không cần lời chào hay dẫn dắt, chỉ trả về đoạn tóm tắt."
-        )
-    else:
-        prompt = (
-            f"Các tin nhắn hội thoại cần tóm tắt:\n{conversation_text}\n\n"
-            "Hãy tạo một đoạn tóm tắt ngắn gọn, súc tích bằng tiếng Việt về cuộc hội thoại trên, "
-            "nêu rõ chủ đề thảo luận, kiến thức học sinh gặp khó khăn và lời khuyên của gia sư. "
-            "Chỉ trả về đoạn tóm tắt."
-        )
+    prompt = build_summarize_prompt(conversation_text, current_summary)
 
     try:
         new_summary = generate_content_deepseek(
             messages=[{"role": "user", "content": prompt}],
-            system_instruction="Bạn là trợ lý ảo phân tích hội thoại.",
+            system_instruction=SUMMARY_SYSTEM_INSTRUCTION,
             temperature=0.3,
         )
 

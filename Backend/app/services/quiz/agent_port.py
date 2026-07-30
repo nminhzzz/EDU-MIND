@@ -22,6 +22,7 @@ class QuizGeneratorPort:
         question_type: str,
         context: str,
         essay_count: int = 0,
+        custom_prompt: Any = None,
     ) -> Any:
         return generate_quiz(
             subject=subject,
@@ -31,6 +32,7 @@ class QuizGeneratorPort:
             question_type=question_type,
             context=context,
             essay_count=essay_count,
+            custom_prompt=custom_prompt,
         )
 
 

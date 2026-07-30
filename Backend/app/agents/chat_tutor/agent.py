@@ -1,7 +1,10 @@
 import asyncio
 from typing import Optional, List, Dict, Any, AsyncGenerator
-from app.infrastructure.ai import generate_content_deepseek, generate_content_deepseek_stream
-from app.agents.prompts import CHAT_TUTOR_SYSTEM_PROMPT
+from app.agents.chat_tutor.prompts import (
+    CHAT_TUTOR_SYSTEM_PROMPT,
+    EXPLAIN_QUIZ_SYSTEM_INSTRUCTION,
+    build_explain_quiz_prompt,
+)
 from app.agents.tools.datetime_tool import get_current_date
 from app.agents.tools.db_tools import (
     get_student_study_plans_db,
@@ -164,16 +167,11 @@ async def chat_with_tutor(
             )
             analysis_context += f"  - Giải thích lý thuyết: {q['explanation']}\n\n"
 
-        system_instruction = (
-            "Bạn là một gia sư AI thân thiện. Nhiệm vụ của bạn là phân tích bài thi thử gần nhất của học sinh dựa trên dữ liệu đầu vào. "
-            "Hãy tóm tắt học lực của họ qua bài thi này, chỉ ra những câu họ đã làm sai, phân tích cặn kẽ TẠI SAO họ lại sai (giải thích từ lỗi hiểu lầm thường gặp của học sinh) "
-            "và hướng dẫn họ ôn tập lại phần lý thuyết liên quan dựa vào phần 'Giải thích lý thuyết' được cung cấp. Giọng điệu thân thiện, động viên."
-        )
-
+        system_instruction = EXPLAIN_QUIZ_SYSTEM_INSTRUCTION
         messages = [
             {
                 "role": "user",
-                "content": f"Hãy phân tích chi tiết kết quả làm bài của tôi và giải thích các câu sai.\n\nDữ liệu bài làm:\n{analysis_context}",
+                "content": build_explain_quiz_prompt(analysis_context),
             }
         ]
 

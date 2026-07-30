@@ -1,15 +1,17 @@
-"use client";
-
 import React from "react";
 import { motion } from "framer-motion";
 import type { Subject } from "@/features/student/types";
+import type { Classroom } from "@/types/classroom";
 
 interface GoalsCreateStepProps {
   subjects: Subject[];
+  classrooms?: Classroom[];
+  selectedClassroomId?: number;
   selectedSubjectId: string;
   targetScore: number;
   deadline: string;
   loading: boolean;
+  onClassroomChange?: (value: string) => void;
   onSubjectChange: (value: string) => void;
   onTargetScoreChange: (value: number) => void;
   onDeadlineChange: (value: string) => void;
@@ -19,10 +21,13 @@ interface GoalsCreateStepProps {
 
 export function GoalsCreateStep({
   subjects,
+  classrooms = [],
+  selectedClassroomId,
   selectedSubjectId,
   targetScore,
   deadline,
   loading,
+  onClassroomChange,
   onSubjectChange,
   onTargetScoreChange,
   onDeadlineChange,
@@ -45,23 +50,34 @@ export function GoalsCreateStep({
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
-              Chọn môn học cần lên lộ trình:
+              Chọn Lớp học bạn đã tham gia để lập lộ trình:
             </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => onSubjectChange(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
-            >
-              {subjects.length === 0 ? (
-                <option value="">Không tìm thấy môn học nào</option>
-              ) : (
-                subjects.map((sub) => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name} ({sub.code})
-                  </option>
-                ))
-              )}
-            </select>
+            {classrooms.length > 0 ? (
+              <select
+                value={selectedClassroomId ? String(selectedClassroomId) : ""}
+                onChange={(e) => onClassroomChange?.(e.target.value)}
+                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+              >
+                {classrooms.map((cls) => {
+                  const subName =
+                    cls.subject?.name ||
+                    subjects.find((s) => s.id === cls.subject_id)?.name ||
+                    "Môn học";
+                  return (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.class_name} — Môn: {subName} (Mã lớp: {cls.class_code})
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 text-sm space-y-2">
+                <p className="font-semibold">⚠️ Bạn chưa tham gia lớp học nào!</p>
+                <p className="text-xs">
+                  Để AI lập lộ trình học tập cá nhân hóa bám sát giáo trình của Giáo viên, bạn cần tham gia ít nhất 1 lớp học bằng Mã lớp do Giáo viên cung cấp.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

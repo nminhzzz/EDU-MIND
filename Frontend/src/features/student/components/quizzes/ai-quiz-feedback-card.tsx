@@ -15,6 +15,7 @@ interface AIQuizFeedbackCardProps {
   score: number;
   correctCount: number;
   totalQuestions: number;
+  submittedAt?: string;
   onRetryWrong?: () => void;
 }
 
@@ -23,9 +24,16 @@ export function AIQuizFeedbackCard({
   score,
   correctCount,
   totalQuestions,
+  submittedAt,
   onRetryWrong,
 }: AIQuizFeedbackCardProps) {
   if (!assessment && score === undefined) return null;
+
+  // Backend trả submitted_at dạng UTC nhưng thiếu 'Z' → append 'Z' để JS parse đúng timezone
+  const isRecentlySubmitted = submittedAt
+    ? Date.now() - new Date(submittedAt.endsWith("Z") ? submittedAt : submittedAt + "Z").getTime() < 120_000
+    : false;
+  const isGenerating = !assessment && isRecentlySubmitted;
 
   const defaultFeedback =
     score >= 8.0
@@ -56,9 +64,22 @@ export function AIQuizFeedbackCard({
               {score.toFixed(1)} / 10 Điểm
             </span>
           </div>
-          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-relaxed italic">
-            "{overall}"
-          </p>
+
+          {isGenerating ? (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-sm font-bold text-violet-600 dark:text-violet-300 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-violet-500 animate-ping" />
+                AI Tutor đang phân tích lỗ hổng kiến thức & tổng hợp lời phê ngầm...
+              </p>
+              <div className="w-full bg-violet-200/50 dark:bg-violet-950/50 h-1.5 rounded-full overflow-hidden">
+                <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full w-2/3 animate-pulse rounded-full" />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-relaxed italic">
+              "{overall}"
+            </p>
+          )}
         </div>
       </div>
 

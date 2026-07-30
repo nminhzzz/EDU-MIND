@@ -78,6 +78,8 @@ export const classroomApi = {
       subject_id: number;
       topic?: string;
       document_id?: number;
+      document_ids?: number[];
+      custom_prompt?: string;
       difficulty: string;
       total_questions: number;
       deadline?: string;

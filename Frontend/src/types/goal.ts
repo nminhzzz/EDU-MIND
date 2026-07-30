@@ -8,6 +8,7 @@ export interface StudentPreference {
 
 export interface DraftRequest {
   subject_id: number;
+  classroom_id?: number;
   target_score: number;
   deadline: string;
 }
@@ -32,6 +33,7 @@ export interface DraftResponse {
 
 export interface ConfirmRequest {
   subject_id: number;
+  classroom_id?: number;
   target_score: number;
   deadline: string;
   plan: RoadmapPlan;

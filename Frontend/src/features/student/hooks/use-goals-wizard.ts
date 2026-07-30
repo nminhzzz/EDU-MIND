@@ -1,8 +1,8 @@
-"use client";
-
 import { useCallback, useEffect, useState } from "react";
 import { goalService } from "@/features/student/services/goal";
 import { subjectService } from "@/features/student/services/subject";
+import { classroomApi } from "@/services/classroom";
+import type { Classroom } from "@/types/classroom";
 import { useConfirmDialog } from "@/features/student/hooks/use-confirm-dialog";
 import type { DraftResponse, StudyGoalResponse, Subject } from "@/features/student/types";
 import { TimeSlot, WeekSchedule } from "@/features/student/types/schedule";
@@ -22,10 +22,11 @@ export type GoalsWizardStep =
   | "roadmap_draft"
   | "success";
 
-export function useGoalsWizard() {
+export function useGoalsWizard(classroomId?: number) {
   const confirm = useConfirmDialog();
   const [step, setStep] = useState<GoalsWizardStep>("checking");
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState<StudyGoalResponse[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
@@ -34,6 +35,7 @@ export function useGoalsWizard() {
   const [preferredTime, setPreferredTime] = useState<string>("evening");
   const [schedule, setSchedule] = useState<WeekSchedule>(createDefaultWeekSchedule);
 
+  const [selectedClassroomId, setSelectedClassroomId] = useState<number | undefined>(classroomId);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [targetScore, setTargetScore] = useState<number>(8);
   const [deadline, setDeadline] = useState<string>("");
@@ -42,7 +44,7 @@ export function useGoalsWizard() {
   useEffect(() => {
     const checkScheduleAndLoadData = async () => {
       try {
-        const [subjectsRes, goalsRes, prefRes] = await Promise.all([
+        const [subjectsRes, goalsRes, prefRes, classroomsRes] = await Promise.all([
           subjectService.list(),
           goalService.getGoals(),
           goalService.getPreferences().catch((err) => {
@@ -51,10 +53,20 @@ export function useGoalsWizard() {
             }
             throw err;
           }),
+          classroomApi.listMine().catch(() => ({ data: [] })),
         ]);
 
         setSubjects(subjectsRes.data);
-        if (subjectsRes.data.length > 0) {
+        const myClassrooms = classroomsRes.data || [];
+        setClassrooms(myClassrooms);
+
+        if (myClassrooms.length > 0) {
+          const targetCls = classroomId
+            ? myClassrooms.find((c) => c.id === classroomId) || myClassrooms[0]
+            : myClassrooms[0];
+          setSelectedClassroomId(targetCls.id);
+          setSelectedSubjectId(String(targetCls.subject_id));
+        } else if (subjectsRes.data.length > 0) {
           setSelectedSubjectId(String(subjectsRes.data[0].id));
         }
 
@@ -86,7 +98,7 @@ export function useGoalsWizard() {
     };
 
     checkScheduleAndLoadData();
-  }, []);
+  }, [classroomId]);
 
   const handleSaveSchedule = useCallback(
     async (e: React.FormEvent) => {
@@ -126,6 +138,7 @@ export function useGoalsWizard() {
       try {
         const res = await goalService.createDraft({
           subject_id: Number(selectedSubjectId),
+          classroom_id: classroomId,
           target_score: targetScore,
           deadline,
         });
@@ -138,7 +151,7 @@ export function useGoalsWizard() {
         setLoading(false);
       }
     },
-    [selectedSubjectId, targetScore, deadline],
+    [selectedSubjectId, targetScore, deadline, classroomId],
   );
 
   const handleUpdatePlan = useCallback((updatedPlan: NonNullable<typeof draft>["plan"]) => {
@@ -151,6 +164,7 @@ export function useGoalsWizard() {
     try {
       await goalService.confirmDraft({
         subject_id: Number(selectedSubjectId),
+        classroom_id: classroomId,
         target_score: targetScore,
         deadline,
         plan: draft.plan,
@@ -162,7 +176,7 @@ export function useGoalsWizard() {
     } finally {
       setLoading(false);
     }
-  }, [draft, selectedSubjectId, targetScore, deadline]);
+  }, [draft, selectedSubjectId, targetScore, deadline, classroomId]);
 
   const handleDeleteGoal = useCallback(async (id: number) => {
     if (
@@ -223,6 +237,18 @@ export function useGoalsWizard() {
     [],
   );
 
+  const handleClassroomChange = useCallback(
+    (clsIdStr: string) => {
+      const clsId = Number(clsIdStr);
+      setSelectedClassroomId(clsId);
+      const found = classrooms.find((c) => c.id === clsId);
+      if (found) {
+        setSelectedSubjectId(String(found.subject_id));
+      }
+    },
+    [classrooms],
+  );
+
   const handleCancelDraft = useCallback(() => {
     if (confirm("Bạn có chắc muốn hủy bản nháp lộ trình này để làm lại từ đầu?")) {
       setDraft(null);
@@ -234,6 +260,9 @@ export function useGoalsWizard() {
     step,
     setStep,
     subjects,
+    classrooms,
+    selectedClassroomId,
+    handleClassroomChange,
     loading,
     goals,
     goalsLoading,
