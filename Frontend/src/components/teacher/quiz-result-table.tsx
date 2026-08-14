@@ -63,7 +63,7 @@ export function QuizResultTable({ attempts }: QuizResultTableProps) {
               </td>
               <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate">{att.quiz_title}</td>
               <td className="py-3 px-4 text-center">
-                <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
+                <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${
                   att.score >= 8 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400' :
                   att.score >= 5 ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400' :
                   'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400'
@@ -84,7 +84,7 @@ export function QuizResultTable({ attempts }: QuizResultTableProps) {
               </td>
               <td className="py-3 px-4 text-center">
                 {att.tab_violations_count ? (
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
                     att.tab_violations_count >= 3
                       ? 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 animate-pulse border border-red-200 dark:border-red-950/50'
                       : 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-950/50'

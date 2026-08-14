@@ -42,7 +42,7 @@ export function GoalsCreateStep({
       exit={{ opacity: 0 }}
       className="space-y-6"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-2xl shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-md shadow-sm">
         <h2 className="text-xl font-black text-zinc-950 dark:text-white uppercase mb-6">
           THIẾT LẬP MỤC TIÊU HỌC TẬP MỚI
         </h2>
@@ -56,7 +56,7 @@ export function GoalsCreateStep({
               <select
                 value={selectedClassroomId ? String(selectedClassroomId) : ""}
                 onChange={(e) => onClassroomChange?.(e.target.value)}
-                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
               >
                 {classrooms.map((cls) => {
                   const subName =
@@ -71,7 +71,7 @@ export function GoalsCreateStep({
                 })}
               </select>
             ) : (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 text-sm space-y-2">
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-md text-amber-600 dark:text-amber-400 text-sm space-y-2">
                 <p className="font-semibold">⚠️ Bạn chưa tham gia lớp học nào!</p>
                 <p className="text-xs">
                   Để AI lập lộ trình học tập cá nhân hóa bám sát giáo trình của Giáo viên, bạn cần tham gia ít nhất 1 lớp học bằng Mã lớp do Giáo viên cung cấp.
@@ -92,7 +92,7 @@ export function GoalsCreateStep({
                 step={0.5}
                 value={targetScore}
                 onChange={(e) => onTargetScoreChange(Number(e.target.value))}
-                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
               />
             </div>
 
@@ -105,7 +105,7 @@ export function GoalsCreateStep({
                 min={new Date().toISOString().split("T")[0]}
                 value={deadline}
                 onChange={(e) => onDeadlineChange(e.target.value)}
-                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+                className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export function GoalsCreateStep({
             <button
               type="submit"
               disabled={loading}
-              className="w-full md:w-fit px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-500/10"
+              className="w-full md:w-fit px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-md text-xs tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-500/10"
             >
               {loading ? "AI ĐANG LẬP LỘ TRÌNH..." : "AI LẬP LỘ TRÌNH THỬ NGAY ->"}
             </button>

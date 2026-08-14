@@ -17,8 +17,8 @@ export function DraftKpiWidgets({ plan, targetScore }: DraftKpiWidgetsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6 w-full">
       {/* 1. Thời lượng */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/50 dark:from-indigo-950/40 dark:via-zinc-900 dark:to-violet-950/30 border border-indigo-100 dark:border-indigo-900/40 p-4 rounded-2xl flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
-        <div className="p-3 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20 shrink-0">
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/50 dark:from-indigo-950/40 dark:via-zinc-900 dark:to-violet-950/30 border border-indigo-100 dark:border-indigo-900/40 p-4 rounded-md flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
+        <div className="p-3 rounded-md bg-indigo-600 text-white shadow-md shadow-indigo-600/20 shrink-0">
           <Calendar className="w-5 h-5" />
         </div>
         <div>
@@ -35,8 +35,8 @@ export function DraftKpiWidgets({ plan, targetScore }: DraftKpiWidgetsProps) {
       </div>
 
       {/* 2. Buổi học */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 dark:from-emerald-950/40 dark:via-zinc-900 dark:to-teal-950/30 border border-emerald-100 dark:border-emerald-900/40 p-4 rounded-2xl flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
-        <div className="p-3 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
+      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 dark:from-emerald-950/40 dark:via-zinc-900 dark:to-teal-950/30 border border-emerald-100 dark:border-emerald-900/40 p-4 rounded-md flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
+        <div className="p-3 rounded-md bg-emerald-600 text-white shadow-md shadow-emerald-600/20 shrink-0">
           <BookOpen className="w-5 h-5" />
         </div>
         <div>
@@ -53,8 +53,8 @@ export function DraftKpiWidgets({ plan, targetScore }: DraftKpiWidgetsProps) {
       </div>
 
       {/* 3. Mật độ học */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 dark:from-amber-950/40 dark:via-zinc-900 dark:to-orange-950/30 border border-amber-100 dark:border-amber-900/40 p-4 rounded-2xl flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
-        <div className="p-3 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20 shrink-0">
+      <div className="relative overflow-hidden bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 dark:from-amber-950/40 dark:via-zinc-900 dark:to-orange-950/30 border border-amber-100 dark:border-amber-900/40 p-4 rounded-md flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
+        <div className="p-3 rounded-md bg-amber-500 text-white shadow-md shadow-amber-500/20 shrink-0">
           <Zap className="w-5 h-5" />
         </div>
         <div>
@@ -71,8 +71,8 @@ export function DraftKpiWidgets({ plan, targetScore }: DraftKpiWidgetsProps) {
       </div>
 
       {/* 4. Mục tiêu */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-50/80 via-white to-fuchsia-50/50 dark:from-purple-950/40 dark:via-zinc-900 dark:to-fuchsia-950/30 border border-purple-100 dark:border-purple-900/40 p-4 rounded-2xl flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
-        <div className="p-3 rounded-xl bg-purple-600 text-white shadow-md shadow-purple-600/20 shrink-0">
+      <div className="relative overflow-hidden bg-gradient-to-br from-purple-50/80 via-white to-fuchsia-50/50 dark:from-purple-950/40 dark:via-zinc-900 dark:to-fuchsia-950/30 border border-purple-100 dark:border-purple-900/40 p-4 rounded-md flex items-center gap-3.5 shadow-xs hover:shadow-md transition-all">
+        <div className="p-3 rounded-md bg-purple-600 text-white shadow-md shadow-purple-600/20 shrink-0">
           <Target className="w-5 h-5" />
         </div>
         <div>

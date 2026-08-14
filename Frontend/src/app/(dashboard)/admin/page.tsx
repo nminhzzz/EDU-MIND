@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   if (isLoading || analyticsLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 font-mono">
           Đang tải dữ liệu báo cáo hệ thống...
         </p>
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="max-w-md mx-auto text-center py-20 space-y-6">
-        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-full flex items-center justify-center text-2xl font-black mx-auto">
+        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-md flex items-center justify-center text-2xl font-black mx-auto">
           !
         </div>
         <div className="space-y-2">
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         </div>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs"
+          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs"
         >
           Quay lại Trang chủ
         </Link>
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 text-left">
       {/* Lời chào mừng của Admin */}
-      <div className="bg-gradient-to-tr from-indigo-500/10 via-violet-500/5 to-transparent border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+      <div className="bg-gradient-to-tr from-indigo-500/10 via-violet-500/5 to-transparent border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-md flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
         <div className="space-y-2">
           <span className="text-[10px] font-sans font-bold tracking-wider text-indigo-600 dark:text-indigo-400 block uppercase">
             Trang Quản trị Hệ Thống
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-2xl shadow-sm"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-md shadow-sm"
         >
           <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
             Học sinh hệ thống
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-2xl shadow-sm"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-md shadow-sm"
         >
           <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
             Giáo viên giảng dạy
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-2xl shadow-sm"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-md shadow-sm"
         >
           <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
             Tổng số lớp học
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-2xl shadow-sm"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-850 p-6 rounded-md shadow-sm"
         >
           <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
             Mục tiêu đang chạy
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
       {/* Phân khu quản lý nhanh */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Card Quản lý User */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm flex flex-col justify-between">
           <div className="space-y-3">
             <h3 className="font-bold text-sm tracking-wide text-zinc-900 dark:text-white uppercase">
               Quản lý người dùng
@@ -183,14 +183,14 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/users"
-            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs text-center transition-all cursor-pointer"
+            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs text-center transition-all cursor-pointer"
           >
             Quản lý Thành viên
           </Link>
         </div>
 
         {/* Card Quản lý Lớp học */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm flex flex-col justify-between">
           <div className="space-y-3">
             <h3 className="font-bold text-sm tracking-wide text-zinc-900 dark:text-white uppercase">
               Quản lý lớp học
@@ -202,14 +202,14 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/classrooms"
-            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs text-center transition-all cursor-pointer"
+            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs text-center transition-all cursor-pointer"
           >
             Quản lý Lớp học
           </Link>
         </div>
 
         {/* Card Quản lý Môn học */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm flex flex-col justify-between">
           <div className="space-y-3">
             <h3 className="font-bold text-sm tracking-wide text-zinc-900 dark:text-white uppercase">
               Danh mục môn học
@@ -222,7 +222,7 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/subjects"
-            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs text-center transition-all cursor-pointer"
+            className="mt-6 inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs text-center transition-all cursor-pointer"
           >
             Quản lý Môn học
           </Link>

@@ -42,11 +42,11 @@ export function GoalsScheduleStep({
       exit={{ opacity: 0 }}
       className="space-y-6"
     >
-      <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-5 rounded-2xl text-xs font-semibold leading-relaxed">
+      <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-5 rounded-md text-xs font-semibold leading-relaxed">
         * THÔNG BÁO: Tài khoản của bạn chưa thiết lập lịch rảnh cá nhân. Để AI Agent của EduMind phân phối giờ học chuẩn xác và không chồng lấp thời gian biểu, vui lòng hoàn tất cấu hình lịch học dưới đây trước khi lập lộ trình.
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-2xl shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-8 rounded-md shadow-sm">
         <h2 className="text-xl font-black text-zinc-950 dark:text-white uppercase mb-6">
           CẤU HÌNH LỊCH HỌC CỦA BẠN
         </h2>
@@ -62,7 +62,7 @@ export function GoalsScheduleStep({
               max={12}
               value={studyHours}
               onChange={(e) => onStudyHoursChange(Number(e.target.value))}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
             />
             <span className="text-[10px] text-zinc-400 font-medium block">
               AI sẽ phân bổ lượng kiến thức học dựa trên số giờ tự học bạn cam kết hàng ngày.
@@ -76,7 +76,7 @@ export function GoalsScheduleStep({
             <select
               value={preferredTime}
               onChange={(e) => onPreferredTimeChange(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-sm"
             >
               <option value="morning">Buổi sáng (08:00 - 12:00)</option>
               <option value="afternoon">Buổi chiều (13:00 - 17:00)</option>
@@ -109,7 +109,7 @@ export function GoalsScheduleStep({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs tracking-wider transition-all cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs tracking-wider transition-all cursor-pointer disabled:opacity-50"
             >
               {loading ? "ĐANG LƯU CẤU HÌNH..." : "LƯU CẤU HÌNH LỊCH HỌC & TIẾP TỤC ->"}
             </button>

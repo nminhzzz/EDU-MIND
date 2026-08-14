@@ -12,7 +12,7 @@ interface AiTutorPromoCardProps {
 
 export function AiTutorPromoCard({ stats, statsLoading }: AiTutorPromoCardProps) {
   return (
-    <div className="bg-gradient-to-br from-sky-50/90 via-blue-50/70 to-slate-50 dark:from-sky-950/70 dark:to-slate-900 text-sky-950 dark:text-sky-100 p-8 rounded-2xl flex flex-col justify-between border border-sky-200/90 dark:border-sky-900/60 shadow-xs">
+    <div className="bg-gradient-to-br from-sky-50/90 via-blue-50/70 to-slate-50 dark:from-sky-950/70 dark:to-slate-900 text-sky-950 dark:text-sky-100 p-8 rounded-md flex flex-col justify-between border border-sky-200/90 dark:border-sky-900/60 shadow-xs">
       <div className="space-y-6">
         <div className="space-y-2">
           <span className="text-[10px] font-bold tracking-wider text-sky-600 dark:text-sky-400 block uppercase">
@@ -33,7 +33,7 @@ export function AiTutorPromoCard({ stats, statsLoading }: AiTutorPromoCardProps)
               {stats.weak_areas.map((topic: string) => (
                 <span
                   key={topic}
-                  className="text-[9px] font-bold px-2.5 py-1 bg-white/90 dark:bg-sky-900/60 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-200 rounded-lg shadow-xs"
+                  className="text-[9px] font-bold px-2.5 py-1 bg-white/90 dark:bg-sky-900/60 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-200 rounded-md shadow-xs"
                 >
                   {topic}
                 </span>
@@ -45,7 +45,7 @@ export function AiTutorPromoCard({ stats, statsLoading }: AiTutorPromoCardProps)
 
       <Link
         href={ROUTES.STUDENT_CHAT}
-        className="mt-8 px-5 py-3.5 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 rounded-xl font-bold text-xs text-center tracking-wider transition-all shadow-md shadow-sky-500/15 border border-sky-600 active:scale-[0.98] cursor-pointer"
+        className="mt-8 px-5 py-3.5 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 rounded-md font-bold text-xs text-center tracking-wider transition-all shadow-md shadow-sky-500/15 border border-sky-600 active:scale-[0.98] cursor-pointer"
       >
         Hỏi Gia sư AI ngay
       </Link>

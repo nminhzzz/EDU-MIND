@@ -43,9 +43,9 @@ export function DocumentRow({ id, title, fileType, filePath, createdAt, onDelete
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="group flex items-center gap-4 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 transition-colors"
+      className="group flex items-center gap-4 p-4 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 transition-colors"
     >
-      <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${colorClass}`}>
+      <div className={`w-10 h-10 flex items-center justify-center rounded-md ${colorClass}`}>
         <FileText className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
@@ -68,14 +68,14 @@ export function DocumentRow({ id, title, fileType, filePath, createdAt, onDelete
           type="button"
           onClick={handleView}
           disabled={opening}
-          className="p-2 rounded-lg text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer disabled:opacity-50"
+          className="p-2 rounded-md text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors cursor-pointer disabled:opacity-50"
           title="Xem tài liệu"
         >
           {opening ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
         </button>
         <button
           onClick={() => onDelete(id)}
-          className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+          className="p-2 rounded-md text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
         >
           <Trash2 className="w-4 h-4" />
         </button>

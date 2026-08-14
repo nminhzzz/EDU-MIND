@@ -48,10 +48,10 @@ export function AIQuizFeedbackCard({
   const recommendation = assessment?.recommendation || "Hãy xem lại giải thích chi tiết từng câu phía dưới.";
 
   return (
-    <div className="p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-indigo-500/10 border border-violet-200 dark:border-violet-900/40 shadow-lg space-y-5 text-left animate-fadeIn">
+    <div className="p-6 rounded-md bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-indigo-500/10 border border-violet-200 dark:border-violet-900/40 shadow-lg space-y-5 text-left animate-fadeIn">
       {/* Header with AI Tutor Avatar */}
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-violet-500/30 shrink-0">
+        <div className="w-12 h-12 rounded-md bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-violet-500/30 shrink-0">
           <BrainCircuit className="w-6 h-6 animate-pulse" />
         </div>
         <div className="space-y-1 flex-1">
@@ -68,11 +68,11 @@ export function AIQuizFeedbackCard({
           {isGenerating ? (
             <div className="space-y-1.5 pt-1">
               <p className="text-sm font-bold text-violet-600 dark:text-violet-300 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-violet-500 animate-ping" />
+                <span className="inline-block w-2 h-2 rounded-md bg-violet-500 animate-ping" />
                 AI Tutor đang phân tích lỗ hổng kiến thức & tổng hợp lời phê ngầm...
               </p>
-              <div className="w-full bg-violet-200/50 dark:bg-violet-950/50 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full w-2/3 animate-pulse rounded-full" />
+              <div className="w-full bg-violet-200/50 dark:bg-violet-950/50 h-1.5 rounded-md overflow-hidden">
+                <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full w-2/3 animate-pulse rounded-md" />
               </div>
             </div>
           ) : (
@@ -86,7 +86,7 @@ export function AIQuizFeedbackCard({
       {/* Grid Strengths vs Weaknesses */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
         {/* Strengths */}
-        <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 space-y-2">
+        <div className="p-4 rounded-md bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 space-y-2">
           <h4 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             Điểm mạnh đã nắm vững ({correctCount}/{totalQuestions} câu):
@@ -106,7 +106,7 @@ export function AIQuizFeedbackCard({
         </div>
 
         {/* Weaknesses */}
-        <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-2">
+        <div className="p-4 rounded-md bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-2">
           <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             Lỗ hổng kiến thức cần ôn lại ({totalQuestions - correctCount} câu):
@@ -137,7 +137,7 @@ export function AIQuizFeedbackCard({
           <button
             type="button"
             onClick={onRetryWrong}
-            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-md shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Luyện lại các câu sai

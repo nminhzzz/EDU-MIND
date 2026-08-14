@@ -57,7 +57,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
       {/* Nút Toggle Sidebar (Chỉ ẩn hiện trên Mobile) */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 cursor-pointer"
+        className="lg:hidden p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 cursor-pointer"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -70,7 +70,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
         {/* Nút Chuyển đổi Giao diện Sáng / Tối */}
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-2 px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all cursor-pointer shadow-sm active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all cursor-pointer shadow-sm active:scale-95"
           title="Chuyển đổi giao diện Sáng / Tối"
         >
           {theme === "light" ? (
@@ -96,10 +96,10 @@ export function Header({ onMenuToggle }: HeaderProps) {
               <img
                 src={user.avatar_url}
                 alt={user.full_name || "Avatar"}
-                className="w-8 h-8 rounded-xl object-cover border border-zinc-200 dark:border-zinc-800 shrink-0"
+                className="w-8 h-8 rounded-md object-cover border border-zinc-200 dark:border-zinc-800 shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="w-8 h-8 rounded-md bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
                 {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
               </div>
             )}
@@ -121,12 +121,12 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 className="fixed inset-0 z-40"
                 onClick={() => setDropdownOpen(false)}
               />
-              <div className="absolute right-0 mt-2.5 w-48 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800/80 rounded-2xl shadow-xl z-50 p-2 py-1.5 animate-fadeIn">
+              <div className="absolute right-0 mt-2.5 w-48 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800/80 rounded-md shadow-xl z-50 p-2 py-1.5 animate-fadeIn">
                 {user?.role === "student" && (
                   <Link
                     href="/student/profile"
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-md transition-colors"
                   >
                     Xem Profile
                   </Link>
@@ -136,7 +136,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                     setDropdownOpen(false);
                     handleLogout();
                   }}
-                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer"
+                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-md transition-colors cursor-pointer"
                 >
                   Đăng xuất
                 </button>

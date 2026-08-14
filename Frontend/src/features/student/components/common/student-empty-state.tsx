@@ -39,15 +39,15 @@ export function StudentEmptyState({
         {action && (
           <button
             onClick={action.onClick}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
           >
             {action.label}
           </button>
         )}
       </div>
     ) : (
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-12 rounded-2xl text-center shadow-sm space-y-4">
-        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-12 rounded-md text-center shadow-sm space-y-4">
+        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-md flex items-center justify-center mx-auto">
           <Icon className="w-6 h-6" />
         </div>
         <div className="space-y-1">
@@ -59,7 +59,7 @@ export function StudentEmptyState({
         {action && (
           <button
             onClick={action.onClick}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
           >
             {action.label}
           </button>

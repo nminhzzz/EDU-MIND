@@ -53,7 +53,7 @@ export function DraftTimelineView({ plan, onUpdatePlan }: DraftTimelineViewProps
         return (
           <div
             key={week.week}
-            className="border border-zinc-200/80 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 overflow-hidden transition-all shadow-sm w-full"
+            className="border border-zinc-200/80 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 overflow-hidden transition-all shadow-sm w-full"
           >
             {/* Week Header */}
             <div
@@ -61,7 +61,7 @@ export function DraftTimelineView({ plan, onUpdatePlan }: DraftTimelineViewProps
               className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-mono font-black text-xs flex items-center justify-center border border-indigo-500/20 shrink-0">
+                <div className="w-8 h-8 rounded-md bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-mono font-black text-xs flex items-center justify-center border border-indigo-500/20 shrink-0">
                   W{week.week}
                 </div>
                 <div>
@@ -84,12 +84,12 @@ export function DraftTimelineView({ plan, onUpdatePlan }: DraftTimelineViewProps
               <div className="px-4 pb-4 pt-1 border-t border-zinc-100 dark:border-zinc-900 space-y-2">
                 {week.tasks.map((task, taskIdx) => (
                   <div key={taskIdx} className="flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-md bg-indigo-500 shrink-0" />
                     <input
                       type="text"
                       value={task}
                       onChange={(e) => handleWeekTaskChange(weekIdx, taskIdx, e.target.value)}
-                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:bg-zinc-50 dark:focus:bg-zinc-950 px-2.5 py-1.5 border border-transparent focus:border-indigo-500/40 rounded-xl w-full focus:outline-none transition-all"
+                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:bg-zinc-50 dark:focus:bg-zinc-950 px-2.5 py-1.5 border border-transparent focus:border-indigo-500/40 rounded-md w-full focus:outline-none transition-all"
                     />
                     <button
                       type="button"

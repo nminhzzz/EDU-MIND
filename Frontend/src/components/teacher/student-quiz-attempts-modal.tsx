@@ -103,11 +103,11 @@ export function StudentQuizAttemptsModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden text-left">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden text-left">
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-zinc-150 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/30 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-violet-600/20">
+                  <div className="w-10 h-10 rounded-md bg-violet-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-violet-600/20">
                     <ClipboardList className="w-5 h-5" />
                   </div>
                   <div>
@@ -122,7 +122,7 @@ export function StudentQuizAttemptsModal({
 
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -154,7 +154,7 @@ export function StudentQuizAttemptsModal({
                     return (
                       <div
                         key={att.attempt_id}
-                        className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/40 dark:bg-zinc-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:border-violet-200 dark:hover:border-violet-800 transition-colors"
+                        className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50/40 dark:bg-zinc-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:border-violet-200 dark:hover:border-violet-800 transition-colors"
                       >
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-100">

@@ -36,7 +36,7 @@ export function TimeSlotRow({
         <button
           type="button"
           onClick={() => onToggle(day, slot)}
-          className={`px-3.5 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-all cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-md border text-[10px] font-bold uppercase transition-all cursor-pointer ${
             slotData.enabled
               ? "bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-500/10"
               : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 hover:border-zinc-350"
@@ -54,7 +54,7 @@ export function TimeSlotRow({
           <select
             value={slotData.start}
             onChange={(e) => onHourChange(day, slot, "start", e.target.value)}
-            className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
           >
             {hourOptions.start.map((h) => (
               <option key={h} value={h}>
@@ -66,7 +66,7 @@ export function TimeSlotRow({
           <select
             value={slotData.end}
             onChange={(e) => onHourChange(day, slot, "end", e.target.value)}
-            className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            className="px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
           >
             {hourOptions.end.map((h) => (
               <option key={h} value={h}>
@@ -99,7 +99,7 @@ export function DayScheduleCard({
   onHourChange,
 }: DayScheduleCardProps) {
   return (
-    <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 space-y-4 shadow-sm">
+    <div className="p-5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50/50 dark:bg-zinc-950/20 space-y-4 shadow-sm">
       <div className="pb-2 border-b border-zinc-200/60 dark:border-zinc-800/80">
         <span className="text-xs font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">
           {DAY_LABELS[day]}

@@ -23,18 +23,18 @@ export function ClassroomCard({ classroom, onClick }: ClassroomCardProps) {
   return (
     <div
       onClick={() => onClick(classroom)}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-sky-200/80 dark:border-sky-900/50 bg-white dark:bg-sky-950/40 p-5 shadow-xs hover:shadow-md hover:border-sky-300 dark:hover:border-sky-700 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-md border border-sky-200/80 dark:border-sky-900/50 bg-white dark:bg-sky-950/40 p-5 shadow-xs hover:shadow-md hover:border-sky-300 dark:hover:border-sky-700 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-left"
     >
       {/* Top Accent Bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 ${barClass}`} />
 
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300 border border-sky-100 dark:border-sky-800 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-colors duration-200">
+          <div className="p-2.5 rounded-md bg-sky-50 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300 border border-sky-100 dark:border-sky-800 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-colors duration-200">
             <BookOpen className="w-4 h-4" />
           </div>
 
-          <span className="text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/60 border border-sky-200/80 dark:border-sky-800 px-2.5 py-1 rounded-lg shadow-xs">
+          <span className="text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/60 border border-sky-200/80 dark:border-sky-800 px-2.5 py-1 rounded-md shadow-xs">
             {classroom.class_code}
           </span>
         </div>
@@ -55,7 +55,7 @@ export function ClassroomCard({ classroom, onClick }: ClassroomCardProps) {
           <span>Vào phòng trao đổi</span>
         </div>
 
-        <div className="w-6 h-6 rounded-full bg-sky-50 dark:bg-sky-900/50 border border-sky-200/60 dark:border-sky-800 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all duration-200">
+        <div className="w-6 h-6 rounded-md bg-sky-50 dark:bg-sky-900/50 border border-sky-200/60 dark:border-sky-800 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all duration-200">
           <ChevronRight className="w-3.5 h-3.5" />
         </div>
       </div>

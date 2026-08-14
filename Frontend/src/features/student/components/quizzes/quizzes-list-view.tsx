@@ -35,7 +35,7 @@ export function QuizzesListView({
       </div>
 
       {/* 1. Assigned Quizzes List */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm space-y-4">
         <h2 className="font-extrabold text-sm text-zinc-850 dark:text-zinc-200 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
           <ClipboardList className="w-4 h-4 text-indigo-500" />
           Bài tập được giao từ lớp học
@@ -60,7 +60,7 @@ export function QuizzesListView({
               return (
                 <div
                   key={quiz.id}
-                  className="flex flex-col justify-between p-5 border border-zinc-150 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
+                  className="flex flex-col justify-between p-5 border border-zinc-150 dark:border-zinc-800 rounded-md bg-zinc-50/50 dark:bg-zinc-950/30 hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start gap-2">
@@ -68,15 +68,15 @@ export function QuizzesListView({
                         {quiz.difficulty === "easy" ? "Dễ" : quiz.difficulty === "hard" ? "Khó" : "Trung bình"}
                       </span>
                       {result.completed ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200/50 dark:border-green-800/30">
+                        <span className="px-2.5 py-0.5 rounded-md text-[11px] font-extrabold bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200/50 dark:border-green-800/30">
                           Điểm: {result.score} / 10
                         </span>
                       ) : isExpired ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/30">
+                        <span className="px-2.5 py-0.5 rounded-md text-[11px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/30">
                           Đã quá hạn
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30">
+                        <span className="px-2.5 py-0.5 rounded-md text-[11px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30">
                           Chưa hoàn thành
                         </span>
                       )}
@@ -104,21 +104,21 @@ export function QuizzesListView({
                     {result.completed ? (
                       <Link
                         href={`/student/quizzes/${quiz.id}`}
-                        className="px-4 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-lg transition-all"
+                        className="px-4 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-md transition-all"
                       >
                         Xem lại bài
                       </Link>
                     ) : isExpired ? (
                       <button
                         disabled
-                        className="px-4 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 font-bold text-xs rounded-lg cursor-not-allowed border border-zinc-300 dark:border-zinc-700"
+                        className="px-4 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 font-bold text-xs rounded-md cursor-not-allowed border border-zinc-300 dark:border-zinc-700"
                       >
                         Đã quá hạn chót
                       </button>
                     ) : (
                       <Link
                         href={`/student/quizzes/${quiz.id}`}
-                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-all"
+                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-md transition-all"
                       >
                         Bắt đầu làm bài
                       </Link>
@@ -132,7 +132,7 @@ export function QuizzesListView({
       </div>
 
       {/* 2. Attempts History */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm space-y-4">
         <h2 className="font-extrabold text-sm text-zinc-850 dark:text-zinc-200 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
           <Trophy className="w-4 h-4 text-amber-500" />
           Lịch sử điểm số bài thi

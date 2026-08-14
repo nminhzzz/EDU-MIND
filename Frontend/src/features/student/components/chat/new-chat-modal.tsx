@@ -31,7 +31,7 @@ export function NewChatModal({ isOpen, onClose, subjects, onCreated }: NewChatMo
           <select
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+            className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
           >
             <option value="">-- Chọn môn học --</option>
             {subjects.map((s) => (
@@ -50,13 +50,13 @@ export function NewChatModal({ isOpen, onClose, subjects, onCreated }: NewChatMo
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="VD: Thảo luận Lý thuyết hàm số (Để trống để tự tạo)"
-            className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+            className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={creating}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-md shadow-md transition-all active:scale-[0.98] cursor-pointer"
         >
           {creating ? "Đang khởi tạo..." : "Bắt đầu thảo luận"}
         </button>

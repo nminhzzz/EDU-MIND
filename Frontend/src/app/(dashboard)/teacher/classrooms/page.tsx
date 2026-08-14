@@ -69,7 +69,7 @@ export default function TeacherClassroomsPage() {
   if (loading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Đang tải danh sách lớp học...</p>
       </div>
     );
@@ -87,7 +87,7 @@ export default function TeacherClassroomsPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Tạo lớp mới
@@ -134,12 +134,12 @@ export default function TeacherClassroomsPage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg p-8">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl w-full max-w-lg p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-black text-zinc-900 dark:text-white">Tạo lớp học mới</h2>
                   <button
                     onClick={() => setShowModal(false)}
-                    className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="p-2 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -151,7 +151,7 @@ export default function TeacherClassroomsPage() {
                     <select
                       value={formData.subject_id}
                       onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                     >
                       <option value="">-- Chọn môn học --</option>
                       {subjects.map((s) => (
@@ -166,7 +166,7 @@ export default function TeacherClassroomsPage() {
                       value={formData.class_name}
                       onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                       placeholder="VD: Lớp Lập trình Java K10"
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                     />
                   </div>
                   <div>
@@ -176,7 +176,7 @@ export default function TeacherClassroomsPage() {
                       value={formData.class_code}
                       onChange={(e) => setFormData({ ...formData, class_code: e.target.value.toUpperCase() })}
                       placeholder="VD: JAVA-K10-01"
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                     />
                   </div>
                   <div>
@@ -186,13 +186,13 @@ export default function TeacherClassroomsPage() {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Mô tả ngắn gọn về lớp học..."
                       rows={3}
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-none"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md shadow-violet-500/20 transition-all active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 transition-all active:scale-[0.98] cursor-pointer"
                   >
                     {submitting ? "Đang tạo..." : "Tạo lớp học"}
                   </button>

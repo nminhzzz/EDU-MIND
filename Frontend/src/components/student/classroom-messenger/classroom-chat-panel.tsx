@@ -29,7 +29,7 @@ export function ClassroomChatPanel({
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBack}
-            className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
             title="Quay lại danh sách lớp"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -38,7 +38,7 @@ export function ClassroomChatPanel({
             <span className="font-extrabold text-sm tracking-tight truncate">
               {classroom.class_name}
             </span>
-            <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded-full text-white/90 shrink-0 font-bold">
+            <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded-md text-white/90 shrink-0 font-bold">
               {classroom.class_code}
             </span>
           </div>
@@ -46,7 +46,7 @@ export function ClassroomChatPanel({
 
         <button
           onClick={onClose}
-          className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+          className="p-1.5 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
           title="Đóng"
         >
           <X className="w-4 h-4" />

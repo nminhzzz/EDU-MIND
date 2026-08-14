@@ -22,9 +22,9 @@ export function DashboardKpiRow({ stats, statsLoading }: DashboardKpiRowProps) {
         iconColor="text-sky-600 dark:text-sky-300"
         animationDelay={0.05}
       >
-        <div className="w-full bg-sky-100 dark:bg-sky-950 h-2.5 rounded-full mt-4 overflow-hidden p-0.5 border border-sky-200/80 dark:border-sky-900">
+        <div className="w-full bg-sky-100 dark:bg-sky-950 h-2.5 rounded-md mt-4 overflow-hidden p-0.5 border border-sky-200/80 dark:border-sky-900">
           <div
-            className="bg-gradient-to-r from-sky-400 to-blue-500 h-full rounded-full transition-all duration-700 shadow-xs"
+            className="bg-gradient-to-r from-sky-400 to-blue-500 h-full rounded-md transition-all duration-700 shadow-xs"
             style={{ width: `${stats?.overall?.progress_pct || 0}%` }}
           />
         </div>

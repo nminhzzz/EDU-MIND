@@ -83,7 +83,7 @@ export function QuizQuestionPanel({
     : (mcqQuestions.length + (essayQuestions.length > 0 ? 1 : 0));
 
   return (
-    <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex flex-col justify-between min-h-[450px]">
+    <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm flex flex-col justify-between min-h-[450px]">
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-6">
           <span className="text-xs font-bold text-zinc-400">
@@ -92,7 +92,7 @@ export function QuizQuestionPanel({
               : "Phần 2: Tự luận"
             }
           </span>
-          <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-550 dark:text-zinc-400 rounded-lg">
+          <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-550 dark:text-zinc-400 rounded-md">
             {!question ? "Tự luận" : qType === "essay" ? "Tự luận" : "Trắc nghiệm"}
           </span>
         </div>
@@ -103,7 +103,7 @@ export function QuizQuestionPanel({
               {essayQuestions.map((q, idx) => {
                 const originalIndex = quiz.questions.findIndex((originalQ) => originalQ === q);
                 return (
-                  <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-2.5">
+                  <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wide">
                         Câu hỏi tự luận {idx + 1} (Câu {originalIndex + 1} trong đề)
@@ -123,7 +123,7 @@ export function QuizQuestionPanel({
                         value={selectedAnswers[originalIndex] || ""}
                         onChange={(e) => onSelectOption(originalIndex, e.target.value)}
                         placeholder="Soạn câu trả lời tự luận trực tiếp tại đây..."
-                        className="w-full text-xs font-medium text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 focus:border-violet-500 rounded-xl p-3 focus:outline-none transition-all resize-y min-h-[80px]"
+                        className="w-full text-xs font-medium text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 focus:border-violet-500 rounded-md p-3 focus:outline-none transition-all resize-y min-h-[80px]"
                       />
                     )}
                   </div>
@@ -142,7 +142,7 @@ export function QuizQuestionPanel({
 
               <div
                 onClick={triggerFileInput}
-                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+                className={`border-2 border-dashed rounded-md p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
                   essayFilePath
                     ? "border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5"
                     : "border-zinc-300 dark:border-zinc-700 hover:border-violet-500 dark:hover:border-violet-400 bg-zinc-50/50 dark:bg-zinc-950/20"
@@ -155,7 +155,7 @@ export function QuizQuestionPanel({
                   </div>
                 ) : essayFilePath ? (
                   <div className="flex flex-col items-center space-y-2 animate-fadeIn">
-                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md">
                       <CheckCircle2 className="w-8 h-8" />
                     </div>
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Đã nộp tệp bài làm!</p>
@@ -171,7 +171,7 @@ export function QuizQuestionPanel({
                   </div>
                 ) : (
                   <>
-                    <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 rounded-full">
+                    <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 rounded-md">
                       <UploadCloud className="w-8 h-8" />
                     </div>
                     <div className="space-y-1">
@@ -186,7 +186,7 @@ export function QuizQuestionPanel({
                 )}
               </div>
 
-              <div className="p-4 bg-violet-50/30 dark:bg-violet-950/10 border border-violet-100/30 dark:border-violet-900/20 rounded-xl">
+              <div className="p-4 bg-violet-50/30 dark:bg-violet-950/10 border border-violet-100/30 dark:border-violet-900/20 rounded-md">
                 <p className="text-xs text-zinc-550 dark:text-zinc-400 font-medium leading-relaxed">
                   💡 <span className="font-bold text-violet-600">Lưu ý quan trọng:</span> Bạn chỉ cần tải lên **01 tệp duy nhất** chứa toàn bộ lời giải/bài viết của tất cả các câu hỏi tự luận trong đề thi này. AI Grader sẽ tự động trích xuất OCR và chấm chi tiết từng câu.
                 </p>
@@ -213,7 +213,7 @@ export function QuizQuestionPanel({
 
                     <div
                       onClick={triggerFileInput}
-                      className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+                      className={`border-2 border-dashed rounded-md p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
                         essayFilePath
                           ? "border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5"
                           : "border-zinc-300 dark:border-zinc-700 hover:border-violet-500 dark:hover:border-violet-400 bg-zinc-50/50 dark:bg-zinc-950/20"
@@ -226,7 +226,7 @@ export function QuizQuestionPanel({
                         </div>
                       ) : essayFilePath ? (
                         <div className="flex flex-col items-center space-y-2 animate-fadeIn">
-                          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-655 text-white rounded-full">
+                          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-655 text-white rounded-md">
                             <CheckCircle2 className="w-8 h-8" />
                           </div>
                           <p className="text-sm font-bold text-emerald-600">Đã nộp tệp bài làm!</p>
@@ -239,7 +239,7 @@ export function QuizQuestionPanel({
                 ) : (
                   <div className="space-y-6 animate-fadeIn">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-5 border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 rounded-2xl flex flex-col justify-between">
+                      <div className="p-5 border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 rounded-md flex flex-col justify-between">
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                           Bài làm của bạn (Trích xuất OCR)
                         </span>
@@ -248,7 +248,7 @@ export function QuizQuestionPanel({
                         </p>
                       </div>
 
-                      <div className={`p-5 border rounded-2xl flex flex-col justify-between ${
+                      <div className={`p-5 border rounded-md flex flex-col justify-between ${
                         (attemptAnswer?.score ?? 0) >= 5.0
                           ? "border-emerald-100 bg-emerald-50/10 dark:bg-emerald-950/5"
                           : "border-red-100 bg-red-50/10 dark:bg-red-950/5"
@@ -257,7 +257,7 @@ export function QuizQuestionPanel({
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                             Điểm số tự luận
                           </span>
-                          <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
+                          <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${
                             (attemptAnswer?.score ?? 0) >= 5.0
                               ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                               : "bg-red-100 text-red-655 dark:bg-red-900/30 dark:text-red-400"
@@ -278,7 +278,7 @@ export function QuizQuestionPanel({
                       </div>
                     </div>
 
-                    <div className="p-5 bg-indigo-50/20 dark:bg-zinc-950/20 border border-indigo-100/30 dark:border-zinc-800 rounded-xl space-y-2">
+                    <div className="p-5 bg-indigo-50/20 dark:bg-zinc-950/20 border border-indigo-100/30 dark:border-zinc-800 rounded-md space-y-2">
                       <h4 className="text-xs font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider">
                         Gợi ý đáp án / Bài mẫu gợi ý
                       </h4>
@@ -288,7 +288,7 @@ export function QuizQuestionPanel({
                     </div>
 
                     {question.explanation && (
-                      <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-1">
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                           Tiêu chí chấm điểm
                         </span>
@@ -312,11 +312,11 @@ export function QuizQuestionPanel({
                       key={opt.key}
                       onClick={() => onSelectOption(questionIndex, opt.key)}
                       disabled={isReview}
-                      className={`w-full flex items-center gap-3.5 p-4 border rounded-2xl text-left transition-all shadow-sm ${
+                      className={`w-full flex items-center gap-3.5 p-4 border rounded-md text-left transition-all shadow-sm ${
                         !isReview && isSelected ? "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-indigo-500/10" : optionStyle
                       }`}
                     >
-                      <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black transition-all shrink-0 ${
+                      <span className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-black transition-all shrink-0 ${
                         isSelected && !isReview
                           ? "bg-indigo-600 border border-indigo-600 text-white shadow-md shadow-indigo-500/25"
                           : isReview && isCorrect
@@ -331,12 +331,12 @@ export function QuizQuestionPanel({
                         <MathRenderer content={opt.value || ""} />
                       </div>
                       {isReview && isCorrect && (
-                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shrink-0">
                           Đáp án đúng ✓
                         </span>
                       )}
                       {isReview && isSelected && !isCorrect && (
-                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 shrink-0">
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 shrink-0">
                           Bạn đã chọn (Sai) ✗
                         </span>
                       )}
@@ -345,7 +345,7 @@ export function QuizQuestionPanel({
                 })}
 
                 {isReview && question.explanation && (
-                  <div className="mt-8 p-5 bg-indigo-50/30 dark:bg-zinc-950/30 border border-indigo-100/50 dark:border-zinc-800 rounded-xl space-y-2">
+                  <div className="mt-8 p-5 bg-indigo-50/30 dark:bg-zinc-950/30 border border-indigo-100/50 dark:border-zinc-800 rounded-md space-y-2">
                     <h4 className="text-xs font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider">
                       Giải thích đáp án AI
                     </h4>
@@ -364,7 +364,7 @@ export function QuizQuestionPanel({
         <button
           onClick={onPrevious}
           disabled={questionIndex === 0}
-          className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 disabled:opacity-30 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+          className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 disabled:opacity-30 rounded-md text-xs font-bold flex items-center gap-1 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           Câu trước
@@ -373,7 +373,7 @@ export function QuizQuestionPanel({
         {questionIndex < totalPages - 1 ? (
           <button
             onClick={onNext}
-            className="px-4 py-2 bg-zinc-800 dark:bg-zinc-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+            className="px-4 py-2 bg-zinc-800 dark:bg-zinc-700 text-white rounded-md text-xs font-bold flex items-center gap-1 cursor-pointer"
           >
             Câu sau
             <ChevronRight className="w-4 h-4" />
@@ -382,7 +382,7 @@ export function QuizQuestionPanel({
           <button
             onClick={onSubmit}
             disabled={submitting}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-500/10"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-md text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-500/10"
           >
             <Send className="w-3.5 h-3.5" />
             Nộp bài thi
@@ -390,7 +390,7 @@ export function QuizQuestionPanel({
         ) : (
           <button
             onClick={onBackToList}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Quay lại kho

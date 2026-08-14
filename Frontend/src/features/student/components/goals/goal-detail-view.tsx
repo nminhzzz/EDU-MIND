@@ -160,7 +160,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
   if (!goal) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4 text-left space-y-6">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-10 rounded-3xl text-center space-y-4 shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-10 rounded-md text-center space-y-4 shadow-sm">
           <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
           <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Không tìm thấy lộ trình học</h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -168,7 +168,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
           </p>
           <Link
             href={ROUTES.STUDENT_GOALS}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md hover:bg-indigo-500 transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-md font-bold text-xs shadow-md hover:bg-indigo-500 transition-all"
           >
             <ArrowLeft className="w-4 h-4" /> Quay lại danh sách lộ trình
           </Link>
@@ -199,7 +199,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
       <div className="flex items-center justify-between gap-4">
         <Link
           href={ROUTES.STUDENT_GOALS}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-bold text-zinc-600 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Quay lại Lộ trình
@@ -208,7 +208,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
           type="button"
           onClick={handleDeleteGoal}
           disabled={deleting}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 hover:bg-red-100 transition-all cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 hover:bg-red-100 transition-all cursor-pointer disabled:opacity-50"
         >
           <Trash2 className="w-3.5 h-3.5" />
           Xóa lộ trình
@@ -216,15 +216,15 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
       </div>
 
       {/* Main Goal Banner Card */}
-      <div className="bg-gradient-to-br from-white via-indigo-50/20 to-indigo-100/30 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/30 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-3xl shadow-sm space-y-6">
+      <div className="bg-gradient-to-br from-white via-indigo-50/20 to-indigo-100/30 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/30 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-md shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center text-[10px] font-extrabold tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900 px-2.5 py-1 rounded-lg uppercase">
+              <span className="inline-flex items-center text-[10px] font-extrabold tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-100/80 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900 px-2.5 py-1 rounded-md uppercase">
                 {subject?.code || "MÔN HỌC"}
               </span>
               <span
-                className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-lg border ${statusStyle.className}`}
+                className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-md border ${statusStyle.className}`}
               >
                 {statusStyle.label}
               </span>
@@ -243,7 +243,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
 
         {/* Progress & Target Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-800">
-          <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-1">
+          <div className="p-4 rounded-md bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-1">
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
               <Target className="w-3.5 h-3.5 text-indigo-500" /> Mục tiêu điểm
             </p>
@@ -252,7 +252,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-1">
+          <div className="p-4 rounded-md bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-1">
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-indigo-500" /> Hạn hoàn thành
             </p>
@@ -265,16 +265,16 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-2">
+          <div className="p-4 rounded-md bg-white/80 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" /> Tiến độ hoàn thành
               </p>
               <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{progressPercent}%</span>
             </div>
-            <div className="w-full h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-full h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-md overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-md transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -298,11 +298,11 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
         </div>
 
         {/* Filter Buttons */}
-        <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-md border border-zinc-200/80 dark:border-zinc-800 shadow-sm shrink-0">
           <button
             type="button"
             onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
               statusFilter === "all"
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -313,7 +313,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
           <button
             type="button"
             onClick={() => setStatusFilter("todo")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
               statusFilter === "todo"
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -324,7 +324,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
           <button
             type="button"
             onClick={() => setStatusFilter("doing")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
               statusFilter === "doing"
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -335,7 +335,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
           <button
             type="button"
             onClick={() => setStatusFilter("done")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
               statusFilter === "done"
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -348,7 +348,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
 
       {/* Task List */}
       {filteredPlans.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-10 rounded-3xl text-center shadow-sm space-y-3">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-10 rounded-md text-center shadow-sm space-y-3">
           <Filter className="w-10 h-10 text-zinc-300 dark:text-zinc-700 mx-auto" />
           <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">
             {statusFilter === "all"
@@ -367,7 +367,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
             return (
               <div
                 key={plan.id}
-                className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border transition-all duration-200 bg-white dark:bg-zinc-900 ${
+                className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-md border transition-all duration-200 bg-white dark:bg-zinc-900 ${
                   isDone
                     ? "border-emerald-200/80 dark:border-emerald-950/80 bg-emerald-50/20 dark:bg-emerald-950/10"
                     : isDoing
@@ -384,7 +384,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
                     type="button"
                     onClick={() => handleToggleTaskStatus(plan.id, plan.status)}
                     title="Đổi trạng thái bài học"
-                    className={`mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+                    className={`mt-0.5 shrink-0 w-6 h-6 rounded-md flex items-center justify-center border transition-all cursor-pointer ${
                       isDone
                         ? "bg-emerald-500 border-emerald-500 text-white"
                         : isDoing
@@ -449,7 +449,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
                       type="button"
                       disabled
                       title={`Nhiệm vụ này mở vào ngày ${new Date(plan.study_date).toLocaleDateString("vi-VN")}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/60 cursor-not-allowed select-none opacity-80"
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-xs font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/60 cursor-not-allowed select-none opacity-80"
                     >
                       <Lock className="w-3.5 h-3.5" />
                       Chưa đến ngày
@@ -457,7 +457,7 @@ export function GoalDetailView({ goalId }: GoalDetailViewProps) {
                   ) : (
                     <Link
                       href={ROUTES.STUDENT_TASK(plan.id)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all"
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       Học bài này

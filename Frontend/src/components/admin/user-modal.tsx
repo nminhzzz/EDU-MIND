@@ -72,7 +72,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 z-10 text-left relative"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-xl w-full max-w-md p-6 z-10 text-left relative"
           >
             <h3 className="text-sm font-black uppercase text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-4">
               {editingUser ? "CHỈNH SỬA THÀNH VIÊN" : "THÊM THÀNH VIÊN MỚI"}
@@ -87,7 +87,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
                 />
               </div>
 
@@ -101,7 +101,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                   required={!editingUser}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
                 />
               </div>
 
@@ -112,7 +112,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
                 />
               </div>
 
@@ -122,7 +122,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs cursor-pointer"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs cursor-pointer"
                 >
                   <option value="student">Học sinh (Student)</option>
                   <option value="teacher">Giáo viên (Teacher)</option>
@@ -137,7 +137,7 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                   <select
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs cursor-pointer"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs cursor-pointer"
                   >
                     <option value="">Chưa cấu hình</option>
                     <option value="grade_6">Lớp 6</option>
@@ -179,14 +179,14 @@ export function UserModal({ isOpen, onClose, editingUser, onSubmit, formLoading 
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-650 hover:bg-zinc-50 cursor-pointer"
+                  className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-bold text-zinc-650 hover:bg-zinc-50 cursor-pointer"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={formLoading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {formLoading ? "Đang xử lý..." : editingUser ? "Cập nhật" : "Tạo mới"}
                 </button>

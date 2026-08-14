@@ -20,7 +20,7 @@ export function ClassroomCard({ id, className_, classCode, studentCount, index =
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.08 }}
-        className="group p-5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-md transition-all duration-200 cursor-pointer"
+        className="group p-5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-900 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-md transition-all duration-200 cursor-pointer"
       >
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 min-w-0">
@@ -35,7 +35,7 @@ export function ClassroomCard({ id, className_, classCode, studentCount, index =
               </span>
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 transition-colors">
+          <div className="p-2 rounded-md bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 transition-colors">
             <ChevronRight className="w-4 h-4" />
           </div>
         </div>

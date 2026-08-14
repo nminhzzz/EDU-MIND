@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
   if (isLoading || loading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 font-mono">
           Đang tải danh sách thành viên...
         </p>
@@ -136,7 +136,7 @@ export default function AdminUsersPage() {
   if (error) {
     return (
       <div className="max-w-md mx-auto text-center py-20 space-y-6">
-        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-full flex items-center justify-center text-2xl font-black mx-auto">
+        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-md flex items-center justify-center text-2xl font-black mx-auto">
           !
         </div>
         <div className="space-y-2">
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
         </div>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs"
+          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs"
         >
           Quay lại Trang chủ
         </Link>
@@ -171,7 +171,7 @@ export default function AdminUsersPage() {
 
         <button
           onClick={handleOpenAddModal}
-          className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-wider transition-all shadow-lg shadow-indigo-500/15 cursor-pointer flex items-center justify-center"
+          className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md font-bold text-xs tracking-wider transition-all shadow-lg shadow-indigo-500/15 cursor-pointer flex items-center justify-center"
         >
           Thêm thành viên mới +
         </button>

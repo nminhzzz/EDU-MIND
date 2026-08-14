@@ -23,7 +23,7 @@ export function QuizQuestionMap({
   const essayQuestions = quiz.questions.filter((q) => q.question_type === "essay");
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-6">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm space-y-6">
       <div>
         <h3 className="font-extrabold text-xs text-zinc-400 uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
           Bản đồ câu hỏi
@@ -69,16 +69,16 @@ export function QuizQuestionMap({
               <button
                 key={idx}
                 onClick={() => onSelectQuestion(isReview ? originalIndex : idx)}
-                className={`relative w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle} ${currentRing}`}
+                className={`relative w-9 h-9 rounded-md border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle} ${currentRing}`}
               >
                 {originalIndex + 1}
                 {isReview && isCorrect && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-md bg-emerald-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
                     <Check className="w-2.5 h-2.5 stroke-[3]" />
                   </span>
                 )}
                 {isReview && isWrong && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-md bg-rose-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
                     <X className="w-2.5 h-2.5 stroke-[3]" />
                   </span>
                 )}
@@ -114,16 +114,16 @@ export function QuizQuestionMap({
                 <button
                   key={`essay-${idx}`}
                   onClick={() => onSelectQuestion(originalIndex)}
-                  className={`relative w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle} ${currentRing}`}
+                  className={`relative w-9 h-9 rounded-md border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle} ${currentRing}`}
                 >
                   {originalIndex + 1}
                   {isCorrect && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-md bg-emerald-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                   )}
                   {isWrong && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-md bg-rose-500 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-zinc-900">
                       <X className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                   )}
@@ -144,7 +144,7 @@ export function QuizQuestionMap({
                 return (
                   <button
                     onClick={() => onSelectQuestion(mcqQuestions.length)}
-                    className={`px-3.5 h-9 rounded-xl border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle}`}
+                    className={`px-3.5 h-9 rounded-md border flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${btnStyle}`}
                   >
                     ✍ Tự luận
                   </button>

@@ -29,7 +29,7 @@ export function DashboardKpiCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: animationDelay }}
-      className="relative overflow-hidden bg-sky-50/40 dark:bg-sky-950/30 border border-sky-200/70 dark:border-sky-900/40 p-6 rounded-2xl shadow-xs hover:shadow-md hover:border-sky-300 dark:hover:border-sky-800 transition-all group"
+      className="relative overflow-hidden bg-sky-50/40 dark:bg-sky-950/30 border border-sky-200/70 dark:border-sky-900/40 p-6 rounded-md shadow-xs hover:shadow-md hover:border-sky-300 dark:hover:border-sky-800 transition-all group"
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
@@ -42,7 +42,7 @@ export function DashboardKpiCard({
         </div>
 
         {Icon && (
-          <div className={`p-3 rounded-2xl ${iconBg} ${iconColor} shadow-xs group-hover:scale-110 transition-transform duration-200`}>
+          <div className={`p-3 rounded-md ${iconBg} ${iconColor} shadow-xs group-hover:scale-110 transition-transform duration-200`}>
             <Icon className="w-6 h-6" />
           </div>
         )}

@@ -24,7 +24,7 @@ export function TutorMiniChat({ subjectId, topic }: TutorMiniChatProps) {
   }
 
   return (
-    <div className="flex flex-col h-[400px] border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden">
+    <div className="flex flex-col h-[400px] border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
           <div
@@ -32,7 +32,7 @@ export function TutorMiniChat({ subjectId, topic }: TutorMiniChatProps) {
             className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
           >
             <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border ${
+              className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold border ${
                 msg.role === "user"
                   ? "bg-indigo-600 border-indigo-700 text-white"
                   : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-indigo-600"
@@ -41,7 +41,7 @@ export function TutorMiniChat({ subjectId, topic }: TutorMiniChatProps) {
               {msg.role === "user" ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
             </div>
             <div
-              className={`max-w-[75%] p-3 rounded-xl text-xs leading-relaxed ${
+              className={`max-w-[75%] p-3 rounded-md text-xs leading-relaxed ${
                 msg.role === "user"
                   ? "bg-indigo-600 text-white rounded-tr-none whitespace-pre-wrap break-words"
                   : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none"
@@ -53,10 +53,10 @@ export function TutorMiniChat({ subjectId, topic }: TutorMiniChatProps) {
         ))}
         {sending && (
           <div className="flex items-start gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-indigo-600">
+            <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-indigo-600">
               <Bot className="w-3.5 h-3.5" />
             </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-tl-none flex items-center justify-center">
+            <div className="p-3 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-tl-none flex items-center justify-center">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
             </div>
           </div>
@@ -73,13 +73,13 @@ export function TutorMiniChat({ subjectId, topic }: TutorMiniChatProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Nhập câu hỏi thảo luận..."
-          className="flex-1 px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500"
+          className="flex-1 px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500"
           disabled={sending}
         />
         <button
           type="submit"
           disabled={sending || !input.trim()}
-          className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-55"
+          className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md transition-colors cursor-pointer disabled:opacity-55"
         >
           <Send className="w-3.5 h-3.5" />
         </button>

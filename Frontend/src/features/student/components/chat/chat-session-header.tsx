@@ -17,7 +17,7 @@ export function ChatSessionHeader({ session }: ChatSessionHeaderProps) {
           Mã phiên: {session.session_id.substring(0, 8)}...
         </span>
       </div>
-      <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-md">
         <Sparkles className="w-3.5 h-3.5" />
         AI Tutor Active
       </div>

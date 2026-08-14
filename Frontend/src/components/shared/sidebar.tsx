@@ -57,7 +57,7 @@ export function Sidebar() {
       {/* Logo Thương Hiệu với Gradient & Glow */}
       <div className="h-16 flex items-center px-6 border-b border-zinc-200/80 dark:border-zinc-800">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-base flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-200">
+          <div className="w-10 h-10 rounded-md bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-base flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-200">
             EM
           </div>
           <div className="flex flex-col">
@@ -91,7 +91,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3.5 py-3 text-xs font-bold rounded-xl transition-all duration-200 relative group ${
+              className={`flex items-center gap-3 px-3.5 py-3 text-xs font-bold rounded-md transition-all duration-200 relative group ${
                 isActive
                   ? "text-indigo-600 dark:text-indigo-300 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-200/60 dark:border-indigo-800/40 shadow-sm"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60"
@@ -106,7 +106,7 @@ export function Sidebar() {
                 />
               )}
               
-              <div className={`p-1.5 rounded-lg transition-all ${
+              <div className={`p-1.5 rounded-md transition-all ${
                 isActive 
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" 
                   : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white"

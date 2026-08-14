@@ -126,7 +126,7 @@ export default function AdminSubjectsPage() {
   if (isLoading || loading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 font-mono">
           Đang tải danh mục môn học...
         </p>
@@ -137,7 +137,7 @@ export default function AdminSubjectsPage() {
   if (error) {
     return (
       <div className="max-w-md mx-auto text-center py-20 space-y-6">
-        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-full flex items-center justify-center text-2xl font-black mx-auto">
+        <div className="w-16 h-16 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-md flex items-center justify-center text-2xl font-black mx-auto">
           !
         </div>
         <div className="space-y-2">
@@ -150,7 +150,7 @@ export default function AdminSubjectsPage() {
         </div>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs"
+          className="inline-block px-6 py-3 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs"
         >
           Quay lại Trang chủ
         </Link>
@@ -172,32 +172,32 @@ export default function AdminSubjectsPage() {
 
         <button
           onClick={handleOpenAddModal}
-          className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs tracking-wider transition-all shadow-lg shadow-indigo-500/15 cursor-pointer flex items-center justify-center"
+          className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md font-bold text-xs tracking-wider transition-all shadow-lg shadow-indigo-500/15 cursor-pointer flex items-center justify-center"
         >
           Tạo môn học mới +
         </button>
       </div>
 
       {/* Thanh công cụ tìm kiếm */}
-      <div className="flex flex-col md:flex-row gap-4 p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl">
+      <div className="flex flex-col md:flex-row gap-4 p-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-md">
         <input
           type="text"
           placeholder="Tìm tên môn học hoặc mã môn học (code)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white font-medium"
+          className="flex-1 px-4 py-2.5 text-xs border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white font-medium"
         />
 
         <Link
           href="/admin"
-          className="px-6 py-2.5 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 text-zinc-650 dark:text-zinc-350 hover:text-zinc-900 dark:hover:text-white text-xs font-bold rounded-xl flex items-center justify-center"
+          className="px-6 py-2.5 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 text-zinc-650 dark:text-zinc-350 hover:text-zinc-900 dark:hover:text-white text-xs font-bold rounded-md flex items-center justify-center"
         >
           Quay lại Dashboard
         </Link>
       </div>
 
       {/* Bảng danh sách môn học */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
@@ -226,7 +226,7 @@ export default function AdminSubjectsPage() {
                     className="hover:bg-zinc-50/40 dark:hover:bg-zinc-950/10 transition-colors font-medium"
                   >
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-850 dark:text-zinc-200 rounded-lg font-mono font-bold border border-zinc-200 dark:border-zinc-700">
+                      <span className="px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-850 dark:text-zinc-200 rounded-md font-mono font-bold border border-zinc-200 dark:border-zinc-700">
                         {s.code}
                       </span>
                     </td>
@@ -279,7 +279,7 @@ export default function AdminSubjectsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 z-10 text-left relative"
+              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-xl w-full max-w-md p-6 z-10 text-left relative"
             >
               <h3 className="text-sm font-black uppercase text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-3 mb-4">
                 {editingSubject ? "CẬP NHẬT MÔN HỌC" : "THÊM MÔN HỌC MỚI"}
@@ -298,7 +298,7 @@ export default function AdminSubjectsPage() {
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     disabled={!!editingSubject} // Không cho phép đổi mã môn khi chỉnh sửa
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs font-mono uppercase disabled:opacity-50"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs font-mono uppercase disabled:opacity-50"
                   />
                 </div>
 
@@ -313,7 +313,7 @@ export default function AdminSubjectsPage() {
                     placeholder="Ví dụ: Toán Đại Số lớp 10, Vật Lý 11..."
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
                   />
                 </div>
 
@@ -327,7 +327,7 @@ export default function AdminSubjectsPage() {
                     placeholder="Nhập mô tả tóm tắt nội dung học tập..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-medium focus:outline-none focus:border-indigo-500 text-zinc-900 dark:text-white text-xs"
                   />
                 </div>
 
@@ -336,14 +336,14 @@ export default function AdminSubjectsPage() {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-650 hover:bg-zinc-50 cursor-pointer"
+                    className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-bold text-zinc-650 hover:bg-zinc-50 cursor-pointer"
                   >
                     Hủy bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={formLoading}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {formLoading
                       ? "Đang xử lý..."

@@ -50,7 +50,7 @@ export function ChatLayout({
   onCloseNewChatModal,
 }: ChatLayoutProps) {
   return (
-    <div className="h-[calc(100vh-8rem)] flex border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-950 text-left">
+    <div className="h-[calc(100vh-8rem)] flex border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden bg-white dark:bg-zinc-950 text-left">
       <ChatSidebar
         sessions={sessions}
         activeSession={activeSession}

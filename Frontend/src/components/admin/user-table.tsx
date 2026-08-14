@@ -16,7 +16,7 @@ const roleLabels: Record<string, string> = {
 
 export function UserTable({ users, onToggleStatus, onEdit, onDelete }: UserTableProps) {
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left">
           <thead>
@@ -49,7 +49,7 @@ export function UserTable({ users, onToggleStatus, onEdit, onDelete }: UserTable
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2.5 py-0.5 border rounded-full text-[9px] font-bold ${
+                      className={`px-2.5 py-0.5 border rounded-md text-[9px] font-bold ${
                         u.role === "admin"
                           ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
                           : u.role === "teacher"
@@ -66,7 +66,7 @@ export function UserTable({ users, onToggleStatus, onEdit, onDelete }: UserTable
                   <td className="px-6 py-4">
                     <button
                       onClick={() => onToggleStatus(u)}
-                      className={`px-3 py-1 rounded-full border text-[10px] font-bold transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${
                         u.is_active
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                           : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500"

@@ -67,20 +67,20 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
       <div className="px-3.5 py-2 bg-white dark:bg-zinc-900 border-b border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between shrink-0 text-xs">
         <div className="flex items-center gap-1.5">
           {connected ? (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
               <Wifi className="w-3 h-3" />
               Trực tuyến
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full animate-pulse">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md animate-pulse">
               <WifiOff className="w-3 h-3" />
               Kết nối lại...
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 px-2.5 py-0.5 rounded-full border border-violet-100 dark:border-violet-900/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+        <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 px-2.5 py-0.5 rounded-md border border-violet-100 dark:border-violet-900/30">
+          <span className="w-1.5 h-1.5 rounded-md bg-emerald-500 animate-ping inline-block" />
           <Users className="w-3 h-3" />
           <span>{onlineCount > 0 ? `${onlineCount} online` : "Chờ kết nối"}</span>
         </div>
@@ -105,7 +105,7 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
                 className={`flex items-end gap-2 max-w-[85%] ${isMe ? "ml-auto flex-row-reverse" : "mr-auto"}`}
               >
                 {/* Avatar Initial Badge */}
-                <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs ${
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 shadow-xs ${
                   isMe 
                     ? "bg-violet-600 text-white" 
                     : isTeacher 
@@ -131,7 +131,7 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
                   )}
 
                   {/* Bubble Chat Content */}
-                  <div className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed break-words font-medium shadow-xs ${
+                  <div className={`px-3.5 py-2.5 rounded-md text-xs leading-relaxed break-words font-medium shadow-xs ${
                     isMe
                       ? "bg-violet-600 text-white rounded-br-xs"
                       : isTeacher
@@ -173,12 +173,12 @@ export function ClassroomChatView({ classroomId }: ClassroomChatViewProps) {
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Nhập nội dung thảo luận với lớp..."
-          className="flex-1 max-h-24 min-h-[38px] px-3 py-2 text-xs bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-violet-500 rounded-xl focus:outline-none resize-none font-medium text-zinc-800 dark:text-zinc-100"
+          className="flex-1 max-h-24 min-h-[38px] px-3 py-2 text-xs bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-violet-500 rounded-md focus:outline-none resize-none font-medium text-zinc-800 dark:text-zinc-100"
         />
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 active:scale-95 text-white flex items-center justify-center shrink-0 disabled:opacity-40 transition-all shadow-sm shadow-violet-600/20 cursor-pointer"
+          className="w-9 h-9 rounded-md bg-violet-600 hover:bg-violet-500 active:scale-95 text-white flex items-center justify-center shrink-0 disabled:opacity-40 transition-all shadow-sm shadow-violet-600/20 cursor-pointer"
         >
           <Send className="w-4 h-4" />
         </button>

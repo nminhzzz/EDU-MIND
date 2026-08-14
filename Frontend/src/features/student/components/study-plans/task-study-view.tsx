@@ -38,12 +38,12 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
   // Nếu bài học do AI sinh và tài liệu lý thuyết chưa hoàn thành
   if (task.ai_generated && !task.rag_content) {
     return (
-      <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
+      <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
         <TaskStudyHeader title={task.title} backHref={backHref} />
         
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-zinc-50/50 dark:bg-zinc-950/10 space-y-6">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-950 border-t-indigo-600 animate-spin" />
+            <div className="w-16 h-16 rounded-md border-4 border-indigo-100 dark:border-indigo-950 border-t-indigo-600 animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-indigo-600 animate-pulse" />
             </div>
@@ -62,7 +62,7 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
           <div className="pt-2">
             <a
               href={backHref}
-              className="px-4 py-2.5 border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-350 shadow-sm hover:shadow transition-all cursor-pointer"
+              className="px-4 py-2.5 border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 rounded-md text-xs font-bold text-zinc-600 dark:text-zinc-350 shadow-sm hover:shadow transition-all cursor-pointer"
             >
               Quay lại danh sách nhiệm vụ
             </a>
@@ -73,7 +73,7 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
       <TaskStudyHeader title={task.title} backHref={backHref} />
 
       <div className="flex-1 flex flex-col min-h-0 w-full">

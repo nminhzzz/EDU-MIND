@@ -14,7 +14,7 @@ export function GoalsSuccessStep() {
       exit={{ opacity: 0 }}
       className="max-w-md mx-auto text-center space-y-6 py-12"
     >
-      <div className="w-16 h-16 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center text-3xl font-black mx-auto select-none">
+      <div className="w-16 h-16 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md flex items-center justify-center text-3xl font-black mx-auto select-none">
         ✓
       </div>
       <div className="space-y-2">
@@ -27,7 +27,7 @@ export function GoalsSuccessStep() {
       </div>
       <Link
         href={ROUTES.STUDENT_DASHBOARD}
-        className="inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-xl text-xs tracking-wider transition-all cursor-pointer"
+        className="inline-block w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-100 text-zinc-50 dark:text-zinc-950 font-bold rounded-md text-xs tracking-wider transition-all cursor-pointer"
       >
         ĐI ĐẾN BẢNG ĐIỀU KHIỂN {"->"}
       </Link>

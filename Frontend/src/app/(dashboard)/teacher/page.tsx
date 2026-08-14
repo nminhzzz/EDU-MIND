@@ -50,7 +50,7 @@ export default function TeacherDashboard() {
   if (authLoading || loading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Đang tải dữ liệu...</p>
       </div>
     );
@@ -88,10 +88,10 @@ export default function TeacherDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm rounded-xl"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm rounded-md"
       >
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xl rounded-xl">
+          <div className="w-12 h-12 bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xl rounded-md">
             EM
           </div>
           <div>
@@ -105,7 +105,7 @@ export default function TeacherDashboard() {
         </div>
         <Link
           href={ROUTES.TEACHER_DOCUMENTS}
-          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer w-fit"
+          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer w-fit"
         >
           <Plus className="w-4 h-4" />
           Soạn đề & Tài liệu
@@ -122,7 +122,7 @@ export default function TeacherDashboard() {
       {/* 3. Classrooms */}
       <div className="grid grid-cols-1 gap-6">
         {/* Classrooms List */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm rounded-xl flex flex-col justify-between">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm rounded-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-4">
               <h2 className="font-extrabold text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">

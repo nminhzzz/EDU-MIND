@@ -50,7 +50,7 @@ export function QuizHistoryTable({ attempts }: QuizHistoryTableProps) {
               </td>
               <td className="py-3.5 px-4 text-center">
                 <span
-                  className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${att.score >= 8
+                  className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${att.score >= 8
                       ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
                       : att.score >= 5
                         ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"

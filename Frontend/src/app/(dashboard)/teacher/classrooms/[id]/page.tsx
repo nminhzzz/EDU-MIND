@@ -277,7 +277,7 @@ export default function TeacherClassroomDetailPage() {
   if (loading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-md animate-spin mx-auto" />
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
           Đang tải thông tin lớp học...
         </p>
@@ -343,7 +343,7 @@ export default function TeacherClassroomDetailPage() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl shadow-md shadow-violet-500/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             Thêm học sinh
@@ -352,7 +352,7 @@ export default function TeacherClassroomDetailPage() {
             type="button"
             onClick={handleDeleteClassroom}
             disabled={deleting}
-            className="px-4 py-2.5 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 font-bold text-sm rounded-xl transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 font-bold text-sm rounded-md transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {deleting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -390,7 +390,7 @@ export default function TeacherClassroomDetailPage() {
         key={activeTab}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm"
+        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-6 shadow-sm"
       >
         {activeTab === "students" && (
           <>
@@ -414,7 +414,7 @@ export default function TeacherClassroomDetailPage() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.04 }}
-                    className="flex items-center justify-between gap-4 p-4 border border-zinc-100 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                    className="flex items-center justify-between gap-4 p-4 border border-zinc-100 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
                   >
                     <div>
                       <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
@@ -431,7 +431,7 @@ export default function TeacherClassroomDetailPage() {
                             name: student.full_name || `Học sinh #${student.id}`,
                           })
                         }
-                        className="px-3 py-1.5 text-xs font-bold rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-bold rounded-md text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
                         title="Xem danh sách các bài thi đã làm"
                       >
                         <ClipboardList className="w-3.5 h-3.5" />
@@ -445,7 +445,7 @@ export default function TeacherClassroomDetailPage() {
                             name: student.full_name || `Học sinh #${student.id}`,
                           })
                         }
-                        className="px-3 py-1.5 text-xs font-bold rounded-lg text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-bold rounded-md text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center gap-1.5 cursor-pointer"
                         title="Xem & Chỉnh sửa báo cáo học lực"
                       >
                         <BarChart3 className="w-3.5 h-3.5" />
@@ -455,7 +455,7 @@ export default function TeacherClassroomDetailPage() {
                         type="button"
                         onClick={() => handleRemoveStudent(student.id)}
                         disabled={removingId === student.id}
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:opacity-50"
+                        className="p-2 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer disabled:opacity-50"
                         title="Xóa khỏi lớp"
                       >
                         {removingId === student.id ? (
@@ -489,7 +489,7 @@ export default function TeacherClassroomDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowGenModal(true)}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-md shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
               >
                 <BrainCircuit className="w-3.5 h-3.5" />
                 Tạo đề thi bằng AI
@@ -513,7 +513,7 @@ export default function TeacherClassroomDetailPage() {
                 {quizzes.map((q) => (
                   <div
                     key={q.id}
-                    className="p-5 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col justify-between hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
+                    className="p-5 border border-zinc-100 dark:border-zinc-800 rounded-md bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col justify-between hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
                   >
                     <div className="space-y-2 text-left">
                       <div className="flex justify-between items-center">
@@ -546,7 +546,7 @@ export default function TeacherClassroomDetailPage() {
                         type="button"
                         onClick={() => handlePreviewQuiz(q.id)}
                         disabled={loadingPreviewId === q.id}
-                        className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] rounded-lg transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                        className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-850/80 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] rounded-md transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1 disabled:opacity-50"
                       >
                         {loadingPreviewId === q.id ? (
                           <>
@@ -581,7 +581,7 @@ export default function TeacherClassroomDetailPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-auto"
           >
             {/* Header */}
             <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
@@ -592,7 +592,7 @@ export default function TeacherClassroomDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowGenModal(false)}
-                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-bold cursor-pointer p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-bold cursor-pointer p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -601,11 +601,11 @@ export default function TeacherClassroomDetailPage() {
             {/* Scrollable Form Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               {/* Mode Switcher Tabs */}
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl gap-1.5">
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md gap-1.5">
                 <button
                   type="button"
                   onClick={() => setGenMode("select_doc")}
-                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     genMode === "select_doc"
                       ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
                       : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -617,7 +617,7 @@ export default function TeacherClassroomDetailPage() {
                 <button
                   type="button"
                   onClick={() => setGenMode("file")}
-                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     genMode === "file"
                       ? "bg-white dark:bg-zinc-900 text-violet-600 dark:text-violet-400 shadow-sm"
                       : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -657,17 +657,17 @@ export default function TeacherClassroomDetailPage() {
                         Đang tải danh sách tài liệu...
                       </div>
                     ) : docsList.length === 0 ? (
-                      <div className="p-4 border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      <div className="p-4 border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/30 rounded-md text-xs text-amber-700 dark:text-amber-400 font-medium">
                         Chưa có tài liệu nào được upload cho môn học này. Vui lòng chuyển sang tab "Tải file mới".
                       </div>
                     ) : (
-                      <div className="max-h-44 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 space-y-1.5 bg-zinc-50/50 dark:bg-zinc-950/20">
+                      <div className="max-h-44 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-md p-2.5 space-y-1.5 bg-zinc-50/50 dark:bg-zinc-950/20">
                         {docsList.map((doc) => {
                           const isSelected = selectedDocIds.includes(doc.id);
                           return (
                             <label
                               key={doc.id}
-                              className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border ${
+                              className={`flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-all border ${
                                 isSelected
                                   ? "bg-violet-50/80 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700/60"
                                   : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800/80 hover:border-zinc-300"
@@ -701,7 +701,7 @@ export default function TeacherClassroomDetailPage() {
                     <label className="block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">
                       Chọn các file tài liệu (PDF, Word, TXT - Cho phép chọn nhiều file):
                     </label>
-                    <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-xl p-5 flex flex-col items-center justify-center space-y-1.5 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
+                    <label className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-violet-500 rounded-md p-5 flex flex-col items-center justify-center space-y-1.5 cursor-pointer bg-zinc-50/50 dark:bg-zinc-950/20 transition-all">
                       <UploadCloud className="w-7 h-7 text-violet-500" />
                       <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                         Nhấp để chọn 1 hoặc nhiều file PDF, .docx, .txt
@@ -738,7 +738,7 @@ export default function TeacherClassroomDetailPage() {
                         {uploadedFiles.map((file, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs"
+                            className="flex items-center justify-between p-2.5 rounded-md bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <FileText className="w-4 h-4 text-violet-500 shrink-0" />
@@ -770,7 +770,7 @@ export default function TeacherClassroomDetailPage() {
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     placeholder="Ví dụ: Tập trung 60% vào chương 2, cho 2 câu hỏi tình huống nâng cao, lời giải giải thích ngắn gọn..."
                     rows={3}
-                    className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white resize-none"
+                    className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white resize-none"
                   />
                 </div>
 
@@ -783,7 +783,7 @@ export default function TeacherClassroomDetailPage() {
                     <select
                       value={difficulty}
                       onChange={(e) => setDifficulty(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                     >
                       <option value="easy">Dễ (Nhận biết & Khái niệm)</option>
                       <option value="medium">Trung bình (Vận dụng & Tổng hợp)</option>
@@ -805,7 +805,7 @@ export default function TeacherClassroomDetailPage() {
                     <select
                       value={totalQuestions}
                       onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                     >
                       <option value={5}>5 câu</option>
                       <option value={10}>10 câu</option>
@@ -821,7 +821,7 @@ export default function TeacherClassroomDetailPage() {
                     <select
                       value={timeLimitMinutes}
                       onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                     >
                       <option value={15}>15 phút</option>
                       <option value={30}>30 phút (Mặc định)</option>
@@ -838,7 +838,7 @@ export default function TeacherClassroomDetailPage() {
                     <select
                       value={maxTabViolations}
                       onChange={(e) => setMaxTabViolations(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                     >
                       <option value={1}>Tối đa 1 lần</option>
                       <option value={3}>Tối đa 3 lần (Mặc định)</option>
@@ -872,7 +872,7 @@ export default function TeacherClassroomDetailPage() {
                         <select
                           value={essayCount}
                           onChange={(e) => setEssayCount(Number(e.target.value))}
-                          className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
+                          className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-bold text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white cursor-pointer"
                         >
                           <option value={1}>1 câu</option>
                           <option value={2}>2 câu (Mặc định)</option>
@@ -892,7 +892,7 @@ export default function TeacherClassroomDetailPage() {
                       type="datetime-local"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950 font-medium text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950 font-medium text-xs focus:outline-none focus:border-violet-500 text-zinc-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -905,7 +905,7 @@ export default function TeacherClassroomDetailPage() {
                 type="submit"
                 form="gen-quiz-form"
                 disabled={generating}
-                className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"
+                className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"
               >
                 {generating ? (
                   <>
@@ -1053,7 +1053,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden"
+        className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md w-full max-w-3xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 p-5 bg-zinc-50/50 dark:bg-zinc-900/50">
@@ -1067,7 +1067,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-black text-zinc-900 dark:text-white bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm font-black text-zinc-900 dark:text-white bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
                 />
               </div>
             ) : (
@@ -1091,7 +1091,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 isEditing
                   ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                   : "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400 hover:bg-violet-100"
@@ -1119,11 +1119,11 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
               return (
                 <div
                   key={qIdx}
-                  className="p-5 border border-violet-200/80 dark:border-violet-900/40 rounded-xl bg-violet-50/10 dark:bg-violet-950/5 space-y-4 shadow-sm"
+                  className="p-5 border border-violet-200/80 dark:border-violet-900/40 rounded-md bg-violet-50/10 dark:bg-violet-950/5 space-y-4 shadow-sm"
                 >
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold">
+                      <span className="w-6 h-6 rounded-md bg-violet-600 text-white flex items-center justify-center text-xs font-bold">
                         {qIdx + 1}
                       </span>
                       <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
@@ -1134,7 +1134,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                         onChange={(e) =>
                           handleUpdateQuestionField(qIdx, "question_type", e.target.value)
                         }
-                        className="px-2.5 py-1 text-xs font-bold border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
+                        className="px-2.5 py-1 text-xs font-bold border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
                       >
                         <option value="mcq">Trắc nghiệm (MCQ)</option>
                         <option value="essay">Tự luận (Essay)</option>
@@ -1143,7 +1143,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                     <button
                       type="button"
                       onClick={() => handleDeleteQuestion(qIdx)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors cursor-pointer"
                       title="Xóa câu hỏi này"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1161,7 +1161,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                       onChange={(e) =>
                         handleUpdateQuestionField(qIdx, "question_text", e.target.value)
                       }
-                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-xs font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
                     />
                   </div>
 
@@ -1200,7 +1200,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                               type="text"
                               value={opt.value || ""}
                               onChange={(e) => handleUpdateOption(qIdx, optIdx, e.target.value)}
-                              className="flex-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
+                              className="flex-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-950 focus:outline-none focus:border-violet-500"
                             />
                           </div>
                         ))}
@@ -1220,7 +1220,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                         onChange={(e) =>
                           handleUpdateQuestionField(qIdx, "correct_answer", e.target.value)
                         }
-                        className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                        className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
                       />
                     </div>
                   )}
@@ -1236,7 +1236,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                       onChange={(e) =>
                         handleUpdateQuestionField(qIdx, "explanation", e.target.value)
                       }
-                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
+                      className="w-full p-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-950 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-violet-500"
                     />
                   </div>
                 </div>
@@ -1247,10 +1247,10 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
             return (
               <div
                 key={qIdx}
-                className="p-5 border border-zinc-100 dark:border-zinc-850 rounded-xl bg-zinc-50/30 dark:bg-zinc-950/10 space-y-4"
+                className="p-5 border border-zinc-100 dark:border-zinc-850 rounded-md bg-zinc-50/30 dark:bg-zinc-950/10 space-y-4"
               >
                 <div className="flex items-start gap-2.5">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xs font-bold mt-0.5">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center text-xs font-bold mt-0.5">
                     {qIdx + 1}
                   </span>
                   <div className="space-y-1">
@@ -1273,14 +1273,14 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                       return (
                         <div
                           key={opt.key}
-                          className={`p-3 rounded-lg border text-xs font-semibold transition-all flex items-start gap-2 ${
+                          className={`p-3 rounded-md border text-xs font-semibold transition-all flex items-start gap-2 ${
                             isCorrect
                               ? "bg-emerald-50/50 border-emerald-250 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-900/50 dark:text-emerald-400"
                               : "bg-white border-zinc-100 text-zinc-700 dark:bg-zinc-950 dark:border-zinc-850 dark:text-zinc-300"
                           }`}
                         >
                           <span
-                            className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
+                            className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
                               isCorrect
                                 ? "bg-emerald-500 text-white"
                                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
@@ -1302,7 +1302,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                     <h5 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       Đáp án mẫu gợi ý:
                     </h5>
-                    <div className="p-3.5 rounded-lg bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-750 dark:text-zinc-350 font-medium leading-relaxed whitespace-pre-line">
+                    <div className="p-3.5 rounded-md bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-750 dark:text-zinc-350 font-medium leading-relaxed whitespace-pre-line">
                       <MathRenderer content={q.correct_answer || ""} />
                     </div>
                   </div>
@@ -1313,7 +1313,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                     <h5 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       Giải thích đáp án:
                     </h5>
-                    <div className="p-3.5 rounded-lg bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100 dark:border-violet-900/30 text-xs text-zinc-650 dark:text-zinc-400 font-medium leading-relaxed">
+                    <div className="p-3.5 rounded-md bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100 dark:border-violet-900/30 text-xs text-zinc-650 dark:text-zinc-400 font-medium leading-relaxed">
                       <MathRenderer content={q.explanation || ""} />
                     </div>
                   </div>
@@ -1330,7 +1330,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-100 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Thêm câu hỏi mới
@@ -1339,7 +1339,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl hover:bg-zinc-300 transition-all cursor-pointer"
+                  className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-md hover:bg-zinc-300 transition-all cursor-pointer"
                 >
                   Hủy
                 </button>
@@ -1347,7 +1347,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
                   type="button"
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-md transition-all cursor-pointer shadow-md flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {saving ? (
                     <>
@@ -1368,7 +1368,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50 font-bold text-xs rounded-xl hover:bg-violet-100 transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-900/50 font-bold text-xs rounded-md hover:bg-violet-100 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 Chỉnh sửa câu hỏi & Đáp án
@@ -1376,7 +1376,7 @@ function QuizEditPreviewModal({ open, onClose, quiz, onSaveSuccess }: QuizEditPr
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                className="px-5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-md transition-all cursor-pointer"
               >
                 Đóng
               </button>

@@ -66,7 +66,7 @@ export function StudentProgressTable({ students }: StudentProgressTableProps) {
               <td className="py-3 px-4 text-center">
                 {student.average_score != null ? (
                   <span
-                    className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${
+                    className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${
                       student.average_score >= 8
                         ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
                         : student.average_score >= 5

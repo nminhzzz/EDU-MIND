@@ -19,10 +19,10 @@ export function ClassroomSection({
   onSelectClassroom,
 }: ClassroomSectionProps) {
   return (
-    <div className="bg-sky-50/30 dark:bg-sky-950/20 border border-sky-200/70 dark:border-sky-900/40 p-6 md:p-8 rounded-3xl shadow-xs space-y-6">
+    <div className="bg-sky-50/30 dark:bg-sky-950/20 border border-sky-200/70 dark:border-sky-900/40 p-6 md:p-8 rounded-md shadow-xs space-y-6">
       <div className="flex items-center justify-between pb-4 border-b border-sky-200/60 dark:border-sky-900/50">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-white dark:bg-sky-900/50 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-300 shadow-xs">
+          <div className="p-2.5 rounded-md bg-white dark:bg-sky-900/50 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-300 shadow-xs">
             <GraduationCap className="w-5 h-5" />
           </div>
           <div>
@@ -35,7 +35,7 @@ export function ClassroomSection({
           </div>
         </div>
 
-        <span className="text-xs font-mono font-bold text-sky-700 dark:text-sky-300 bg-white dark:bg-sky-900/60 border border-sky-200 dark:border-sky-800 px-3 py-1 rounded-xl shadow-xs">
+        <span className="text-xs font-mono font-bold text-sky-700 dark:text-sky-300 bg-white dark:bg-sky-900/60 border border-sky-200 dark:border-sky-800 px-3 py-1 rounded-md shadow-xs">
           {classrooms.length} lớp đã gia nhập
         </span>
       </div>
@@ -49,7 +49,7 @@ export function ClassroomSection({
           <p className="font-medium">Bạn chưa tham gia lớp học nào.</p>
           <button
             onClick={onJoinClick}
-            className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 border border-sky-600 rounded-xl text-xs font-bold transition-all shadow-md shadow-sky-500/15 active:scale-95 cursor-pointer inline-flex items-center gap-2"
+            className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 border border-sky-600 rounded-md text-xs font-bold transition-all shadow-md shadow-sky-500/15 active:scale-95 cursor-pointer inline-flex items-center gap-2"
           >
             <Sparkles className="w-3.5 h-3.5 text-sky-100 dark:text-slate-900" />
             Gia nhập lớp học ngay

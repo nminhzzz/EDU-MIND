@@ -27,7 +27,7 @@ export function ChatSidebar({
         <h2 className="font-extrabold text-sm text-zinc-900 dark:text-white">Lịch sử thảo luận</h2>
         <button
           onClick={onNewChatClick}
-          className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+          className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md shadow-sm transition-all active:scale-95 cursor-pointer"
           title="Cuộc trò chuyện mới"
         >
           <Plus className="w-4 h-4" />
@@ -47,7 +47,7 @@ export function ChatSidebar({
             return (
               <div
                 key={s.session_id}
-                className={`group w-full flex items-center justify-between p-1 rounded-xl transition-all ${
+                className={`group w-full flex items-center justify-between p-1 rounded-md transition-all ${
                   isActive
                     ? "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-zinc-800"
                     : "hover:bg-zinc-100/60 dark:hover:bg-zinc-900/30 border border-transparent"
@@ -67,7 +67,7 @@ export function ChatSidebar({
                     e.stopPropagation();
                     onDeleteSession(s.session_id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0 cursor-pointer"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-zinc-400 hover:text-red-500 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 shrink-0 cursor-pointer"
                   title="Xóa phiên thảo luận"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

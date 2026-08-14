@@ -29,7 +29,7 @@ export function GoalsListStep({
       exit={{ opacity: 0 }}
       className="space-y-6 text-left"
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-white to-indigo-50/30 dark:from-zinc-900 dark:to-indigo-950/20 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-white to-indigo-50/30 dark:from-zinc-900 dark:to-indigo-950/20 border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-md shadow-sm">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-zinc-900 dark:text-white">
@@ -44,7 +44,7 @@ export function GoalsListStep({
         <button
           type="button"
           onClick={onCreateClick}
-          className="shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-md shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Tạo lộ trình mới

@@ -187,8 +187,8 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
 
   if (submitting) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 bg-zinc-50/80 dark:bg-zinc-950/40 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-8 shadow-xs">
-        <div className="p-4 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 animate-bounce">
+      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 bg-zinc-50/80 dark:bg-zinc-950/40 rounded-md border border-zinc-200/80 dark:border-zinc-800 p-8 shadow-xs">
+        <div className="p-4 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 animate-bounce">
           <Sparkles className="w-8 h-8" />
         </div>
         <div className="space-y-1">
@@ -199,7 +199,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
             Hệ thống đang gửi bài làm và gọi AI DeepSeek chấm điểm trắc nghiệm & tự luận. Vui lòng giữ màn hình trong giây lát!
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-extrabold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 px-4 py-2 rounded-xl border border-violet-200/60 dark:border-violet-800/50">
+        <div className="flex items-center gap-2 text-xs font-extrabold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 px-4 py-2 rounded-md border border-violet-200/60 dark:border-violet-800/50">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>Đang gửi bài nộp & chờ AI phản hồi...</span>
         </div>
@@ -228,7 +228,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
   // 1. Chưa sinh quiz
   if (!quiz) {
     return (
-      <div className="flex flex-col items-center justify-center text-center p-6 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/20 space-y-4">
+      <div className="flex flex-col items-center justify-center text-center p-6 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950/20 space-y-4">
         <HelpCircle className="w-10 h-10 text-indigo-500 mb-1 opacity-80" />
         <div>
           <h4 className="text-sm font-extrabold text-zinc-850 dark:text-zinc-200">Đánh giá nhanh lý thuyết</h4>
@@ -238,7 +238,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
         </div>
         <button
           onClick={handleGenerateQuiz}
-          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white rounded-md shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-all"
         >
           <Sparkles className="w-3.5 h-3.5" />
           Sinh đề thi bằng AI ⚡
@@ -251,17 +251,17 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
   if (result) {
     const isPass = result.score >= 5.0;
     return (
-      <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden flex flex-col text-left">
+      <div className="border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden flex flex-col text-left">
         {/* Score Summary Banner */}
         <div className="flex flex-col items-center justify-center text-center p-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+          <div className={`w-10 h-10 rounded-md flex items-center justify-center ${
             isPass ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"
           }`}>
             <Trophy className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200 uppercase">KẾT QUẢ KIỂM TRA</h4>
-            <span className={`inline-block mt-1.5 px-3 py-0.5 rounded-full text-xs font-black ${
+            <span className={`inline-block mt-1.5 px-3 py-0.5 rounded-md text-xs font-black ${
               isPass ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40" : "text-red-600 bg-red-50 dark:bg-red-950/40"
             }`}>
               {result.score.toFixed(1)} / 10 Điểm
@@ -290,7 +290,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
             const qType = q.question_type || "mcq";
 
             return (
-              <div key={idx} className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl space-y-2">
+              <div key={idx} className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-[10px] font-black text-zinc-400">Câu {idx + 1} ({qType === "essay" ? "Tự luận" : "Trắc nghiệm"})</span>
                   <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
@@ -359,7 +359,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
   const progress = ((currentIdx + 1) / totalPages) * 100;
 
   return (
-    <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden text-left flex flex-col">
+    <div className="border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-950/20 overflow-hidden text-left flex flex-col">
       {/* Tiêu đề & Tiến trình */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
         <div className="flex justify-between items-center">
@@ -373,7 +373,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
             }
           </span>
         </div>
-        <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-md overflow-hidden">
           <div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
       </div>
@@ -387,7 +387,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
               {essayQuestions.map((q, idx) => {
                 const originalIndex = quiz.questions.findIndex((originalQ) => originalQ === q);
                 return (
-                  <div key={idx} className="p-3.5 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 rounded-xl space-y-1">
+                  <div key={idx} className="p-3.5 bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 rounded-md space-y-1">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide">
                       Câu hỏi tự luận {idx + 1} (Câu {originalIndex + 1} trong đề)
                     </span>
@@ -414,7 +414,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+              className={`border-2 border-dashed rounded-md p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
                 essayFilePath
                   ? "border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/5"
                   : "border-zinc-300 dark:border-zinc-700 hover:border-indigo-500 dark:hover:border-indigo-400 bg-zinc-50/50 dark:bg-zinc-950/20"
@@ -427,7 +427,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
                 </div>
               ) : essayFilePath ? (
                 <div className="flex flex-col items-center space-y-1 animate-fadeIn">
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Đã nhận tệp bài làm!</p>
@@ -440,7 +440,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
                 </div>
               ) : (
                 <>
-                  <div className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 rounded-full">
+                  <div className="p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 rounded-md">
                     <UploadCloud className="w-6 h-6" />
                   </div>
                   <div className="space-y-0.5">
@@ -455,7 +455,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
               )}
             </div>
 
-            <div className="p-3.5 bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100/30 dark:border-indigo-900/20 rounded-xl">
+            <div className="p-3.5 bg-indigo-50/30 dark:bg-indigo-950/10 border border-indigo-100/30 dark:border-indigo-900/20 rounded-md">
               <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
                 💡 <span className="font-bold text-indigo-600">Lưu ý quan trọng:</span> Bạn chỉ cần tải lên **01 tệp duy nhất** chứa toàn bộ lời giải của tất cả các câu hỏi tự luận trên. AI Grader sẽ tự động trích xuất OCR và chấm chi tiết từng câu.
               </p>
@@ -475,14 +475,14 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
                     <button
                       key={opt.key}
                       onClick={() => handleSelectAnswer(opt.key)}
-                      className={`w-full p-4 text-left text-sm rounded-2xl border transition-all cursor-pointer flex items-center gap-3.5 shadow-sm ${
+                      className={`w-full p-4 text-left text-sm rounded-md border transition-all cursor-pointer flex items-center gap-3.5 shadow-sm ${
                         isSelected
                           ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 font-extrabold shadow-indigo-500/10"
                           : "bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700"
                       }`}
                     >
                       <span
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black transition-all ${
+                        className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-black transition-all ${
                           isSelected
                             ? "bg-indigo-600 border border-indigo-600 text-white shadow-md shadow-indigo-500/25"
                             : "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
@@ -507,7 +507,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
         <button
           onClick={handlePrev}
           disabled={currentIdx === 0}
-          className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-750 text-[10px] font-bold rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 cursor-pointer"
+          className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-750 text-[10px] font-bold rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 cursor-pointer"
         >
           Quay lại
         </button>
@@ -515,7 +515,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
         {currentIdx < totalPages - 1 ? (
           <button
             onClick={handleNext}
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold text-white rounded-lg cursor-pointer"
+            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold text-white rounded-md cursor-pointer"
           >
             Tiếp theo
           </button>
@@ -523,7 +523,7 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold text-white rounded-lg cursor-pointer disabled:opacity-55"
+            className="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold text-white rounded-md cursor-pointer disabled:opacity-55"
           >
             {submitting ? "Đang chấm..." : "Nộp bài thi ✔"}
           </button>

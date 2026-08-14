@@ -21,7 +21,7 @@ export function TaskStudyFooter({ task, backHref, onClose }: TaskStudyFooterProp
         {backHref ? (
           <Link
             href={backHref}
-            className="px-4 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+            className="px-4 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
           >
             Quay lại danh sách
           </Link>
@@ -30,14 +30,14 @@ export function TaskStudyFooter({ task, backHref, onClose }: TaskStudyFooterProp
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+              className="px-4 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold rounded-md text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
             >
               Đóng lại
             </button>
           )
         )}
         {task.status !== "done" && (
-          <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-bold">
+          <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md text-xs font-bold">
             <AlertCircle className="w-4 h-4 shrink-0" />
             Cần đạt ≥ 8 điểm Quick Quiz để hoàn thành
           </div>

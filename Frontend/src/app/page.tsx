@@ -10,8 +10,8 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-zinc-50 via-zinc-100 to-indigo-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 relative overflow-hidden">
       {/* Background Decorative Blobs */}
-      <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[60%] rounded-full bg-indigo-500/5 blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-25%] right-[-15%] w-[60%] h-[60%] rounded-full bg-violet-500/5 blur-[140px] pointer-events-none" />
+      <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[60%] rounded-md bg-indigo-500/5 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-25%] right-[-15%] w-[60%] h-[60%] rounded-md bg-violet-500/5 blur-[140px] pointer-events-none" />
 
       <div className="w-full max-w-4xl z-10 flex flex-col items-center">
         {/* Logo and Tagline */}
@@ -19,7 +19,7 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-black text-3xl flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-6"
+          className="w-16 h-16 rounded-md bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-black text-3xl flex items-center justify-center shadow-xl shadow-indigo-500/20 mb-6"
         >
           EM
         </motion.div>
@@ -50,10 +50,10 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
             whileHover={{ y: -5 }}
-            className="group bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-8 rounded-3xl shadow-lg dark:shadow-zinc-950/30 flex flex-col justify-between transition-all cursor-pointer"
+            className="group bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-8 rounded-md shadow-lg dark:shadow-zinc-950/30 flex flex-col justify-between transition-all cursor-pointer"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-md bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <GraduationCap className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Không gian Học sinh</h2>
@@ -73,10 +73,10 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
             whileHover={{ y: -5 }}
-            className="group bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-8 rounded-3xl shadow-lg dark:shadow-zinc-950/30 flex flex-col justify-between transition-all cursor-pointer"
+            className="group bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-8 rounded-md shadow-lg dark:shadow-zinc-950/30 flex flex-col justify-between transition-all cursor-pointer"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-md bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Briefcase className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Không gian Giáo viên</h2>

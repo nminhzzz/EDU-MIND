@@ -54,12 +54,12 @@ export function ClassroomJoinModal({ isOpen, onClose, onSuccess }: ClassroomJoin
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-8 text-left">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl w-full max-w-md p-8 text-left">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-black text-zinc-900 dark:text-white">Gia nhập lớp học mới</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-zinc-400 hover:text-zinc-650 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-2 rounded-md text-zinc-400 hover:text-zinc-650 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -75,13 +75,13 @@ export function ClassroomJoinModal({ isOpen, onClose, onSuccess }: ClassroomJoin
                     value={classCode}
                     onChange={(e) => setClassCode(e.target.value.toUpperCase())}
                     placeholder="VD: CLASS-TEST243"
-                    className="w-full px-4 py-3 border border-sky-200 dark:border-sky-800 rounded-xl bg-white dark:bg-sky-950 text-sky-950 dark:text-white font-mono text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none uppercase"
+                    className="w-full px-4 py-3 border border-sky-200 dark:border-sky-800 rounded-md bg-white dark:bg-sky-950 text-sky-950 dark:text-white font-mono text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none uppercase"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={joining}
-                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 disabled:opacity-50 text-white dark:text-slate-950 font-bold text-sm rounded-xl shadow-md shadow-sky-500/20 transition-all active:scale-[0.98] cursor-pointer border border-sky-600"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 disabled:opacity-50 text-white dark:text-slate-950 font-bold text-sm rounded-md shadow-md shadow-sky-500/20 transition-all active:scale-[0.98] cursor-pointer border border-sky-600"
                 >
                   {joining ? "Đang xử lý..." : "Xác nhận gia nhập"}
                 </button>

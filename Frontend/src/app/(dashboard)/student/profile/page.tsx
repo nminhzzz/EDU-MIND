@@ -171,9 +171,9 @@ export default function StudentProfilePage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12 animate-fadeIn text-left">
       {/* 1. Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white shadow-xl shadow-indigo-500/20">
-        <div className="absolute right-0 top-0 -mt-12 -mr-12 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-0 bottom-0 -mb-16 -ml-16 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-md bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white shadow-xl shadow-indigo-500/20">
+        <div className="absolute right-0 top-0 -mt-12 -mr-12 w-64 h-64 bg-white/10 rounded-md blur-3xl pointer-events-none" />
+        <div className="absolute left-0 bottom-0 -mb-16 -ml-16 w-80 h-80 bg-blue-400/20 rounded-md blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
@@ -186,14 +186,14 @@ export default function StudentProfilePage() {
                 <img
                   src={user.avatar_url}
                   alt={user.full_name || "Avatar"}
-                  className="w-24 h-24 rounded-2xl object-cover bg-white/10 backdrop-blur-md border-2 border-white/40 shadow-lg shrink-0 group-hover:opacity-90 transition-opacity"
+                  className="w-24 h-24 rounded-md object-cover bg-white/10 backdrop-blur-md border-2 border-white/40 shadow-lg shrink-0 group-hover:opacity-90 transition-opacity"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur-md border-2 border-white/40 flex items-center justify-center font-bold text-3xl shadow-lg shrink-0 text-white group-hover:bg-white/20 transition-colors">
+                <div className="w-24 h-24 rounded-md bg-white/10 backdrop-blur-md border-2 border-white/40 flex items-center justify-center font-bold text-3xl shadow-lg shrink-0 text-white group-hover:bg-white/20 transition-colors">
                   {user.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs font-bold text-white">
+              <div className="absolute inset-0 bg-black/40 rounded-md opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs font-bold text-white">
                 <Edit3 className="w-5 h-5" />
               </div>
             </div>
@@ -203,18 +203,18 @@ export default function StudentProfilePage() {
                 <h1 className="text-2xl md:text-3xl font-black tracking-tight">{user.full_name || "Chưa cập nhật họ tên"}</h1>
                 <button
                   onClick={() => setIsEditOpen(true)}
-                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
                   title="Chỉnh sửa họ tên"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
               </div>
               <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm font-medium text-indigo-100">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-xl backdrop-blur-sm">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-md backdrop-blur-sm">
                   <Mail className="w-4 h-4" />
                   {user.email}
                 </span>
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-xl backdrop-blur-sm">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-md backdrop-blur-sm">
                   <GraduationCap className="w-4 h-4" />
                   {user.grade ? GRADE_MAP[user.grade] : "Chưa cập nhật lớp"}
                 </span>
@@ -225,7 +225,7 @@ export default function StudentProfilePage() {
           {/* Prominent Edit Profile Button */}
           <button
             onClick={() => setIsEditOpen(true)}
-            className="px-6 py-3 bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs rounded-2xl transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 shrink-0 z-10"
+            className="px-6 py-3 bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs rounded-md transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 shrink-0 z-10"
           >
             <Edit3 className="w-4.5 h-4.5 text-indigo-600" />
             Chỉnh sửa thông tin
@@ -236,7 +236,7 @@ export default function StudentProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 2. Cấu hình học tập (Left Side) */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-6">
+          <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm space-y-6">
             <h3 className="text-sm font-black text-zinc-850 dark:text-zinc-150 uppercase tracking-wider flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
               <Compass className="w-4.5 h-4.5 text-indigo-500" />
               Cấu hình học tập
@@ -244,7 +244,7 @@ export default function StudentProfilePage() {
 
             <div className="space-y-4">
               <div className="flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <div className="w-9 h-9 rounded-md bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <Clock className="w-4.5 h-4.5" />
                 </div>
                 <div>
@@ -256,7 +256,7 @@ export default function StudentProfilePage() {
               </div>
 
               <div className="flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <div className="w-9 h-9 rounded-md bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <BookOpen className="w-4.5 h-4.5" />
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export default function StudentProfilePage() {
               </div>
 
               <div className="flex items-start gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <div className="w-9 h-9 rounded-md bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                   <Calendar className="w-4.5 h-4.5" />
                 </div>
                 <div className="flex-1">
@@ -296,7 +296,7 @@ export default function StudentProfilePage() {
 
         {/* 3. Báo cáo học lực & Điểm mạnh/yếu (Right Side) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-6">
+          <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-sm space-y-6">
             <h3 className="text-sm font-black text-zinc-850 dark:text-zinc-150 uppercase tracking-wider flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
               <BarChart3 className="w-4.5 h-4.5 text-violet-500" />
               Báo cáo học lực theo môn
@@ -315,7 +315,7 @@ export default function StudentProfilePage() {
                       : "text-amber-500 dark:text-amber-400";
 
                   return (
-                    <div key={analytic.id} className="p-5 rounded-2xl border border-zinc-150 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-5">
+                    <div key={analytic.id} className="p-5 rounded-md border border-zinc-150 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-5">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="space-y-1">
                           <h4 className="text-sm font-black text-zinc-850 dark:text-zinc-100">
@@ -326,7 +326,7 @@ export default function StudentProfilePage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800 shrink-0">
+                        <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2.5 rounded-md border border-zinc-100 dark:border-zinc-800 shrink-0">
                           <div className="relative w-10 h-10 flex items-center justify-center">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                               <path
@@ -360,7 +360,7 @@ export default function StudentProfilePage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-3.5 rounded-xl bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-100/50 dark:border-emerald-900/30 space-y-2">
+                        <div className="p-3.5 rounded-md bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-100/50 dark:border-emerald-900/30 space-y-2">
                           <h5 className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Điểm mạnh / Chủ đề nắm vững
@@ -378,7 +378,7 @@ export default function StudentProfilePage() {
                           )}
                         </div>
 
-                        <div className="p-3.5 rounded-xl bg-amber-50/20 dark:bg-amber-950/10 border border-amber-100/50 dark:border-amber-900/30 space-y-2">
+                        <div className="p-3.5 rounded-md bg-amber-50/20 dark:bg-amber-950/10 border border-amber-100/50 dark:border-amber-900/30 space-y-2">
                           <h5 className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                             <AlertTriangle className="w-3.5 h-3.5" />
                             Chủ đề cần cải thiện
@@ -398,7 +398,7 @@ export default function StudentProfilePage() {
                       </div>
 
                       {analytic.ai_feedback && (
-                        <div className="p-4 rounded-xl bg-violet-50/20 dark:bg-violet-950/15 border border-violet-100/50 dark:border-violet-900/30 text-left relative overflow-hidden">
+                        <div className="p-4 rounded-md bg-violet-50/20 dark:bg-violet-950/15 border border-violet-100/50 dark:border-violet-900/30 text-left relative overflow-hidden">
                           <div className="flex items-center gap-1.5 text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">
                             <Sparkles className="w-4 h-4 animate-pulse shrink-0" />
                             Nhận xét từ AI Tutor
@@ -413,7 +413,7 @@ export default function StudentProfilePage() {
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 text-center bg-zinc-50 dark:bg-zinc-950/20 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+              <div className="flex flex-col items-center justify-center p-8 text-center bg-zinc-50 dark:bg-zinc-950/20 rounded-md border border-dashed border-zinc-200 dark:border-zinc-800">
                 <Brain className="w-10 h-10 text-zinc-300 mb-2" />
                 <p className="text-xs text-zinc-500 font-bold">Chưa có đủ dữ liệu học tập để tổng hợp báo cáo học lực.</p>
                 <p className="text-[10px] text-zinc-400 mt-1">Hãy tham gia làm các bài kiểm tra ôn luyện môn học để AI xây dựng lộ trình và báo cáo điểm mạnh/yếu.</p>
@@ -450,11 +450,11 @@ export default function StudentProfilePage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 md:p-8 space-y-6 z-10 text-left overflow-hidden"
+              className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 md:p-8 space-y-6 z-10 text-left overflow-hidden"
             >
               <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <div className="w-8 h-8 rounded-md bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <User className="w-4 h-4" />
                   </div>
                   <h2 className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight">
@@ -463,7 +463,7 @@ export default function StudentProfilePage() {
                 </div>
                 <button
                   onClick={() => setIsEditOpen(false)}
-                  className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -481,7 +481,7 @@ export default function StudentProfilePage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nhập họ và tên đầy đủ..."
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-bold text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full px-4 py-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-bold text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
 
@@ -493,7 +493,7 @@ export default function StudentProfilePage() {
                   <select
                     value={grade}
                     onChange={(e) => setGrade(e.target.value as StudentGrade)}
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-bold text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                    className="w-full px-4 py-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-bold text-sm text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
                   >
                     {Object.entries(GRADE_MAP).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -514,7 +514,7 @@ export default function StudentProfilePage() {
                     type="button"
                     disabled={uploadingAvatar}
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 text-indigo-600 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                    className="w-full py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 text-indigo-600 dark:text-indigo-300 font-bold text-xs rounded-md border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
                   >
                     {uploadingAvatar ? (
                       <>
@@ -538,15 +538,15 @@ export default function StudentProfilePage() {
                           key={idx}
                           type="button"
                           onClick={() => setAvatarUrl(url)}
-                          className={`w-12 h-12 rounded-xl p-1 border-2 transition-all cursor-pointer shrink-0 relative ${
+                          className={`w-12 h-12 rounded-md p-1 border-2 transition-all cursor-pointer shrink-0 relative ${
                             avatarUrl === url
                               ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 scale-105"
                               : "border-transparent hover:border-zinc-300 dark:hover:border-zinc-700"
                           }`}
                         >
-                          <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover rounded-lg" />
+                          <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover rounded-md" />
                           {avatarUrl === url && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center">
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-md flex items-center justify-center">
                               <Check className="w-2.5 h-2.5" />
                             </div>
                           )}
@@ -561,7 +561,7 @@ export default function StudentProfilePage() {
                     value={avatarUrl}
                     onChange={(e) => setAvatarUrl(e.target.value)}
                     placeholder="Hoặc dán URL ảnh đại diện tùy chỉnh (https://...)"
-                    className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-medium text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full px-4 py-2.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-medium text-xs text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
 
@@ -577,7 +577,7 @@ export default function StudentProfilePage() {
                   <button
                     type="submit"
                     disabled={saving || uploadingAvatar}
-                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-md shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {saving ? (
                       <>

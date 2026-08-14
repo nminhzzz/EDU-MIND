@@ -57,7 +57,7 @@ export function StudentModal({
         className={`fixed inset-0 ${panelZIndex} flex items-center justify-center p-4 ${panelClassName}`.trim()}
       >
         <div
-          className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} ${contentClassName}`.trim()}
+          className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl w-full ${maxWidthClasses[maxWidth]} ${contentClassName}`.trim()}
         >
           {title !== undefined && (
             <div className="flex items-center justify-between mb-6">
@@ -69,7 +69,7 @@ export function StudentModal({
               {showCloseButton && (
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-zinc-400 hover:text-zinc-650 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-2 rounded-md text-zinc-400 hover:text-zinc-650 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

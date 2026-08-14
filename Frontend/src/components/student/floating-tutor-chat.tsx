@@ -91,10 +91,10 @@ export function FloatingTutorChat() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 cursor-pointer active:scale-95 transition-all relative group"
+            className="w-14 h-14 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 cursor-pointer active:scale-95 transition-all relative group"
           >
             <MessageSquare className="w-6 h-6" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-zinc-50 rounded-full animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-zinc-50 rounded-md animate-pulse" />
           </motion.button>
         )}
 
@@ -105,7 +105,7 @@ export function FloatingTutorChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="w-96 h-[550px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-white/95 dark:bg-zinc-900/95"
+            className="w-96 h-[550px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-white/95 dark:bg-zinc-900/95"
           >
             {/* Header */}
             <div className="h-14 px-4 border-b border-zinc-150 dark:border-zinc-850 bg-indigo-600 text-white flex items-center justify-between">
@@ -116,7 +116,7 @@ export function FloatingTutorChat() {
                       setShowSessionsList(false);
                       setShowNewChatForm(false);
                     }}
-                    className="p-1 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                    className="p-1 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -137,7 +137,7 @@ export function FloatingTutorChat() {
                 {!showSessionsList && !showNewChatForm && chat.sessions.length > 0 && (
                   <button
                     onClick={() => setShowSessionsList(true)}
-                    className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
                     title="Lịch sử chat"
                   >
                     <History className="w-4 h-4" />
@@ -146,7 +146,7 @@ export function FloatingTutorChat() {
                 {!showNewChatForm && (
                   <button
                     onClick={() => setShowNewChatForm(true)}
-                    className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
                     title="Trò chuyện mới"
                   >
                     <Plus className="w-4 h-4" />
@@ -154,7 +154,7 @@ export function FloatingTutorChat() {
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                  className="p-1.5 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -173,7 +173,7 @@ export function FloatingTutorChat() {
                     <select
                       value={subjectId}
                       onChange={(e) => setSubjectId(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                       required
                     >
                       <option value="">-- Chọn môn học --</option>
@@ -193,13 +193,13 @@ export function FloatingTutorChat() {
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
                       placeholder="VD: Hỏi bài tập Kế Thừa Java"
-                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={creating || !subjectId}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md cursor-pointer transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-1.5"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-md shadow-md cursor-pointer transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-1.5"
                   >
                     {creating && <Loader2 className="w-4 h-4 animate-spin" />}
                     Bắt đầu thảo luận
@@ -216,7 +216,7 @@ export function FloatingTutorChat() {
                     chat.sessions.map((session) => (
                       <div
                         key={session.session_id}
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${chat.activeSession?.session_id === session.session_id
+                        className={`flex items-center justify-between p-3 rounded-md border transition-all cursor-pointer ${chat.activeSession?.session_id === session.session_id
                             ? "bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200"
                             : "bg-white border-zinc-200/80 dark:bg-zinc-900 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                           }`}
@@ -238,7 +238,7 @@ export function FloatingTutorChat() {
                             e.stopPropagation();
                             chat.handleDeleteSession(session.session_id);
                           }}
-                          className="p-1 text-zinc-400 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                          className="p-1 text-zinc-400 hover:text-red-500 rounded-md transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -274,7 +274,7 @@ export function FloatingTutorChat() {
                               }`}
                           >
                             <div
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold border shrink-0 ${msg.role === "user"
+                              className={`w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold border shrink-0 ${msg.role === "user"
                                   ? "bg-indigo-600 border-indigo-700 text-white"
                                   : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-indigo-600"
                                 }`}
@@ -286,7 +286,7 @@ export function FloatingTutorChat() {
                               )}
                             </div>
                             <div
-                              className={`max-w-[78%] p-2.5 rounded-xl text-xs leading-relaxed ${msg.role === "user"
+                              className={`max-w-[78%] p-2.5 rounded-md text-xs leading-relaxed ${msg.role === "user"
                                   ? "bg-indigo-600 text-white rounded-tr-none whitespace-pre-wrap break-words"
                                   : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none markdown-container"
                                 }`}
@@ -303,10 +303,10 @@ export function FloatingTutorChat() {
 
                       {chat.sending && (
                         <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-indigo-600 shrink-0">
+                          <div className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-indigo-600 shrink-0">
                             <Bot className="w-3.5 h-3.5" />
                           </div>
-                          <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-tl-none flex items-center justify-center">
+                          <div className="p-3 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-tl-none flex items-center justify-center">
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
                           </div>
                         </div>
@@ -329,13 +329,13 @@ export function FloatingTutorChat() {
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}
                   placeholder="Nhập câu hỏi thảo luận..."
-                  className="flex-1 px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="flex-1 px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-md bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:bg-white"
                   disabled={chat.sending || chat.loadingMessages}
                 />
                 <button
                   type="submit"
                   disabled={chat.sending || !chat.input.trim() || chat.loadingMessages}
-                  className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                  className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>

@@ -55,10 +55,10 @@ export function ClassroomChatList({
           <button
             key={cls.id}
             onClick={() => onSelectClassroom(cls)}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all text-left group cursor-pointer shadow-sm"
+            className="w-full flex items-center justify-between p-3.5 rounded-md border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all text-left group cursor-pointer shadow-sm"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-md bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-transform">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -72,7 +72,7 @@ export function ClassroomChatList({
             </div>
 
             {unread > 0 && (
-              <div className="ml-2 px-2 py-0.5 bg-red-500 text-white text-[11px] font-black rounded-full shadow-md shadow-red-500/30 shrink-0 animate-pulse">
+              <div className="ml-2 px-2 py-0.5 bg-red-500 text-white text-[11px] font-black rounded-md shadow-md shadow-red-500/30 shrink-0 animate-pulse">
                 {unread > 99 ? "99+" : unread}
               </div>
             )}

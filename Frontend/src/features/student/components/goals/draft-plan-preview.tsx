@@ -28,12 +28,12 @@ export function DraftPlanPreview({
   const subjectObj = subjects.find((s) => String(s.id) === String(selectedSubjectId));
 
   return (
-    <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-3xl shadow-sm space-y-6 w-full">
+    <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-md shadow-sm space-y-6 w-full">
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-200/60 dark:border-zinc-800">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 px-2.5 py-0.5 rounded-full border border-violet-200/50 dark:border-violet-800/50">
+            <span className="text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 px-2.5 py-0.5 rounded-md border border-violet-200/50 dark:border-violet-800/50">
               Bản thảo Lộ trình AI
             </span>
           </div>
@@ -46,11 +46,11 @@ export function DraftPlanPreview({
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 self-start sm:self-auto shrink-0 shadow-2xs">
+        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-md border border-zinc-200/80 dark:border-zinc-800 self-start sm:self-auto shrink-0 shadow-2xs">
           <button
             type="button"
             onClick={() => setViewMode("daily")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === "daily"
                 ? "bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -61,7 +61,7 @@ export function DraftPlanPreview({
           <button
             type="button"
             onClick={() => setViewMode("timeline")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
               viewMode === "timeline"
                 ? "bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm"
                 : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -93,7 +93,7 @@ export function DraftPlanPreview({
               {draft.plan.curriculum_materials.map((mat, idx) => (
                 <div
                   key={idx}
-                  className="p-4 border border-zinc-200/70 dark:border-zinc-800 rounded-2xl bg-zinc-50/60 dark:bg-zinc-950/40 space-y-1.5"
+                  className="p-4 border border-zinc-200/70 dark:border-zinc-800 rounded-md bg-zinc-50/60 dark:bg-zinc-950/40 space-y-1.5"
                 >
                   <h5 className="text-xs font-black text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

@@ -46,14 +46,14 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
   const status = getStatusStyle(goal.status);
 
   return (
-    <article className="group h-full flex flex-col rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md hover:border-indigo-300/80 dark:hover:border-indigo-700/60 transition-all duration-200 overflow-hidden">
+    <article className="group h-full flex flex-col rounded-md border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md hover:border-indigo-300/80 dark:hover:border-indigo-700/60 transition-all duration-200 overflow-hidden">
       <div className="p-5 sm:p-6 flex-1 flex flex-col">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <span className="inline-flex items-center text-[10px] font-extrabold tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 px-2.5 py-1 rounded-lg uppercase">
+          <span className="inline-flex items-center text-[10px] font-extrabold tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 px-2.5 py-1 rounded-md uppercase">
             {subject?.code || "MÔN HỌC"}
           </span>
           <span
-            className={`inline-flex items-center shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${status.className}`}
+            className={`inline-flex items-center shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md border whitespace-nowrap ${status.className}`}
           >
             {status.label}
           </span>
@@ -69,7 +69,7 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{subject.name}</p>
         )}
 
-        <div className="mt-5 grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-zinc-50/90 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/80">
+        <div className="mt-5 grid grid-cols-2 gap-3 p-3.5 rounded-md bg-zinc-50/90 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/80">
           <div className="space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
               <Target className="w-3 h-3" />
@@ -95,7 +95,7 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
       <div className="px-5 sm:px-6 py-4 border-t border-zinc-100 dark:border-zinc-800/90 bg-zinc-50/40 dark:bg-zinc-900/40 flex items-center justify-between gap-3">
         <Link
           href={ROUTES.STUDENT_GOAL_DETAIL(goal.id)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
         >
           Xem chi tiết lộ trình
           <ArrowRight className="w-3.5 h-3.5" />
@@ -104,7 +104,7 @@ export function GoalCard({ goal, subject, goalsLoading, onDelete }: GoalCardProp
           type="button"
           onClick={() => onDelete(goal.id)}
           disabled={goalsLoading}
-          className="p-2.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-100 dark:hover:border-red-900/40 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+          className="p-2.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-100 dark:hover:border-red-900/40 rounded-md transition-colors cursor-pointer disabled:opacity-50"
           title="Xóa lộ trình học"
         >
           <Trash2 className="w-4 h-4" />
