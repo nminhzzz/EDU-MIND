@@ -75,13 +75,13 @@ export function ClassroomJoinModal({ isOpen, onClose, onSuccess }: ClassroomJoin
                     value={classCode}
                     onChange={(e) => setClassCode(e.target.value.toUpperCase())}
                     placeholder="VD: CLASS-TEST243"
-                    className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-850 text-zinc-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none uppercase"
+                    className="w-full px-4 py-3 border border-sky-200 dark:border-sky-800 rounded-xl bg-white dark:bg-sky-950 text-sky-950 dark:text-white font-mono text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none uppercase"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={joining}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 disabled:opacity-50 text-white dark:text-slate-950 font-bold text-sm rounded-xl shadow-md shadow-sky-500/20 transition-all active:scale-[0.98] cursor-pointer border border-sky-600"
                 >
                   {joining ? "Đang xử lý..." : "Xác nhận gia nhập"}
                 </button>

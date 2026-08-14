@@ -66,14 +66,14 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-xl p-8 max-h-[90vh] overflow-y-auto text-left">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-100 dark:border-zinc-800">
                 <div>
-                  <h2 className="text-lg font-black text-zinc-900 dark:text-white">{classroom.class_name}</h2>
-                  <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md inline-block mt-1">
+                  <h2 className="text-lg font-black text-sky-950 dark:text-white">{classroom.class_name}</h2>
+                  <span className="text-xs font-mono font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/60 px-2.5 py-0.5 rounded-md inline-block mt-1 border border-sky-200 dark:border-sky-800">
                     {classroom.class_code}
                   </span>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-zinc-400 hover:text-zinc-650 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg text-sky-400 hover:text-sky-700 dark:hover:text-white hover:bg-sky-50 dark:hover:bg-sky-900 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -82,27 +82,27 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
               <div className="space-y-6">
                 {classroom.description && (
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block">
+                    <span className="text-[10px] font-bold text-sky-700/80 dark:text-sky-300/80 uppercase tracking-wider block">
                       Giới thiệu lớp
                     </span>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium">
+                    <p className="text-xs text-sky-900/80 dark:text-sky-300/80 leading-relaxed font-medium">
                       {classroom.description}
                     </p>
                   </div>
                 )}
 
                 <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block flex items-center gap-1">
-                    <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="text-[10px] font-bold text-sky-700/80 dark:text-sky-300/80 uppercase tracking-wider block flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5 text-sky-500" />
                     Tài liệu môn học
                   </span>
 
                   {loading ? (
-                    <div className="py-6 text-center text-xs font-mono text-zinc-400">
+                    <div className="py-6 text-center text-xs font-mono text-sky-600/70">
                       Đang đồng bộ tài liệu từ kho...
                     </div>
                   ) : docs.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    <div className="py-6 text-center text-xs text-sky-800/70 dark:text-sky-300/70 border border-dashed border-sky-200 dark:border-sky-800 rounded-xl">
                       Giáo viên chưa chia sẻ tài liệu nào cho môn học này.
                     </div>
                   ) : (
@@ -110,22 +110,22 @@ export function ClassroomDetailModal({ classroom, onClose }: ClassroomDetailModa
                       {docs.map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex items-center justify-between p-3 border border-zinc-100 dark:border-zinc-800/80 rounded-xl bg-zinc-50/40 dark:bg-zinc-950/20"
+                          className="flex items-center justify-between p-3 border border-sky-100 dark:border-sky-900/60 rounded-xl bg-sky-50/40 dark:bg-sky-950/30"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded bg-sky-50 dark:bg-sky-900/50 text-sky-600 dark:text-sky-300 flex items-center justify-center border border-sky-200/60 dark:border-sky-800">
                               <FileText className="w-4 h-4" />
                             </div>
                             <div>
-                              <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{doc.title}</h4>
-                              <span className="text-[9px] text-zinc-400 uppercase font-bold">{doc.file_type}</span>
+                              <h4 className="text-xs font-bold text-sky-950 dark:text-sky-100">{doc.title}</h4>
+                              <span className="text-[9px] text-sky-600/80 dark:text-sky-400 uppercase font-bold">{doc.file_type}</span>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleOpenDoc(doc)}
                             disabled={openingId === doc.id}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-zinc-800 transition-colors shadow-sm disabled:opacity-50"
+                            className="p-1.5 rounded-lg text-sky-400 hover:text-sky-700 dark:hover:text-white hover:bg-sky-50 dark:hover:bg-sky-900 transition-colors shadow-xs disabled:opacity-50"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </button>
