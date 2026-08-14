@@ -94,13 +94,6 @@ async def confirm_unified(
         )
 
         goal = result["goal"]
-        background_tasks.add_task(
-            generate_materials_and_quizzes_for_plans_bg,
-            goal.id,
-            current_user.id,
-            subject.id,
-        )
-
         # Xóa cache dashboard của học sinh
         try:
             redis.delete(f"dashboard_snapshot:{current_user.id}")

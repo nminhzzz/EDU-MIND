@@ -41,13 +41,19 @@ class ClassroomChatManager:
                 return None
         return self.redis_client
 
-    async def connect(self, classroom_id: int, websocket: WebSocket, user_id: int):
+    async def connect(self, classroom_id: int, websocket: WebSocket, user_id: int) -> bool:
         """Đăng ký kết nối WebSocket mới và bắt đầu lắng nghe Redis Pub/Sub nếu cần."""
         async with self.lock:
             if classroom_id not in self.active_connections:
                 self.active_connections[classroom_id] = set()
                 self.connection_users[classroom_id] = {}
                 self.online_users[classroom_id] = set()
+
+            user_connection_count = sum(
+                1 for uid in self.connection_users[classroom_id].values() if uid == user_id
+            )
+            if user_connection_count >= 3:
+                return False
 
             self.active_connections[classroom_id].add(websocket)
             self.connection_users[classroom_id][websocket] = user_id
@@ -60,6 +66,7 @@ class ClassroomChatManager:
 
         # Broadcast online presence update
         await self.broadcast_online_users(classroom_id)
+        return True
 
     async def disconnect(self, classroom_id: int, websocket: WebSocket):
         """Hủy kết nối WebSocket và cập nhật danh sách Online Users."""
@@ -168,4 +175,3 @@ class ClassroomChatManager:
 
 
 classroom_chat_manager = ClassroomChatManager()
-

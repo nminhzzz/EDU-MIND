@@ -53,6 +53,8 @@ YÊU CẦU BẮT BUỘC:
         instruction += f"\n{analytics_str}"
 
     if context_str:
+        from app.infrastructure.ai.safety import wrap_untrusted_context
+        context_str = wrap_untrusted_context(context_str)
         instruction += (
             f"\n\nTÀI LIỆU THAM KHẢO ĐƯỢC CUNG CẤP (RAG CONTEXT):\n----------------------------------\n{context_str}\n----------------------------------\n"
             f"Bạn PHẢI bám sát các chủ đề và nội dung kiến thức trong tài liệu giáo trình được cung cấp ở trên để lập lộ trình."

@@ -4,6 +4,7 @@ Currently provides: HTTP request/response logging with duration tracking.
 """
 
 import time
+import uuid
 
 from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -21,11 +22,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     Skips health-check endpoints to reduce noise.
     """
 
-    _SKIP_PATHS = {"/", "/health"}
+    _SKIP_PATHS = {"/", "/health", "/health/detailed", "/ready"}
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+        request.state.request_id = request_id
         if request.url.path in self._SKIP_PATHS:
-            return await call_next(request)
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = request_id
+            return response
 
         start = time.perf_counter()
         response = await call_next(request)
@@ -38,6 +43,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             response.status_code,
             duration_ms,
         )
+        response.headers["X-Request-ID"] = request_id
         return response
 
 

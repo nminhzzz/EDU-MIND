@@ -46,9 +46,10 @@ export function QuickQuizPane({ subjectId, topic, studyPlanId, onSuccess }: Quic
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadEssay = async (file: File) => {
+    if (!quiz) return;
     setUploadingEssay(true);
     try {
-      const res = await quizService.uploadEssay(file);
+      const res = await quizService.uploadEssay(file, quiz.id);
       setEssayFilePath(res.data.file_path);
       toast.success("Tải tệp tự luận lên thành công!");
     } catch {

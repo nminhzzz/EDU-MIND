@@ -5,6 +5,7 @@ File upload adapter — Cloudinary (preferred) or local disk (fallback).
 import os
 import re
 import shutil
+from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
 
@@ -20,10 +21,38 @@ ALLOWED_EXTENSIONS = {
     # Documents
     ".pdf", ".doc", ".docx", ".txt", ".pptx", ".xlsx", ".csv",
     # Images
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg",
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
 }
 
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"}
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
+# Callers may select a logical bucket, but never an arbitrary filesystem path.
+ALLOWED_FOLDERS = {"general", "study_documents", "avatars", "classroom_quizzes"}
+
+
+def validate_file_signature(data: bytes, ext: str) -> bool:
+    """Reject obvious extension spoofing before parsing or publishing an upload."""
+    ext = ext.lower()
+    signatures = {
+        ".pdf": (b"%PDF-",),
+        ".png": (b"\x89PNG\r\n\x1a\n",),
+        ".jpg": (b"\xff\xd8\xff",),
+        ".jpeg": (b"\xff\xd8\xff",),
+        ".gif": (b"GIF87a", b"GIF89a"),
+        ".bmp": (b"BM",),
+        ".doc": (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",),
+        ".docx": (b"PK\x03\x04",),
+        ".pptx": (b"PK\x03\x04",),
+        ".xlsx": (b"PK\x03\x04",),
+    }
+    if ext == ".webp":
+        return len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    expected = signatures.get(ext)
+    if expected:
+        return any(data.startswith(signature) for signature in expected)
+    if ext in {".txt", ".csv"}:
+        return b"\x00" not in data[:8192]
+    return True
 
 
 def _sanitize_filename(raw: str) -> str:
@@ -44,6 +73,12 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
     Raises HTTPException 400 for disallowed file types.
     Raises HTTPException 413 if the file exceeds MAX_UPLOAD_BYTES.
     """
+    if folder not in ALLOWED_FOLDERS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Thư mục tải lên không hợp lệ.",
+        )
+
     raw_name = file.filename or "upload"
     filename = _sanitize_filename(raw_name)
     ext = os.path.splitext(filename)[1].lower()
@@ -60,6 +95,11 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Tệp quá lớn. Kích thước tối đa cho phép là {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
+        )
+    if not validate_file_signature(data, ext):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nội dung tệp không khớp với định dạng đã khai báo.",
         )
     file.file.seek(0)
 
@@ -97,10 +137,15 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
             logger.warning("Cloudinary upload failed, falling back to local storage: %s", exc)
 
     # Fallback: save to local disk
-    upload_dir = f"uploads/{folder}"
-    os.makedirs(upload_dir, exist_ok=True)
-    local_path = os.path.join(upload_dir, filename)
+    uploads_root = (Path.cwd() / "uploads").resolve()
+    upload_dir = (uploads_root / folder).resolve()
+    try:
+        upload_dir.relative_to(uploads_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Đường dẫn tải lên không hợp lệ.") from exc
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    local_path = upload_dir / filename
     file.file.seek(0)
-    with open(local_path, "wb") as buffer:
+    with local_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return f"/static/{folder}/{filename}"

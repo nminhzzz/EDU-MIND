@@ -33,9 +33,10 @@ export const quizService = {
   updateQuiz: (quizId: string | number, payload: Partial<StudentQuiz>) =>
     apiClient.put<StudentQuiz>(`/quizzes/${quizId}`, payload),
 
-  uploadEssay: (file: File) => {
+  uploadEssay: (file: File, quizId: string | number) => {
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("quiz_id", String(quizId));
     return apiClient.post<{ file_path: string }>("/quizzes/upload-essay", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });

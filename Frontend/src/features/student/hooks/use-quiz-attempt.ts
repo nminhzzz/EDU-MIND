@@ -42,7 +42,8 @@ export function useQuizAttempt(quizId: string | number | undefined) {
   const handleUploadEssay = useCallback(async (file: File) => {
     setUploadingEssay(true);
     try {
-      const res = await quizService.uploadEssay(file);
+      if (!quizId) throw new Error("Missing quiz id");
+      const res = await quizService.uploadEssay(file, quizId);
       setEssayFilePath(res.data.file_path);
       toast.success("Tải tệp tự luận lên thành công!");
     } catch {
@@ -50,7 +51,7 @@ export function useQuizAttempt(quizId: string | number | undefined) {
     } finally {
       setUploadingEssay(false);
     }
-  }, []);
+  }, [quizId]);
 
   const loadQuiz = useCallback(async (force = false) => {
     if (!quizId) return;

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_student, get_db
 from app.database.redis import get_redis
+from app.core.logging import get_logger
 from app.models.user import User
 from app.schemas.study_plan import StudyPlanResponse, StudyPlanUpdate
 from app.services.plan_service import (
@@ -19,6 +20,7 @@ from app.services.plan_service import (
 )
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 @router.get(
@@ -61,12 +63,16 @@ def get_plan_detail(
         has_quiz = bool(quiz_repository.get_by_study_plan_id(db, plan.id))
         
         if plan.ai_generated and (not plan.rag_content or not has_quiz):
-            from app.services.unified.materials import generate_single_plan_material_bg
-            background_tasks.add_task(
-                generate_single_plan_material_bg,
-                plan.id,
-                current_user.id,
-            )
+            redis = get_redis()
+            enqueue_key = f"enqueue:plan_material:{plan.id}"
+            if redis.set(enqueue_key, "1", nx=True, ex=1200):
+                try:
+                    from app.workers.tasks import task_generate_single_plan_material
+
+                    task_generate_single_plan_material.delay(plan.id, current_user.id)
+                except Exception:
+                    redis.delete(enqueue_key)
+                    logger.exception("Could not enqueue material generation for plan %d", plan.id)
         return plan
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

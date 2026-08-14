@@ -4,6 +4,7 @@ API quản lý Đề thi và Chấm bài (Quizzes & Question Bank).
 
 import os
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_teacher, get_current_user, get_db
 from app.core.enums import UserRole
+from app.core.security import create_essay_upload_token, decode_essay_upload_token
 from app.database.mongodb import get_mongodb_db
 from app.database.redis import get_redis
 from app.models.user import User
@@ -38,6 +40,7 @@ from app.repositories.quiz_repository import quiz_repository
 from app.repositories.classroom_student_repository import classroom_student_repository
 from app.models.classroom_student import ClassroomStudent
 from app.models.quiz import Quiz
+from app.infrastructure.uploader import validate_file_signature
 
 router = APIRouter()
 
@@ -77,6 +80,8 @@ def get_quiz_by_study_plan(
 ):
     try:
         return get_quiz_for_study_plan(db, study_plan_id, current_user.id)
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -129,7 +134,7 @@ async def generate_quiz_for_plan(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi sinh đề thi AI: {str(exc)}",
+            detail="Không thể sinh đề thi AI lúc này.",
         ) from exc
 
 
@@ -262,12 +267,14 @@ async def generate_classroom_quiz_api(
             include_essay=body.include_essay,
             essay_count=body.essay_count,
         )
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi hệ thống khi sinh đề thi: {str(exc)}",
+            detail="Không thể sinh đề thi lúc này.",
         )
 
 
@@ -308,9 +315,21 @@ async def generate_classroom_quiz_from_file_api(
         from app.services.quiz.generation import generate_classroom_quiz_from_files
 
         file_tuples = []
+        total_upload_bytes = 0
         for f in upload_files:
-            content = await f.read()
-            file_tuples.append((content, f.filename or "tai_lieu.pdf"))
+            filename = f.filename or "tai_lieu.pdf"
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in {".pdf", ".doc", ".docx", ".txt"}:
+                raise HTTPException(status_code=400, detail="Định dạng tài liệu không được hỗ trợ.")
+            content = await f.read(20 * 1024 * 1024 + 1)
+            if len(content) > 20 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Mỗi tài liệu không được vượt quá 20 MB.")
+            total_upload_bytes += len(content)
+            if total_upload_bytes > 50 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Tổng dung lượng tài liệu vượt quá 50 MB.")
+            if not validate_file_signature(content, ext):
+                raise HTTPException(status_code=400, detail="Nội dung tệp không khớp định dạng khai báo.")
+            file_tuples.append((content, filename))
 
         return await generate_classroom_quiz_from_files(
             db=db,
@@ -327,12 +346,14 @@ async def generate_classroom_quiz_from_file_api(
             include_essay=include_essay,
             essay_count=essay_count,
         )
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi hệ thống khi sinh đề thi từ file: {str(exc)}",
+            detail="Không thể sinh đề thi từ tệp lúc này.",
         )
 
 
@@ -360,6 +381,7 @@ def get_classroom_quizzes_list(
 
 
 UPLOAD_DIR = "uploads/classroom_quizzes"
+MAX_ESSAY_UPLOAD_BYTES = 20 * 1024 * 1024
 
 
 @router.post(
@@ -368,8 +390,20 @@ UPLOAD_DIR = "uploads/classroom_quizzes"
 )
 async def upload_essay_file(
     file: UploadFile = File(...),
+    quiz_id: int = Form(...),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != UserRole.STUDENT:
+        raise HTTPException(status_code=403, detail="Chỉ học sinh mới có thể tải bài tự luận.")
+    quiz_obj = quiz_repository.get(db, quiz_id)
+    if not quiz_obj:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi.")
+    from app.services.quiz.queries import authorize_student_quiz_access
+    try:
+        authorize_student_quiz_access(db, quiz_obj, current_user.id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in [".png", ".jpg", ".jpeg", ".pdf", ".docx", ".txt"]:
         raise HTTPException(
@@ -377,21 +411,39 @@ async def upload_essay_file(
             detail="Định dạng tệp không được hỗ trợ. Vui lòng chọn file ảnh, PDF, Word hoặc TXT.",
         )
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    upload_root = (Path.cwd() / UPLOAD_DIR).resolve()
+    upload_root.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid.uuid4()}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path = upload_root / filename
 
     try:
-        content = await file.read()
-        with open(file_path, "wb") as f:
+        content = await file.read(MAX_ESSAY_UPLOAD_BYTES + 1)
+        if len(content) > MAX_ESSAY_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Tệp tự luận vượt quá giới hạn 20 MB.",
+            )
+        if not validate_file_signature(content, ext):
+            raise HTTPException(status_code=400, detail="Nội dung tệp không khớp định dạng khai báo.")
+        with file_path.open("wb") as f:
             f.write(content)
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi hệ thống khi lưu tệp tin: {str(exc)}",
+            detail="Không thể lưu tệp tin.",
         ) from exc
 
-    return {"file_path": file_path}
+    # Preserve the response field name for frontend compatibility, but return
+    # an opaque signed reference rather than a filesystem path.
+    return {
+        "file_path": create_essay_upload_token(
+            user_id=current_user.id,
+            quiz_id=quiz_id,
+            storage_name=filename,
+        )
+    }
 
 
 # ============================================================================
@@ -421,19 +473,10 @@ def get_quiz_review_by_id(
             and quiz.latest_attempt.ai_assessment is None
             and quiz.latest_attempt.id not in _ai_assessment_healing
         ):
-            from app.services.quiz.attempts import process_ai_quiz_assessment_background
             attempt = quiz.latest_attempt
             _ai_assessment_healing.add(attempt.id)
-            background_tasks.add_task(
-                process_ai_quiz_assessment_background,
-                attempt.id,
-                quiz.title or "Đề thi",
-                quiz.questions or [],
-                attempt.answers or [],
-                float(attempt.score),
-                attempt.correct_count,
-                attempt.wrong_count,
-            )
+            from app.workers.tasks import task_generate_attempt_assessment
+            task_generate_attempt_assessment.delay(attempt.id)
 
         return quiz
     except ValueError as exc:
@@ -461,6 +504,15 @@ def submit_quiz(
         )
 
     quiz_obj = quiz_repository.get(db, quiz_id)
+    if not quiz_obj:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề thi.")
+
+    from app.services.quiz.queries import authorize_student_quiz_access
+    try:
+        authorize_student_quiz_access(db, quiz_obj, current_user.id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
     if quiz_obj and quiz_obj.deadline:
         now = datetime.now(timezone.utc)
         dl = quiz_obj.deadline if quiz_obj.deadline.tzinfo else quiz_obj.deadline.replace(tzinfo=timezone.utc)
@@ -471,48 +523,48 @@ def submit_quiz(
             )
 
     try:
+        essay_file_path = None
+        if body.essay_file_path:
+            storage_name = decode_essay_upload_token(
+                body.essay_file_path,
+                user_id=current_user.id,
+                quiz_id=quiz_id,
+            )
+            if not storage_name:
+                raise HTTPException(status_code=400, detail="Mã tệp tự luận không hợp lệ hoặc đã hết hạn.")
+            upload_root = (Path.cwd() / UPLOAD_DIR).resolve()
+            candidate = (upload_root / storage_name).resolve()
+            try:
+                candidate.relative_to(upload_root)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Mã tệp tự luận không hợp lệ.") from exc
+            if not candidate.is_file():
+                raise HTTPException(status_code=400, detail="Không tìm thấy tệp tự luận đã tải lên.")
+            essay_file_path = str(candidate)
+
         attempt, subject_id, quiz_title, questions_list, answers_json = submit_student_quiz(
             db=db,
             quiz_id=quiz_id,
             student_id=current_user.id,
             submitted_answers=body.answers,
             duration_seconds=body.duration_seconds,
-            essay_file_path=body.essay_file_path,
+            essay_file_path=essay_file_path,
             tab_violations_count=body.tab_violations_count,
         )
 
-        from app.services.quiz.attempts import process_ai_quiz_assessment_background
-        background_tasks.add_task(
-            process_ai_quiz_assessment_background,
-            attempt.id,
-            quiz_title,
-            questions_list,
-            answers_json,
-            float(attempt.score),
-            attempt.correct_count,
-            attempt.wrong_count,
-        )
-
-        if subject_id is not None:
-            background_tasks.add_task(
-                _analytics_background,
-                current_user.id,
-                subject_id,
-                quiz_id,
-                float(attempt.score),
-            )
-        
         # Xóa cache dashboard của học sinh ngay lập tức để đồng bộ điểm số mới
         try:
             get_redis().delete(f"dashboard_snapshot:{current_user.id}")
         except Exception:
             pass
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xử lý chấm điểm bài thi: {str(exc)}",
+            detail="Không thể xử lý chấm điểm bài thi.",
         ) from exc
 
     return attempt
@@ -541,8 +593,14 @@ def get_quiz_by_id(
                 detail="Đề thi đã quá hạn chót nộp bài. Bạn không thể làm đề thi này nữa.",
             )
 
+    if current_user.role == UserRole.STUDENT:
+        from app.services.quiz.queries import authorize_student_quiz_access
+        try:
+            authorize_student_quiz_access(db, quiz_obj, current_user.id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+
     try:
         return get_quiz(db, quiz_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-

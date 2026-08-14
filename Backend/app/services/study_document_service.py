@@ -18,6 +18,7 @@ from app.models.study_document import StudyDocument
 from app.repositories.study_document_repository import study_document_repository
 from app.services.embedding_service import save_study_material
 from app.services.subject_service import get_subject
+from app.services.outbox_service import stage_outbox_job
 
 logger = get_logger(__name__)
 
@@ -99,6 +100,14 @@ async def upload_study_document(
         file_path=file_url,
         file_type=file_type,
     )
+    if index_in_background:
+        db.flush()
+        stage_outbox_job(
+            db,
+            task_name="app.workers.tasks.task_index_study_document",
+            args=[db_doc.id],
+            unique_key=f"document-index:{db_doc.id}",
+        )
     commit_or_rollback(db)
     db.refresh(db_doc)
 
@@ -112,7 +121,9 @@ async def upload_study_document(
             "document_id": db_doc.id,
             "file_name": file.filename or "upload",
         }
-        if index_in_background and on_index_ready is not None:
+        if index_in_background:
+            pass
+        elif on_index_ready is not None:
             on_index_ready(**index_kwargs)
         else:
             await _index_document_embedding(**index_kwargs)
@@ -289,14 +300,37 @@ def read_study_document_file(doc: StudyDocument) -> tuple[bytes, str, str]:
 
 
 def get_study_document_for_user(
-    db: Session, document_id: int, user_id: int, *, is_teacher: bool
+    db: Session,
+    document_id: int,
+    user_id: int,
+    *,
+    is_teacher: bool,
+    is_admin: bool = False,
 ) -> StudyDocument:
     """Return a document if the user is allowed to view it."""
     doc = study_document_repository.get(db, document_id)
     if not doc:
         raise ValueError(f"Không tìm thấy tài liệu với ID={document_id}.")
+    if is_admin:
+        return doc
     if is_teacher and doc.created_by != user_id:
         raise PermissionError("Bạn không có quyền xem tài liệu của giáo viên khác.")
+    if not is_teacher:
+        from app.models.classroom import Classroom
+        from app.models.classroom_student import ClassroomStudent
+
+        allowed = (
+            db.query(ClassroomStudent.id)
+            .join(Classroom, Classroom.id == ClassroomStudent.classroom_id)
+            .filter(
+                ClassroomStudent.student_id == user_id,
+                Classroom.teacher_id == doc.created_by,
+                Classroom.subject_id == doc.subject_id,
+            )
+            .first()
+        )
+        if not allowed:
+            raise PermissionError("Bạn không có quyền xem tài liệu này.")
     return doc
 
 

@@ -3,6 +3,8 @@ Classrooms API — CRUD for classrooms, student enrollment, and progress reporti
 """
 
 from typing import Dict, List, Optional
+from collections import deque
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy import func
@@ -386,6 +388,19 @@ def api_mark_classroom_chat_read(
 ):
     from app.models.classroom_chat_message import ClassroomChatMessage
     from app.models.classroom_chat_read_cursor import ClassroomChatReadCursor
+    from app.models.classroom import Classroom
+    from app.models.classroom_student import ClassroomStudent
+
+    classroom = db.query(Classroom).filter(Classroom.id == classroom_id).first()
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học.")
+    is_teacher = classroom.teacher_id == current_user.id
+    is_student = db.query(ClassroomStudent.id).filter(
+        ClassroomStudent.classroom_id == classroom_id,
+        ClassroomStudent.student_id == current_user.id,
+    ).first() is not None
+    if current_user.role != "admin" and not is_teacher and not is_student:
+        raise HTTPException(status_code=403, detail="Bạn không phải thành viên của lớp học này.")
 
     max_msg_id = (
         db.query(func.max(ClassroomChatMessage.id))
@@ -428,20 +443,17 @@ def api_mark_classroom_chat_read(
 async def websocket_classroom_chat(
     websocket: WebSocket,
     classroom_id: int,
-    token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    # 1. Verify token (fallback to cookies if not in query param)
-    if not token:
-        token = websocket.cookies.get("access_token")
-        if not token:
-            cookie_header = websocket.headers.get("cookie")
-            if cookie_header:
-                for cookie in cookie_header.split(";"):
-                    cookie = cookie.strip()
-                    if cookie.startswith("access_token="):
-                        token = cookie.split("=")[1]
-                        break
+    from app.core.config import settings
+
+    origin = websocket.headers.get("origin")
+    if origin not in settings.BACKEND_CORS_ORIGINS:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # HttpOnly cookie authentication avoids leaking JWTs through query strings/logs.
+    token = websocket.cookies.get("access_token")
 
     if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -478,24 +490,44 @@ async def websocket_classroom_chat(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
         
-    # 3. Accept connection
-    await websocket.accept()
-    
-    # Register connection in ConnectionManager
-    from app.services.classroom_chat_service import classroom_chat_manager
-    await classroom_chat_manager.connect(classroom_id, websocket, user_id)
-    
-    # Get user model for broadcast sender info
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        await classroom_chat_manager.disconnect(classroom_id, websocket)
+    if not user or not user.is_active:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+
+    sender = {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "avatar_url": user.avatar_url,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat(),
+    }
+    db.close()
+
+    # 3. Accept connection
+    await websocket.accept()
+
+    from app.services.classroom_chat_service import classroom_chat_manager
+    connected = await classroom_chat_manager.connect(classroom_id, websocket, user_id)
+    if not connected:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    event_times = deque()
         
     try:
         while True:
             # Receive message from client
             data = await websocket.receive_json()
+            now = time.monotonic()
+            while event_times and now - event_times[0] > 10:
+                event_times.popleft()
+            if len(event_times) >= 60:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                break
+            event_times.append(now)
             msg_type = data.get("type", "message")
 
             if msg_type == "ping":
@@ -507,42 +539,42 @@ async def websocket_classroom_chat(
                     "type": "typing",
                     "classroom_id": classroom_id,
                     "user_id": user_id,
-                    "user_name": user.full_name,
+                    "user_name": sender["full_name"],
                 })
                 continue
 
             content = data.get("content", "").strip()
             if not content:
                 continue
+            if len(content) > 4000:
+                await websocket.send_json({"type": "error", "message": "Tin nhắn vượt quá 4000 ký tự."})
+                continue
                 
             # Save message to database
             from app.models.classroom_chat_message import ClassroomChatMessage
-            msg = ClassroomChatMessage(
-                classroom_id=classroom_id,
-                sender_id=user_id,
-                content=content
-            )
-            db.add(msg)
-            db.commit()
-            db.refresh(msg)
+            from app.database.mysql import SessionLocal
+            with SessionLocal() as message_db:
+                msg = ClassroomChatMessage(
+                    classroom_id=classroom_id,
+                    sender_id=user_id,
+                    content=content
+                )
+                message_db.add(msg)
+                message_db.commit()
+                message_db.refresh(msg)
+                msg_payload = {
+                    "id": msg.id,
+                    "classroom_id": msg.classroom_id,
+                    "sender_id": msg.sender_id,
+                    "content": msg.content,
+                    "created_at": msg.created_at.isoformat(),
+                }
             
             # Broadcast to all active clients in room via Redis Pub/Sub
             broadcast_payload = {
                 "type": "chat_message",
-                "id": msg.id,
-                "classroom_id": msg.classroom_id,
-                "sender_id": msg.sender_id,
-                "content": msg.content,
-                "created_at": msg.created_at.isoformat(),
-                "sender": {
-                    "id": user.id,
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "avatar_url": user.avatar_url,
-                    "role": user.role,
-                    "is_active": user.is_active,
-                    "created_at": user.created_at.isoformat()
-                }
+                **msg_payload,
+                "sender": sender,
             }
             await classroom_chat_manager.broadcast(classroom_id, broadcast_payload)
             
@@ -551,4 +583,3 @@ async def websocket_classroom_chat(
     except Exception as e:
         print(f"WS error: {e}")
         await classroom_chat_manager.disconnect(classroom_id, websocket)
-

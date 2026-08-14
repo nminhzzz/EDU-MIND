@@ -3,7 +3,7 @@ Teacher-specific request/response schemas.
 StudyDocumentCreate lives in schemas/study_document.py — import from there.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,10 +19,10 @@ class TeacherClassroomStudentResponse(BaseModel):
 
 
 class TeacherQuizCreate(BaseModel):
-    title: str = Field(..., description="Tiêu đề bài kiểm tra/bài tập")
-    difficulty: str = Field("medium", description="Độ khó: easy, medium, hard")
-    subject_id: int = Field(..., description="ID môn học")
-    classroom_id: int = Field(..., description="ID lớp học gán bài tập")
+    title: str = Field(..., min_length=1, max_length=255, description="Tiêu đề bài kiểm tra/bài tập")
+    difficulty: Literal["easy", "medium", "hard"] = Field("medium", description="Độ khó: easy, medium, hard")
+    subject_id: int = Field(..., gt=0, description="ID môn học")
+    classroom_id: int = Field(..., gt=0, description="ID lớp học gán bài tập")
     questions: List[Dict[str, Any]] = Field(
-        ..., description="Danh sách các câu hỏi của bài tập"
+        ..., min_length=1, max_length=200, description="Danh sách các câu hỏi của bài tập"
     )

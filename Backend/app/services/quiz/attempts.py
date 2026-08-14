@@ -25,6 +25,7 @@ from app.services.quiz.grading import (
     generate_ai_attempt_feedback,
     grade_submission,
 )
+from app.services.outbox_service import stage_outbox_job
 
 DAILY_TASK_QUIZ_LABEL = "NHIỆM VỤ NGÀY"
 _INVALID_QUIZ_TITLES = frozenset({"quizresponse", ""})
@@ -77,6 +78,7 @@ def process_ai_quiz_assessment_background(
     except Exception as exc:
         db.rollback()
         logger.error("Lỗi khi sinh AI Assessment ngầm cho attempt_id=%d: %s", attempt_id, exc)
+        raise
     finally:
         db.close()
 
@@ -98,6 +100,15 @@ def submit_quiz_attempt(
     if not quiz:
         raise ValueError(f"Không tìm thấy đề thi với ID={quiz_id}")
 
+    question_count = len(quiz.questions or [])
+    indices = [answer.question_index for answer in submitted_answers]
+    if len(indices) != len(set(indices)):
+        raise ValueError("Danh sách câu trả lời chứa chỉ mục câu hỏi bị trùng.")
+    if any(index >= question_count for index in indices):
+        raise ValueError("Danh sách câu trả lời chứa chỉ mục ngoài phạm vi đề thi.")
+    if quiz.time_limit_minutes and duration_seconds > quiz.time_limit_minutes * 60 + 60:
+        raise ValueError("Thời gian làm bài vượt quá giới hạn cho phép.")
+
     score, correct_count, wrong_count, answers_json = grade_submission(
         quiz.questions or [], submitted_answers, essay_file_path
     )
@@ -114,6 +125,20 @@ def submit_quiz_attempt(
         tab_violations_count=tab_violations_count,
         ai_assessment=None,
     )
+    db.flush()
+    stage_outbox_job(
+        db,
+        task_name="app.workers.tasks.task_generate_attempt_assessment",
+        args=[db_attempt.id],
+        unique_key=f"attempt-assessment:{db_attempt.id}",
+    )
+    if quiz.subject_id is not None:
+        stage_outbox_job(
+            db,
+            task_name="app.workers.tasks.task_update_analytics",
+            args=[student_id, quiz.subject_id, quiz_id, float(score)],
+            unique_key=f"attempt-analytics:{db_attempt.id}",
+        )
     commit_or_rollback(db)
     db.refresh(db_attempt)
 

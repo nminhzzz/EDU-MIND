@@ -4,12 +4,9 @@ Provides: get_db (MySQL session), get_current_user (JWT auth),
 role-based guards, and rate_limiter.
 """
 
-import asyncio
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Generator, Optional
 from urllib.parse import urlparse
-from app.core.cache import get_cached, set_cached
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -157,7 +154,7 @@ def get_current_student_from_token(
     return user
 
 
-async def get_current_user(
+def get_current_user(
     token: str = Depends(get_token_from_request),
     db: Session = Depends(get_db),
 ) -> User:
@@ -171,42 +168,15 @@ async def get_current_user(
         raise _invalid_credentials()
 
     # Thử đọc thông tin user từ Redis cache
-    cache_key = f"user_profile:{user_id}"
-    cached_user = await get_cached(cache_key)
-
-    if cached_user:
-        user = User(
-            id=cached_user["id"],
-            email=cached_user["email"],
-            password_hash=cached_user["password_hash"],
-            full_name=cached_user["full_name"],
-            avatar_url=cached_user.get("avatar_url"),
-            grade=cached_user.get("grade"),
-            role=UserRole(cached_user["role"]),
-            is_active=cached_user["is_active"],
-            created_at=datetime.fromisoformat(cached_user["created_at"]) if cached_user.get("created_at") else None,
-            updated_at=datetime.fromisoformat(cached_user["updated_at"]) if cached_user.get("updated_at") else None,
-        )
-    else:
+    # Authentication must use the authoritative database state. Caching role,
+    # active status, or password hashes creates stale authorization decisions.
+    user = user_repository.get(db, int(user_id))
         # Nếu cache miss, query MySQL (chạy trong threadpool để tránh chặn event loop)
-        user = await asyncio.to_thread(user_repository.get, db, int(user_id))
-        if user is None:
-            raise _invalid_credentials()
+    if user is None:
+        raise _invalid_credentials()
 
         # Lưu thông tin user vào Redis cache trong 60 giây
-        user_data = {
-            "id": user.id,
-            "email": user.email,
-            "password_hash": user.password_hash,
-            "full_name": user.full_name,
-            "avatar_url": user.avatar_url,
-            "grade": user.grade.value if hasattr(user.grade, "value") else user.grade if user.grade else None,
-            "role": user.role.value if hasattr(user.role, "value") else user.role,
-            "is_active": user.is_active,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
-        }
-        await set_cached(cache_key, user_data, ttl_seconds=60)
+        # Intentionally do not cache authentication principals.
 
     if not user.is_active:
         raise HTTPException(
@@ -266,8 +236,13 @@ def rate_limiter(limit: int, period_seconds: int, action: str = "default"):
         redis = get_redis()
         key = f"rate_limit:{action}:{current_user.id}"
 
-        current_count = redis.get(key)
-        if current_count and int(current_count) >= limit:
+        script = """
+        local count = redis.call('INCR', KEYS[1])
+        if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+        return count
+        """
+        current_count = int(redis.eval(script, 1, key, period_seconds))
+        if current_count > limit:
             ttl = redis.ttl(key)
             wait = ttl if ttl > 0 else period_seconds
             raise HTTPException(
@@ -275,10 +250,29 @@ def rate_limiter(limit: int, period_seconds: int, action: str = "default"):
                 detail=f"Tần suất gọi quá nhanh! Vui lòng thử lại sau {wait} giây.",
             )
 
-        pipeline = redis.pipeline()
-        pipeline.incr(key)
-        if not current_count:
-            pipeline.expire(key, period_seconds)
-        pipeline.execute()
+    return dependency
+
+
+def request_rate_limiter(limit: int, period_seconds: int, action: str):
+    """Atomic IP-based limiter for unauthenticated endpoints such as login/register."""
+
+    def dependency(request: Request) -> None:
+        client_ip = request.client.host if request.client else ""
+        client_ip = client_ip or "unknown"
+        key = f"rate_limit:ip:{action}:{client_ip}"
+        script = """
+        local count = redis.call('INCR', KEYS[1])
+        if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+        return count
+        """
+        try:
+            count = int(get_redis().eval(script, 1, key, period_seconds))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Dịch vụ bảo vệ tạm thời không khả dụng.") from exc
+        if count > limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+            )
 
     return dependency

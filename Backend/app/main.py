@@ -5,7 +5,7 @@ FastAPI application entry point — AI Learning Assistant Platform.
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -72,7 +72,8 @@ def health() -> dict:
 
 
 @app.get("/health/detailed", tags=["Health"])
-async def health_detailed() -> dict:
+@app.get("/ready", tags=["Health"])
+async def health_detailed(response: Response) -> dict:
     """
     Deep readiness probe — checks MySQL, MongoDB, and Redis connectivity.
     Returns individual service status so ops can pinpoint failures quickly.
@@ -88,7 +89,7 @@ async def health_detailed() -> dict:
         results["mysql"] = "ok"
     except Exception as exc:
         logger.error("MySQL health check failed: %s", exc)
-        results["mysql"] = f"error: {exc}"
+        results["mysql"] = "error"
 
     # Redis
     try:
@@ -97,20 +98,20 @@ async def health_detailed() -> dict:
         results["redis"] = "ok"
     except Exception as exc:
         logger.error("Redis health check failed: %s", exc)
-        results["redis"] = f"error: {exc}"
+        results["redis"] = "error"
 
     # MongoDB
     try:
-        from app.database.mongodb import get_mongo_client
-        client = get_mongo_client()
-        if client is not None:
-            await client.admin.command("ping")
-            results["mongodb"] = "ok"
-        else:
-            results["mongodb"] = "not_initialized"
+        from app.database.mongodb import get_mongodb_db
+
+        mongo_db = get_mongodb_db()
+        await mongo_db.command("ping")
+        results["mongodb"] = "ok"
     except Exception as exc:
         logger.error("MongoDB health check failed: %s", exc)
-        results["mongodb"] = f"error: {exc}"
+        results["mongodb"] = "error"
 
     overall = "healthy" if all(v == "ok" for v in results.values()) else "degraded"
+    if overall != "healthy":
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {"status": overall, **results}

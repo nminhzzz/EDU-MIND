@@ -9,6 +9,9 @@ proper HTTP responses — routers no longer need manual try/except blocks.
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi import status
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -30,4 +33,16 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"detail": str(exc)},
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.exception("Unhandled request error request_id=%s", request_id)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "detail": "Đã xảy ra lỗi hệ thống.",
+                "request_id": request_id,
+            },
         )

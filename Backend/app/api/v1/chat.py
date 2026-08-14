@@ -48,7 +48,7 @@ async def create_session(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi khởi tạo phiên chat: {str(exc)}",
+            detail="Không thể khởi tạo phiên chat.",
         ) from exc
 
 
@@ -63,7 +63,7 @@ async def list_sessions(current_user: User = Depends(get_current_student)):
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi truy vấn danh sách phiên chat: {str(exc)}",
+            detail="Không thể truy vấn danh sách phiên chat.",
         ) from exc
 
 
@@ -85,7 +85,7 @@ async def get_messages(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi tải lịch sử tin nhắn: {str(exc)}",
+            detail="Không thể tải lịch sử tin nhắn.",
         ) from exc
 
 
@@ -97,6 +97,11 @@ async def get_messages(
 async def send_message(
     body: TutorMessageSend, current_user: User = Depends(get_current_student)
 ):
+    if not await verify_session_owner(body.session_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Phiên chat không tồn tại hoặc bạn không có quyền truy cập.",
+        )
     try:
         reply, history = await chat_with_tutor(
             user_message=body.content,
@@ -107,7 +112,7 @@ async def send_message(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi gọi Gia sư ảo phản hồi: {str(exc)}",
+            detail="Gia sư ảo tạm thời không phản hồi.",
         ) from exc
 
 
@@ -136,7 +141,7 @@ async def stream_message(
                 yield f"data: {token}\n\n"
                 await asyncio.sleep(0.01)
         except Exception as exc:
-            yield f"data: [ERROR: {str(exc)}]\n\n"
+            yield "data: [ERROR: Dịch vụ tạm thời không khả dụng]\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -161,5 +166,5 @@ async def delete_session(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xóa phiên chat: {str(exc)}",
+            detail="Không thể xóa phiên chat.",
         ) from exc

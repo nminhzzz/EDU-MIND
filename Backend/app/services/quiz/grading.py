@@ -26,10 +26,13 @@ def build_rag_context(materials: List[Dict[str, Any]]) -> str:
     """Format vector-search results into a single context string for the AI agent."""
     if not materials:
         return ""
-    return "\n\n".join(
+    from app.infrastructure.ai.safety import wrap_untrusted_context
+
+    raw = "\n\n".join(
         f"--- Tài liệu {i + 1} (Chủ đề: {m['topic']}) ---\n{m['content']}"
         for i, m in enumerate(materials)
     )
+    return wrap_untrusted_context(raw)
 
 
 def normalize_ai_questions(ai_quiz: Any) -> List[Dict[str, Any]]:
@@ -211,7 +214,7 @@ def grade_submission(
                     "is_correct": is_correct,
                     "score": score_val,
                     "feedback": feedback_val,
-                    "essay_file_path": essay_file_path,
+                    "essay_file_path": os.path.basename(essay_file_path) if essay_file_path else None,
                 }
             )
         else:

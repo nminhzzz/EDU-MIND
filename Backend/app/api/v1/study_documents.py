@@ -5,7 +5,7 @@ Study Documents API — upload and manage teaching materials with RAG embedding.
 from typing import Any, List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -14,7 +14,6 @@ from app.database.mongodb import get_mongodb_db
 from app.models.user import User
 from app.schemas.study_document import StudyDocumentResponse
 from app.services.study_document_service import (
-    _index_document_embedding,
     delete_study_document,
     get_document_view_url,
     get_study_document_for_user,
@@ -40,27 +39,23 @@ def _inline_content_disposition(filename: str) -> str:
     summary="Giáo viên tải tài liệu mới lên kho lưu trữ",
 )
 async def upload_document(
-    background_tasks: BackgroundTasks,
     subject_id: int = Form(..., description="ID môn học"),
     title: str = Form(..., description="Tiêu đề tài liệu"),
     file: UploadFile = File(..., description="File tài liệu (PDF, docx, txt, md...)"),
     db: Session = Depends(get_db),
-    db_mongo: Any = Depends(get_mongodb_db),
     current_teacher: User = Depends(get_current_teacher),
 ) -> StudyDocumentResponse:
     try:
-        return await upload_study_document(
+        document = await upload_study_document(
             db,
-            db_mongo,
+            None,
             teacher_id=current_teacher.id,
             subject_id=subject_id,
             title=title,
             file=file,
             index_in_background=True,
-            on_index_ready=lambda **kwargs: background_tasks.add_task(
-                _index_document_embedding, **kwargs
-            ),
         )
+        return document
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -75,7 +70,24 @@ def list_documents(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> List[StudyDocumentResponse]:
-    return list_study_documents(db, subject_id=subject_id)
+    documents = list_study_documents(db, subject_id=subject_id)
+    if current_user.role == "admin":
+        return documents
+
+    visible = []
+    for doc in documents:
+        try:
+            get_study_document_for_user(
+                db,
+                doc.id,
+                current_user.id,
+                is_teacher=(current_user.role == "teacher"),
+                is_admin=False,
+            )
+            visible.append(doc)
+        except PermissionError:
+            continue
+    return visible
 
 
 @router.get(
@@ -93,6 +105,7 @@ def stream_document_file(
             document_id,
             current_user.id,
             is_teacher=(current_user.role == "teacher"),
+            is_admin=(current_user.role == "admin"),
         )
         content, media_type, filename = read_study_document_file(doc)
         return Response(
@@ -109,7 +122,7 @@ def stream_document_file(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Không thể tải file tài liệu: {exc}",
+            detail="Không thể tải file tài liệu.",
         ) from exc
 
 
@@ -128,6 +141,7 @@ def get_document_view_url_api(
             document_id,
             current_user.id,
             is_teacher=(current_user.role == "teacher"),
+            is_admin=(current_user.role == "admin"),
         )
         return {"url": get_document_view_url(doc)}
     except ValueError as exc:

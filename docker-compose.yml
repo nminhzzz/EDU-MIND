@@ -23,6 +23,56 @@ services:
     networks:
       - app-network
 
+  celery-worker:
+    image: ailearningassistantplatform-backend:latest
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.dev
+    container_name: celery_worker_dev
+    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "worker", "--loglevel=info", "-Q", "ai_tasks,default"]
+    volumes:
+      - ./Backend:/app
+      - /app/venv
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-password}@db:3306/${MYSQL_DATABASE:-learning_db}
+      - MONGODB_URL=mongodb://mongodb:27017/chat_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - mongodb
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  celery-beat:
+    image: ailearningassistantplatform-backend:latest
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.dev
+    container_name: celery_beat_dev
+    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
+    volumes:
+      - ./Backend:/app
+      - /app/venv
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-password}@db:3306/${MYSQL_DATABASE:-learning_db}
+      - MONGODB_URL=mongodb://mongodb:27017/chat_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - mongodb
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./Frontend

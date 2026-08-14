@@ -7,6 +7,7 @@ This module owns credential validation, user persistence, and JWT lifecycle.
 
 from datetime import datetime, timezone
 from typing import Callable, Optional
+import hashlib
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -17,6 +18,7 @@ from app.core.security import (
     blacklist_token,
     create_access_token,
     create_refresh_token,
+    consume_refresh_token,
     decode_access_token,
     decode_refresh_token,
     hash_password,
@@ -26,6 +28,13 @@ from app.core.security import (
 from app.models.user import User
 from app.repositories.user_repository import user_repository
 from app.schemas.auth import LoginRequest, RegisterRequest
+from app.core.logging import get_logger
+
+logger = get_logger("security.auth")
+
+
+def _email_fingerprint(email: str) -> str:
+    return hashlib.sha256(email.encode("utf-8")).hexdigest()[:16]
 
 
 def _revoke_token(raw_token: str, decode_fn: Callable[[str], Optional[dict]]) -> None:
@@ -62,6 +71,12 @@ def register_user(db: Session, body: RegisterRequest) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
+    logger.info(
+        "event=registration user_id=%s role=%s email_fp=%s",
+        user.id,
+        user.role,
+        _email_fingerprint(email),
+    )
     return user
 
 
@@ -74,11 +89,13 @@ def authenticate_user(db: Session, body: LoginRequest) -> tuple[str, str]:
     user = user_repository.get_by_email(db, email=email)
 
     if not user or not verify_password(body.password, user.password_hash):
+        logger.warning("event=login_failed email_fp=%s", _email_fingerprint(email))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email hoặc mật khẩu không đúng.",
         )
     if not user.is_active:
+        logger.warning("event=login_blocked user_id=%s reason=inactive", user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tài khoản đã bị vô hiệu hóa.",
@@ -97,6 +114,8 @@ def authenticate_user(db: Session, body: LoginRequest) -> tuple[str, str]:
         settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
     )
 
+    logger.info("event=login_success user_id=%s sid=%s", user.id, sid[:12])
+
     return access_token, refresh_token
 
 
@@ -111,8 +130,9 @@ def refresh_user_tokens(db: Session, refresh_token: str) -> tuple[str, str]:
             detail="Không tìm thấy Refresh Token. Vui lòng đăng nhập lại.",
         )
 
-    payload = decode_refresh_token(refresh_token)
+    payload = consume_refresh_token(refresh_token)
     if payload is None:
+        logger.warning("event=refresh_rejected reason=invalid_or_replayed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.",
@@ -133,8 +153,6 @@ def refresh_user_tokens(db: Session, refresh_token: str) -> tuple[str, str]:
         )
 
     sid = payload.get("sid") or uuid.uuid4().hex
-    _revoke_token(refresh_token, decode_refresh_token)
-
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role, "sid": sid})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id), "sid": sid})
 
@@ -144,6 +162,8 @@ def refresh_user_tokens(db: Session, refresh_token: str) -> tuple[str, str]:
         sid,
         settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
     )
+
+    logger.info("event=refresh_success user_id=%s sid=%s", user.id, sid[:12])
 
     return access_token, new_refresh_token
 

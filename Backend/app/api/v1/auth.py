@@ -10,7 +10,13 @@ Authentication endpoints:
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, get_token_from_request
+from app.api.deps import (
+    get_current_user,
+    get_db,
+    get_token_from_request,
+    request_rate_limiter,
+    _verify_csrf_origin,
+)
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.auth import LoginRequest, RegisterRequest
@@ -67,6 +73,7 @@ def _clear_auth_cookies(response: Response) -> None:
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản mới",
+    dependencies=[Depends(request_rate_limiter(5, 3600, "register"))],
 )
 async def register(
     body: RegisterRequest,
@@ -79,7 +86,11 @@ async def register(
     return user
 
 
-@router.post("/login", summary="Đăng nhập và nhận JWT token qua Cookies")
+@router.post(
+    "/login",
+    summary="Đăng nhập và nhận JWT token qua Cookies",
+    dependencies=[Depends(request_rate_limiter(10, 900, "login"))],
+)
 def login(
     response: Response, body: LoginRequest, db: Session = Depends(get_db)
 ) -> dict:
@@ -96,7 +107,11 @@ def login(
     return {"message": "Đăng nhập thành công!", "token_type": "bearer"}
 
 
-@router.post("/refresh", summary="Cấp lại access token từ refresh token")
+@router.post(
+    "/refresh",
+    summary="Cấp lại access token từ refresh token",
+    dependencies=[Depends(request_rate_limiter(30, 900, "refresh"))],
+)
 def refresh_access_token(
     request: Request, response: Response, db: Session = Depends(get_db)
 ) -> dict:
@@ -105,6 +120,7 @@ def refresh_access_token(
     Implements refresh token rotation: the consumed refresh token is blacklisted
     and a brand-new one is issued, so each token can only be used once.
     """
+    _verify_csrf_origin(request)
     refresh_token = request.cookies.get("refresh_token")
     access_token, new_refresh_token = refresh_user_tokens(db, refresh_token or "")
 
@@ -142,4 +158,3 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 def get_me(current_user: CurrentUserDep):
     """Return the currently authenticated user."""
     return current_user
-

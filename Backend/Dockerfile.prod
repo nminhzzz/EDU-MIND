@@ -19,10 +19,11 @@ FROM python:3.10-slim AS runner
 WORKDIR /app
 
 # Copy installed packages from builder
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /root/.local /opt/python-packages
 COPY . .
 
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/opt/python-packages/bin:$PATH
+ENV PYTHONPATH=/opt/python-packages/lib/python3.10/site-packages
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
@@ -30,6 +31,11 @@ EXPOSE 8000
 
 # entrypoint.sh runs: alembic upgrade head → then start gunicorn
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN addgroup --system app && adduser --system --ingroup app app \
+    && mkdir -p /app/uploads \
+    && chown -R app:app /app /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+
+USER app
 
 ENTRYPOINT ["/entrypoint.sh"]

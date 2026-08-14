@@ -16,6 +16,7 @@ from app.models.study_plan import StudyPlan
 from app.models.subject import Subject
 from app.models.user import User
 from app.repositories.goal_repository import goal_repository
+from app.services.outbox_service import stage_outbox_job
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
 
 logger = get_logger(__name__)
@@ -182,6 +183,13 @@ async def confirm_unified_draft(
     db_plans = _create_study_plans(db, plan, db_goal.id, student.id)
     total_quizzes = _persist_plan_quizzes(
         db, plan, db_plans, student.id, subject_obj.id
+    )
+
+    stage_outbox_job(
+        db,
+        task_name="app.workers.tasks.task_generate_plan_materials",
+        args=[db_goal.id, student.id, subject_obj.id],
+        unique_key=f"goal-materials:{db_goal.id}",
     )
 
     commit_or_rollback(db)

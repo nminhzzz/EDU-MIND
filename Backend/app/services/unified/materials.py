@@ -79,7 +79,10 @@ def _lecture_system_instruction(is_theory: bool) -> str:
 
 def _build_rag_context(materials: list) -> str:
     """Join RAG material content strings into a single context block."""
-    return "\n\n".join(m["content"] for m in materials if "content" in m)
+    from app.infrastructure.ai.safety import wrap_untrusted_context
+
+    raw = "\n\n".join(m["content"] for m in materials if "content" in m)
+    return wrap_untrusted_context(raw)
 
 
 def _build_lecture_user_message(plan_title: str, context_str: str) -> str:
@@ -235,6 +238,7 @@ async def generate_materials_and_quizzes_for_plans_bg(
         logger.exception(
             "[BG] Critical error in background task for goal %d: %s", goal_id, exc
         )
+        raise
     finally:
         db.close()
 
@@ -250,6 +254,10 @@ async def generate_single_plan_material_bg(plan_id: int, student_id: int) -> Non
         plan = plan_repository.get(db, plan_id)
         if not plan:
             return
+
+        # The plan row is authoritative. Never trust a queued/caller-supplied
+        # student id for ownership of generated quizzes.
+        student_id = plan.student_id
 
         subject_id = plan.subject_id
         subject_obj = subject_repository.get(db, subject_id) if subject_id else None
@@ -268,6 +276,7 @@ async def generate_single_plan_material_bg(plan_id: int, student_id: int) -> Non
         logger.info("[BG] On-demand generation completed for plan %d", plan.id)
     except Exception as exc:
         logger.exception("[BG] Error in on-demand generation for plan %d: %s", plan_id, exc)
+        raise
     finally:
         db.close()
 

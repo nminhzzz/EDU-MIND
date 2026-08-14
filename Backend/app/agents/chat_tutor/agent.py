@@ -1,5 +1,6 @@
 import asyncio
 from typing import Optional, List, Dict, Any, AsyncGenerator
+from app.infrastructure.ai import generate_content_deepseek, generate_content_deepseek_stream
 from app.agents.chat_tutor.prompts import (
     CHAT_TUTOR_SYSTEM_PROMPT,
     EXPLAIN_QUIZ_SYSTEM_INSTRUCTION,

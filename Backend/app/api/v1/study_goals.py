@@ -100,5 +100,5 @@ def delete_goal(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xóa lộ trình: {str(exc)}",
+            detail="Không thể xóa lộ trình.",
         ) from exc

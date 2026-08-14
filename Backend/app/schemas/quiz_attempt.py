@@ -8,8 +8,9 @@ from pydantic import BaseModel, Field
 
 
 class QuizAttemptAnswer(BaseModel):
-    question_index: int = Field(description="Chỉ mục câu hỏi trong đề (0-indexed)")
+    question_index: int = Field(ge=0, le=500, description="Chỉ mục câu hỏi trong đề (0-indexed)")
     answer: str = Field(
+        max_length=20_000,
         description="Đáp án học sinh chọn, vd: A, B, C, D hoặc True, False"
     )
 
@@ -23,11 +24,15 @@ class QuizAttemptAnswerResponse(QuizAttemptAnswer):
 
 class QuizAttemptCreate(BaseModel):
     answers: List[QuizAttemptAnswer] = Field(
+        max_length=500,
         description="Danh sách đáp án học sinh đã làm"
     )
-    duration_seconds: int = Field(description="Thời gian làm bài tính bằng giây")
-    tab_violations_count: int = Field(0, description="Số lần học sinh thoát tab hoặc làm việc riêng")
-    essay_file_path: Optional[str] = Field(None, description="Đường dẫn file bài làm tự luận của học sinh")
+    duration_seconds: int = Field(ge=0, le=86_400, description="Thời gian làm bài tính bằng giây")
+    tab_violations_count: int = Field(0, ge=0, le=10_000, description="Số lần học sinh thoát tab hoặc làm việc riêng")
+    essay_file_path: Optional[str] = Field(
+        None,
+        description="Mã tham chiếu upload tự luận ngắn hạn; không phải đường dẫn máy chủ",
+    )
 
 
 class AIAssessmentResponse(BaseModel):
@@ -52,4 +57,3 @@ class QuizAttemptResponse(BaseModel):
 
     class Config:
         from_attributes = True
-

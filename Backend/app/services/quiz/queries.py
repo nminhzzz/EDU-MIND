@@ -10,6 +10,9 @@ from app.core.enums import UserRole
 from app.models.quiz import Quiz
 from app.models.quiz_attempt import QuizAttempt
 from app.models.user import User
+from app.models.classroom_student import ClassroomStudent
+from app.models.study_plan import StudyPlan
+from app.repositories.classroom_repository import classroom_repository
 from app.repositories.attempt_repository import attempt_repository
 from app.repositories.quiz_repository import quiz_repository
 from app.schemas.quiz_attempt import QuizAttemptAnswer
@@ -24,15 +27,52 @@ def get_quiz(db: Session, quiz_id: int) -> Quiz:
     return quiz
 
 
+def authorize_student_quiz_access(db: Session, quiz: Quiz, student_id: int) -> None:
+    """Enforce object-level access for every student quiz read/submit flow."""
+    if quiz.student_id is not None:
+        if quiz.student_id != student_id:
+            raise PermissionError("Bạn không có quyền truy cập đề thi này.")
+        return
+
+    if quiz.study_plan_id is not None:
+        owns_plan = db.query(StudyPlan.id).filter(
+            StudyPlan.id == quiz.study_plan_id,
+            StudyPlan.student_id == student_id,
+        ).first()
+        if not owns_plan:
+            raise PermissionError("Bạn không có quyền truy cập đề thi này.")
+        return
+
+    if quiz.classroom_id is not None:
+        enrolled = db.query(ClassroomStudent.id).filter(
+            ClassroomStudent.classroom_id == quiz.classroom_id,
+            ClassroomStudent.student_id == student_id,
+        ).first()
+        if not enrolled:
+            raise PermissionError("Bạn không phải thành viên lớp học được giao đề thi này.")
+        return
+
+    raise PermissionError("Đề thi chưa được giao cho tài khoản của bạn.")
+
+
 def get_quiz_review(db: Session, quiz_id: int, current_user: User) -> Quiz:
     """Return a quiz with answers for review after permission checks."""
     quiz = get_quiz(db, quiz_id)
 
-    if current_user.role != UserRole.TEACHER:
+    if current_user.role == UserRole.STUDENT:
+        authorize_student_quiz_access(db, quiz, current_user.id)
         if not attempt_repository.has_attempt(db, quiz_id, current_user.id):
             raise PermissionError(
                 "Bạn chưa hoàn thành bài thi này nên không thể xem đáp án giải thích."
             )
+    elif current_user.role == UserRole.TEACHER:
+        if not quiz.classroom_id:
+            raise PermissionError("Bạn không có quyền xem đáp án đề thi này.")
+        classroom = classroom_repository.get(db, quiz.classroom_id)
+        if not classroom or classroom.teacher_id != current_user.id:
+            raise PermissionError("Bạn không có quyền xem đáp án đề thi này.")
+    elif current_user.role != UserRole.ADMIN:
+        raise PermissionError("Bạn không có quyền xem đáp án đề thi này.")
 
     # Lấy lượt làm bài gần nhất của học sinh
     latest_attempt = None

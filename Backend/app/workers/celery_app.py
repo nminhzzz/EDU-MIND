@@ -41,8 +41,12 @@ celery.conf.update(
         "app.workers.tasks.task_generate_quiz": {"queue": "ai_tasks"},
         "app.workers.tasks.task_update_analytics": {"queue": "ai_tasks"},
         "app.workers.tasks.task_generate_plan_materials": {"queue": "ai_tasks"},
+        "app.workers.tasks.task_generate_attempt_assessment": {"queue": "ai_tasks"},
+        "app.workers.tasks.task_generate_single_plan_material": {"queue": "ai_tasks"},
+        "app.workers.tasks.task_index_study_document": {"queue": "ai_tasks"},
         "app.workers.tasks.task_send_daily_reminders": {"queue": "default"},
         "app.workers.tasks.task_check_approaching_deadlines": {"queue": "default"},
+        "app.workers.tasks.task_dispatch_outbox": {"queue": "default"},
     },
 
     # Beat schedule (periodic tasks)
@@ -55,6 +59,11 @@ celery.conf.update(
         "check-approaching-deadlines": {
             "task": "app.workers.tasks.task_check_approaching_deadlines",
             "schedule": 60 * 60 * 6,  # every 6 hours
+            "options": {"queue": "default"},
+        },
+        "dispatch-transactional-outbox": {
+            "task": "app.workers.tasks.task_dispatch_outbox",
+            "schedule": 10.0,
             "options": {"queue": "default"},
         },
     },

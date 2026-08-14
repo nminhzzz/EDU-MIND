@@ -3,14 +3,14 @@ Pydantic schemas cho Quiz sinh bởi AI — Giai đoạn 3 & 4.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 from app.schemas.quiz_attempt import QuizAttemptResponse
 
 
 class QuizOptionSchema(BaseModel):
-    key: str = Field(description="Ký tự lựa chọn, vd: A, B, C, D hoặc True, False")
-    value: str = Field(description="Nội dung lựa chọn")
+    key: str = Field(min_length=1, max_length=20, description="Ký tự lựa chọn, vd: A, B, C, D hoặc True, False")
+    value: str = Field(min_length=1, max_length=5_000, description="Nội dung lựa chọn")
 
 
 class QuestionItemStudentResponse(BaseModel):
@@ -29,18 +29,18 @@ class QuestionItemDetailResponse(QuestionItemStudentResponse):
 
 
 class ClassroomQuizCreateRequest(BaseModel):
-    subject_id: int = Field(description="ID môn học")
-    topic: Optional[str] = Field(None, description="Chủ đề kiến thức cần kiểm tra")
+    subject_id: int = Field(gt=0, description="ID môn học")
+    topic: Optional[str] = Field(None, max_length=500, description="Chủ đề kiến thức cần kiểm tra")
     document_id: Optional[int] = Field(None, description="ID tài liệu đã upload trên hệ thống")
     document_ids: Optional[List[int]] = Field(None, description="Danh sách ID tài liệu chọn để sinh đề")
-    custom_prompt: Optional[str] = Field(None, description="Yêu cầu/chỉ thị riêng của giáo viên cho AI")
-    difficulty: str = Field(default="medium", description="Độ khó: easy, medium, hard")
-    total_questions: int = Field(default=5, description="Số lượng câu hỏi cần tạo")
+    custom_prompt: Optional[str] = Field(None, max_length=4_000, description="Yêu cầu/chỉ thị riêng của giáo viên cho AI")
+    difficulty: Literal["easy", "medium", "hard"] = Field(default="medium", description="Độ khó: easy, medium, hard")
+    total_questions: int = Field(default=5, ge=1, le=100, description="Số lượng câu hỏi cần tạo")
     deadline: Optional[datetime] = Field(None, description="Hạn chót nộp bài (ISO-8601)")
-    time_limit_minutes: Optional[int] = Field(default=30, description="Thời gian làm bài tính bằng phút")
-    max_tab_violations: Optional[int] = Field(default=3, description="Số lần vi phạm chuyển tab tối đa")
+    time_limit_minutes: Optional[int] = Field(default=30, ge=1, le=480, description="Thời gian làm bài tính bằng phút")
+    max_tab_violations: Optional[int] = Field(default=3, ge=0, le=100, description="Số lần vi phạm chuyển tab tối đa")
     include_essay: bool = Field(default=False, description="Có bao gồm câu hỏi tự luận không")
-    essay_count: int = Field(default=2, description="Số lượng câu hỏi tự luận muốn tạo")
+    essay_count: int = Field(default=2, ge=0, le=20, description="Số lượng câu hỏi tự luận muốn tạo")
 
 
 class QuizResponse(BaseModel):
@@ -99,4 +99,3 @@ class QuizUpdateRequest(BaseModel):
     difficulty: Optional[str] = Field(None, description="Độ khó")
     deadline: Optional[datetime] = Field(None, description="Hạn chót nộp bài")
     questions: Optional[List[QuestionItemUpdateRequest]] = Field(None, description="Danh sách câu hỏi đã chỉnh sửa")
-

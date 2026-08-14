@@ -140,16 +140,66 @@ def _decode_token(token: str) -> Optional[dict]:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     delta = expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return _make_token(data, delta)
+    return _make_token({**data, "typ": "access"}, delta)
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    return _decode_token(token)
+    payload = _decode_token(token)
+    return payload if payload and payload.get("typ") == "access" else None
 
 
 def create_refresh_token(data: dict) -> str:
-    return _make_token(data, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
+    return _make_token({**data, "typ": "refresh"}, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
 
 
 def decode_refresh_token(token: str) -> Optional[dict]:
-    return _decode_token(token)
+    payload = _decode_token(token)
+    return payload if payload and payload.get("typ") == "refresh" else None
+
+
+def consume_refresh_token(token: str) -> Optional[dict]:
+    """Atomically consume a refresh token so concurrent replay can only win once."""
+    payload = decode_refresh_token(token)
+    if not payload:
+        return None
+    jti = payload.get("jti")
+    exp = payload.get("exp")
+    if not jti or not exp:
+        return None
+    remaining = int(exp - datetime.now(timezone.utc).timestamp())
+    if remaining <= 0:
+        return None
+    try:
+        claimed = _get_redis().set(f"blacklist:{jti}", "1", nx=True, ex=remaining)
+        return payload if claimed else None
+    except Exception as exc:
+        logger.error("Redis refresh-token consume failed: %s", exc)
+        return None
+
+
+def create_essay_upload_token(*, user_id: int, quiz_id: int, storage_name: str) -> str:
+    """Issue a short-lived opaque reference to a server-side essay upload."""
+    return _make_token(
+        {
+            "sub": str(user_id),
+            "typ": "essay_upload",
+            "quiz_id": quiz_id,
+            "storage_name": storage_name,
+        },
+        timedelta(hours=2),
+    )
+
+
+def decode_essay_upload_token(token: str, *, user_id: int, quiz_id: int) -> Optional[str]:
+    """Return the safe storage filename when the upload token belongs to user_id."""
+    payload = _decode_token(token)
+    if not payload or payload.get("typ") != "essay_upload":
+        return None
+    if payload.get("sub") != str(user_id):
+        return None
+    if payload.get("quiz_id") != quiz_id:
+        return None
+    storage_name = payload.get("storage_name")
+    if not isinstance(storage_name, str) or not storage_name:
+        return None
+    return storage_name

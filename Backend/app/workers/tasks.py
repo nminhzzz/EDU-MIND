@@ -10,6 +10,7 @@ Queue routing is handled centrally by task_routes in celery_app.py.
 from __future__ import annotations
 
 import asyncio
+import uuid
 from celery import shared_task  # noqa: F401
 
 from app.core.enums import GoalStatus, NotificationType, PlanStatus
@@ -17,6 +18,31 @@ from app.core.logging import get_logger
 from app.workers.celery_app import celery  # noqa: F401 — ensures tasks are registered
 
 logger = get_logger(__name__)
+
+
+def _acquire_task_lock(key: str, ttl_seconds: int) -> str | None:
+    from app.database.redis import get_redis
+
+    token = uuid.uuid4().hex
+    acquired = get_redis().set(f"task_lock:{key}", token, nx=True, ex=ttl_seconds)
+    return token if acquired else None
+
+
+def _release_task_lock(key: str, token: str | None) -> None:
+    if not token:
+        return
+    from app.database.redis import get_redis
+
+    script = """
+    if redis.call('GET', KEYS[1]) == ARGV[1] then
+        return redis.call('DEL', KEYS[1])
+    end
+    return 0
+    """
+    try:
+        get_redis().eval(script, 1, f"task_lock:{key}", token)
+    except Exception as exc:
+        logger.warning("Could not release task lock %s: %s", key, exc)
 
 
 # ── AI Tasks (queue: ai_tasks via task_routes in celery_app.py) ───────────────
@@ -132,6 +158,11 @@ def task_generate_plan_materials(
     """
     from app.services.unified_service import generate_materials_and_quizzes_for_plans_bg
 
+    lock_key = f"goal_materials:{goal_id}"
+    lock_token = _acquire_task_lock(lock_key, 1800)
+    if not lock_token:
+        return {"status": "already_running", "goal_id": goal_id}
+
     logger.info(
         "task_generate_plan_materials: student=%d goal=%d subject=%d",
         student_id, goal_id, subject_id,
@@ -146,9 +177,110 @@ def task_generate_plan_materials(
     except Exception as exc:
         logger.error("task_generate_plan_materials failed: %s", exc)
         raise self.retry(exc=exc)
+    finally:
+        _release_task_lock(lock_key, lock_token)
+
+
+@celery.task(
+    name="app.workers.tasks.task_generate_attempt_assessment",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=20,
+)
+def task_generate_attempt_assessment(self, attempt_id: int) -> None:
+    """Generate an attempt assessment using authoritative database data."""
+    from app.database.mysql import SessionLocal
+    from app.models.quiz_attempt import QuizAttempt
+    from app.services.quiz.attempts import process_ai_quiz_assessment_background
+
+    lock_key = f"attempt_assessment:{attempt_id}"
+    lock_token = _acquire_task_lock(lock_key, 900)
+    if not lock_token:
+        return
+    try:
+        with SessionLocal() as db:
+            attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+            if not attempt or not attempt.quiz or attempt.ai_assessment is not None:
+                return
+            process_ai_quiz_assessment_background(
+                attempt.id,
+                attempt.quiz.title or "Đề thi",
+                attempt.quiz.questions or [],
+                attempt.answers or [],
+                float(attempt.score),
+                attempt.correct_count,
+                attempt.wrong_count,
+            )
+    except Exception as exc:
+        raise self.retry(exc=exc)
+    finally:
+        _release_task_lock(lock_key, lock_token)
+
+
+@celery.task(
+    name="app.workers.tasks.task_generate_single_plan_material",
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60,
+)
+def task_generate_single_plan_material(self, plan_id: int, student_id: int) -> None:
+    from app.services.unified.materials import generate_single_plan_material_bg
+
+    lock_key = f"plan_material:{plan_id}"
+    lock_token = _acquire_task_lock(lock_key, 1200)
+    if not lock_token:
+        return
+    try:
+        asyncio.run(generate_single_plan_material_bg(plan_id, student_id))
+    except Exception as exc:
+        raise self.retry(exc=exc)
+    finally:
+        _release_task_lock(lock_key, lock_token)
+
+
+@celery.task(
+    name="app.workers.tasks.task_index_study_document",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+)
+def task_index_study_document(self, document_id: int) -> None:
+    from app.database.mongodb import make_mongodb_db
+    from app.database.mysql import SessionLocal
+    from app.services.study_document_service import reindex_study_document_rag
+
+    async def _run() -> None:
+        mongo_client, db_mongo = make_mongodb_db()
+        try:
+            with SessionLocal() as db:
+                await reindex_study_document_rag(
+                    db,
+                    db_mongo,
+                    document_id=document_id,
+                )
+        finally:
+            mongo_client.close()
+
+    lock_key = f"document_index:{document_id}"
+    lock_token = _acquire_task_lock(lock_key, 1200)
+    if not lock_token:
+        return
+    try:
+        asyncio.run(_run())
+    except Exception as exc:
+        raise self.retry(exc=exc)
+    finally:
+        _release_task_lock(lock_key, lock_token)
 
 
 # ── Scheduled Tasks (queue: default via task_routes in celery_app.py) ─────────
+
+@celery.task(name="app.workers.tasks.task_dispatch_outbox")
+def task_dispatch_outbox() -> dict:
+    from app.services.outbox_service import dispatch_pending_outbox_jobs
+
+    return dispatch_pending_outbox_jobs()
+
 
 @celery.task(name="app.workers.tasks.task_send_daily_reminders")
 def task_send_daily_reminders() -> dict:

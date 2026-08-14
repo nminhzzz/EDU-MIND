@@ -8,6 +8,7 @@ from app.agents.roadmap_planner import generate_unified_plan
 from app.core.logging import get_logger
 from app.database.mongodb import get_mongodb_db
 from app.models.classroom import Classroom
+from app.models.classroom_student import ClassroomStudent
 from app.models.study_document import StudyDocument
 from app.models.subject import Subject
 from app.models.user import User
@@ -39,6 +40,20 @@ async def generate_unified_draft(
     if classroom_id and db:
         classroom = db.query(Classroom).filter(Classroom.id == classroom_id).first()
         if classroom:
+            enrollment = db.query(ClassroomStudent.id).filter(
+                ClassroomStudent.classroom_id == classroom_id,
+                ClassroomStudent.student_id == student.id,
+            ).first()
+            if not enrollment:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không phải thành viên của lớp học này.",
+                )
+            if classroom.subject_id != subject_obj.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lớp học không thuộc môn học đã chọn.",
+                )
             teacher_id = classroom.teacher_id
             # Lấy tất cả tài liệu do giáo viên của lớp học này upload trong môn học
             teacher_docs = (
