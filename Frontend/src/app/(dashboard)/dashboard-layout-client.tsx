@@ -83,7 +83,7 @@ export function DashboardLayoutClient({
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors duration-200">
       {/* 1. Desktop Sidebar (md and above) */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Sidebar />
       </div>
 
@@ -97,7 +97,7 @@ export function DashboardLayoutClient({
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black z-30 md:hidden"
+              className="fixed inset-0 z-30 bg-black lg:hidden"
             />
             {/* Sliding Mobile Sidebar */}
             <motion.div
@@ -105,7 +105,7 @@ export function DashboardLayoutClient({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-zinc-900 z-40 md:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white shadow-2xl dark:bg-zinc-900 lg:hidden"
             >
               <div className="h-16 flex items-center justify-end px-6 border-b border-zinc-200 dark:border-zinc-800">
                 <button
@@ -124,13 +124,13 @@ export function DashboardLayoutClient({
       </AnimatePresence>
 
       {/* 3. Main Content Area */}
-      <div className="md:pl-64 flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col lg:pl-64">
         {/* Header */}
         <Header onMenuToggle={() => setIsMobileMenuOpen(true)} />
 
         {/* Page Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 xl:px-8">
+          <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
 

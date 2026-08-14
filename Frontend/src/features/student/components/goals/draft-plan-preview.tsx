@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { LayoutGrid, Calendar, BookOpen, Sparkles, CheckCircle2 } from "lucide-react";
+import { LayoutGrid, Calendar, BookOpen, CheckCircle2 } from "lucide-react";
+import { Badge, Card, TabButton, TabsList } from "@/components/ui";
 import type { DraftResponse, Subject } from "@/features/student/types";
 import { DraftKpiWidgets } from "./draft-kpi-widgets";
 import { DraftTimelineView } from "./draft-timeline-view";
@@ -28,48 +29,42 @@ export function DraftPlanPreview({
   const subjectObj = subjects.find((s) => String(s.id) === String(selectedSubjectId));
 
   return (
-    <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800 p-6 sm:p-8 rounded-md shadow-sm space-y-6 w-full">
+    <Card className="w-full space-y-7 p-5 sm:p-7">
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-200/60 dark:border-zinc-800">
+      <div className="flex flex-col justify-between gap-5 border-b border-zinc-100 pb-6 dark:border-zinc-800 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 px-2.5 py-0.5 rounded-md border border-violet-200/50 dark:border-violet-800/50">
+            <Badge className="border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-300">
               Bản thảo Lộ trình AI
-            </span>
+            </Badge>
           </div>
-          <h2 className="font-extrabold text-lg sm:text-xl tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-            Lộ trình Học tập & Thời khóa biểu Đề xuất
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-zinc-950 dark:text-white sm:text-2xl">
+            Lộ trình học tập đề xuất
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-            Môn học: <span className="text-violet-600 dark:text-violet-400 font-bold">{subjectObj?.name || "Môn học"}</span> // Mục tiêu: <span className="font-mono text-violet-600 dark:text-violet-400 font-bold">{targetScore}/10</span> // Hạn chót: <span className="font-mono text-zinc-700 dark:text-zinc-300 font-bold">{deadline}</span>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">{subjectObj?.name || "Môn học"}</span><span className="mx-2 text-zinc-300">•</span>Mục tiêu <span className="font-semibold text-indigo-600">{targetScore}/10</span><span className="mx-2 text-zinc-300">•</span>Hạn {deadline}
           </p>
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-md border border-zinc-200/80 dark:border-zinc-800 self-start sm:self-auto shrink-0 shadow-2xs">
-          <button
+        <TabsList className="self-start sm:self-auto">
+          <TabButton
             type="button"
             onClick={() => setViewMode("daily")}
-            className={`px-3.5 py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewMode === "daily"
-                ? "bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-            }`}
+            active={viewMode === "daily"}
+            className="flex items-center gap-1.5"
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Chi tiết theo ngày
-          </button>
-          <button
+          </TabButton>
+          <TabButton
             type="button"
             onClick={() => setViewMode("timeline")}
-            className={`px-3.5 py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-              viewMode === "timeline"
-                ? "bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-            }`}
+            active={viewMode === "timeline"}
+            className="flex items-center gap-1.5"
           >
             <Calendar className="w-3.5 h-3.5" /> Theo tuần
-          </button>
-        </div>
+          </TabButton>
+        </TabsList>
       </div>
 
       {/* KPI Widgets */}
@@ -108,6 +103,6 @@ export function DraftPlanPreview({
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

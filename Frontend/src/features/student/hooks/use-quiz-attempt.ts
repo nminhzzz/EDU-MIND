@@ -215,7 +215,7 @@ export function useQuizAttempt(quizId: string | number | undefined) {
 
     setSubmitting(true);
     try {
-      await quizService.submit(quizId, {
+      const submitResponse = await quizService.submit(quizId, {
         answers: quiz.questions.map((_, idx) => ({
           question_index: idx,
           answer: selectedAnswers[idx] || "",
@@ -225,8 +225,16 @@ export function useQuizAttempt(quizId: string | number | undefined) {
         tab_violations_count: tabViolations,
         essay_file_path: essayFilePath || undefined,
       });
+      const attempt = submitResponse.data;
+      setQuiz((current) => current ? { ...current, latest_attempt: attempt } : current);
+      setIsReview(true);
+      setCurrentQuestionIndex(0);
       toast.success(isAutoSubmit ? "Hệ thống đã tự động nộp bài làm!" : "Nộp bài thi thành công!");
-      await loadQuiz(true);
+
+      // Refresh correct answers and explanations without blocking the score.
+      void quizService.getReview(quizId).then((reviewResponse) => {
+        setQuiz(normalizeQuiz(reviewResponse.data));
+      }).catch(() => undefined);
     } catch {
       toast.error("Lỗi khi nộp bài thi. Vui lòng thử lại.");
     } finally {

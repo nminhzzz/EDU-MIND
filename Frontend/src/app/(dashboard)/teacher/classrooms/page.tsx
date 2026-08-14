@@ -10,6 +10,7 @@ import { ClassroomCard } from "@/components/teacher/classroom-card";
 import { EmptyState } from "@/components/teacher/empty-state";
 import { Classroom } from "@/types/classroom";
 import { Subject } from "@/types/subject";
+import { Button, PageHeader, Skeleton } from "@/components/ui";
 
 export default function TeacherClassroomsPage() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -67,32 +68,12 @@ export default function TeacherClassroomsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-md animate-spin mx-auto" />
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Đang tải danh sách lớp học...</p>
-      </div>
-    );
+    return <div className="space-y-5"><Skeleton className="h-20" /><div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((item) => <Skeleton key={item} className="h-56" />)}</div></div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-zinc-900 dark:text-white">Quản lý Lớp học</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Tạo mới, quản lý và theo dõi tiến độ các lớp học bạn đang phụ trách.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Tạo lớp mới
-        </button>
-      </div>
+      <PageHeader eyebrow="Không gian giáo viên" title="Quản lý lớp học" description="Tạo lớp, quản lý học sinh và theo dõi tiến độ học tập." actions={<Button onClick={() => setShowModal(true)}><Plus className="size-4" /> Tạo lớp mới</Button>} />
 
       {/* Classrooms grid */}
       {classrooms.length === 0 ? (

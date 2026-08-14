@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MessageSquare,
   X,
@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/features/student/hooks/use-chat";
-import { useNewChatSession } from "@/features/student/hooks/use-new-chat-session";
 import { chatService } from "@/features/student/services/chat";
 import { MarkdownText } from "@/components/student/markdown-text";
 import { ChatSession } from "@/features/student/types/chat";
+import { announceFloatingChatOpen, subscribeToFloatingChatOpen } from "@/features/student/utils/floating-chat-events";
 
 export function FloatingTutorChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +29,15 @@ export function FloatingTutorChat() {
   const [subjectId, setSubjectId] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => subscribeToFloatingChatOpen((kind) => {
+    if (kind !== "tutor") setIsOpen(false);
+  }), []);
+
+  const openTutorChat = () => {
+    announceFloatingChatOpen("tutor");
+    setIsOpen(true);
+  };
 
   const getSubjectName = (subId: number) => {
     const sub = chat.subjects.find((s) => s.id === subId);
@@ -82,7 +91,7 @@ export function FloatingTutorChat() {
   }, [chat.loadingSessions, chat.sessions]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-4 right-4 z-50 font-sans sm:bottom-6 sm:right-6">
       <AnimatePresence>
         {/* Nút Chat Bubble */}
         {!isOpen && (
@@ -90,7 +99,7 @@ export function FloatingTutorChat() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setIsOpen(true)}
+            onClick={openTutorChat}
             className="w-14 h-14 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 cursor-pointer active:scale-95 transition-all relative group"
           >
             <MessageSquare className="w-6 h-6" />
@@ -105,7 +114,7 @@ export function FloatingTutorChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="w-96 h-[550px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-white/95 dark:bg-zinc-900/95"
+            className="flex h-[min(550px,calc(100vh-6rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:w-96"
           >
             {/* Header */}
             <div className="h-14 px-4 border-b border-zinc-150 dark:border-zinc-850 bg-indigo-600 text-white flex items-center justify-between">

@@ -1,10 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { ClipboardList, Trophy } from "lucide-react";
 import type { QuizAttemptHistory, StudentQuiz } from "@/features/student/types";
 import { QuizHistoryTable } from "./quiz-history-table";
 import Link from "next/link";
+import { EmptyState, PageHeader, Pagination, Skeleton } from "@/components/ui";
+
+const ASSIGNED_PAGE_SIZE = 6;
+const HISTORY_PAGE_SIZE = 10;
 
 interface QuizzesListViewProps {
   attempts: QuizAttemptHistory[];
@@ -17,44 +21,63 @@ export function QuizzesListView({
   assignedQuizzes,
   loading = false,
 }: QuizzesListViewProps) {
+  const [assignedPage, setAssignedPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [renderedAt] = useState(() => Date.now());
+  const sortedAssignedQuizzes = useMemo(
+    () => [...assignedQuizzes].sort((left, right) => {
+      const leftTime = left.created_at ? new Date(left.created_at).getTime() : 0;
+      const rightTime = right.created_at ? new Date(right.created_at).getTime() : 0;
+      return rightTime - leftTime || right.id - left.id;
+    }),
+    [assignedQuizzes],
+  );
+  const sortedAttempts = useMemo(
+    () => [...attempts].sort(
+      (left, right) => new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime(),
+    ),
+    [attempts],
+  );
+  const assignedTotalPages = Math.max(1, Math.ceil(assignedQuizzes.length / ASSIGNED_PAGE_SIZE));
+  const historyTotalPages = Math.max(1, Math.ceil(attempts.length / HISTORY_PAGE_SIZE));
+  const currentAssignedPage = Math.min(assignedPage, assignedTotalPages);
+  const currentHistoryPage = Math.min(historyPage, historyTotalPages);
+  const visibleAssignedQuizzes = sortedAssignedQuizzes.slice(
+    (currentAssignedPage - 1) * ASSIGNED_PAGE_SIZE,
+    currentAssignedPage * ASSIGNED_PAGE_SIZE,
+  );
+  const visibleAttempts = sortedAttempts.slice(
+    (currentHistoryPage - 1) * HISTORY_PAGE_SIZE,
+    currentHistoryPage * HISTORY_PAGE_SIZE,
+  );
+
   // Helper to check if student already attempted the quiz and get the score
   const getQuizResult = (quizId: number) => {
-    const attempt = attempts.find((a) => a.quiz_id === quizId);
+    const attempt = sortedAttempts.find((a) => a.quiz_id === quizId);
     return attempt ? { completed: true, score: attempt.score } : { completed: false, score: null };
   };
 
   return (
     <div className="space-y-6 text-left">
-      <div>
-        <h1 className="text-2xl font-black text-zinc-900 dark:text-white">
-          Nhiệm Vụ & Bài Tập
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Hoàn thành các bài tập và đề kiểm tra trắc nghiệm do Giáo viên giao cho lớp của bạn.
-        </p>
-      </div>
+      <PageHeader eyebrow="Đánh giá năng lực" title="Bài tập và kiểm tra" description="Hoàn thành bài tập được giao, theo dõi điểm số và xem lại lời giải của bạn." />
 
       {/* 1. Assigned Quizzes List */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm space-y-4">
+      <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
         <h2 className="font-extrabold text-sm text-zinc-850 dark:text-zinc-200 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
           <ClipboardList className="w-4 h-4 text-indigo-500" />
           Bài tập được giao từ lớp học
         </h2>
 
         {loading ? (
-          <div className="py-8 text-center text-zinc-400 font-bold text-sm">
-            Đang tải danh sách bài tập...
-          </div>
+          <div className="grid gap-4 md:grid-cols-2">{[0, 1].map((item) => <Skeleton key={item} className="h-48" />)}</div>
         ) : assignedQuizzes.length === 0 ? (
-          <div className="py-8 text-center text-zinc-400 font-semibold text-sm">
-            Hiện tại bạn chưa được giao bài tập nào. Hãy tận hưởng thời gian nghỉ ngơi!
-          </div>
+          <EmptyState title="Chưa có bài tập được giao" description="Bài tập mới từ lớp học sẽ xuất hiện tại đây." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {assignedQuizzes.map((quiz) => {
+            {visibleAssignedQuizzes.map((quiz) => {
               const result = getQuizResult(quiz.id);
               const isExpired = quiz.deadline
-                ? new Date(quiz.deadline).getTime() < Date.now()
+                ? new Date(quiz.deadline).getTime() < renderedAt
                 : false;
 
               return (
@@ -129,17 +152,19 @@ export function QuizzesListView({
             })}
           </div>
         )}
-      </div>
+        <Pagination page={currentAssignedPage} pageSize={ASSIGNED_PAGE_SIZE} totalItems={assignedQuizzes.length} itemLabel="bài tập" onPageChange={setAssignedPage} />
+      </section>
 
       {/* 2. Attempts History */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-6 rounded-md shadow-sm space-y-4">
+      <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
         <h2 className="font-extrabold text-sm text-zinc-850 dark:text-zinc-200 flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
           <Trophy className="w-4 h-4 text-amber-500" />
           Lịch sử điểm số bài thi
         </h2>
 
-        <QuizHistoryTable attempts={attempts} />
-      </div>
+        <QuizHistoryTable attempts={visibleAttempts} />
+        <Pagination page={currentHistoryPage} pageSize={HISTORY_PAGE_SIZE} totalItems={attempts.length} itemLabel="lượt làm bài" onPageChange={setHistoryPage} />
+      </section>
     </div>
   );
 }

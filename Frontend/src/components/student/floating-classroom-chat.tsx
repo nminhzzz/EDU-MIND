@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Users, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStudentClassrooms } from "@/features/student/hooks/use-student-classrooms";
@@ -9,6 +9,7 @@ import { Classroom } from "@/types/classroom";
 import { useAuth } from "@/hooks/use-auth";
 import { ClassroomChatList } from "./classroom-messenger/classroom-chat-list";
 import { ClassroomChatPanel } from "./classroom-messenger/classroom-chat-panel";
+import { announceFloatingChatOpen, subscribeToFloatingChatOpen } from "@/features/student/utils/floating-chat-events";
 
 export function FloatingClassroomChat() {
   const { user } = useAuth();
@@ -17,6 +18,18 @@ export function FloatingClassroomChat() {
 
   const { classrooms, classroomsLoading: loading } = useStudentClassrooms();
   const { unreadCounts, totalUnread, markRead } = useClassroomUnread(classrooms);
+
+  useEffect(() => subscribeToFloatingChatOpen((kind) => {
+    if (kind !== "classroom") {
+      setIsOpen(false);
+      setSelectedClassroom(null);
+    }
+  }), []);
+
+  const openClassroomChat = () => {
+    announceFloatingChatOpen("classroom");
+    setIsOpen(true);
+  };
 
   const handleSelectClassroom = (cls: Classroom) => {
     setSelectedClassroom(cls);
@@ -27,7 +40,7 @@ export function FloatingClassroomChat() {
   const positionClass = isStudent ? "bottom-[88px]" : "bottom-6";
 
   return (
-    <div className={`fixed ${positionClass} right-6 z-50 font-sans`}>
+    <div className={`fixed ${positionClass} right-4 z-50 font-sans sm:right-6`}>
       <AnimatePresence>
         {/* Floating Messenger Trigger Button */}
         {!isOpen && (
@@ -35,7 +48,7 @@ export function FloatingClassroomChat() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setIsOpen(true)}
+            onClick={openClassroomChat}
             className="w-14 h-14 rounded-md bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-500/30 cursor-pointer active:scale-95 transition-all relative group"
             title="Thảo luận Lớp học"
           >
@@ -55,7 +68,7 @@ export function FloatingClassroomChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="w-96 h-[550px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-md shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-white/95 dark:bg-zinc-900/95"
+            className="flex h-[min(550px,calc(100vh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:w-96"
           >
             {/* Main Header Bar (Only shown on Classroom List view) */}
             {!selectedClassroom && (

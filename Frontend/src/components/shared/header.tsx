@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Sun, Moon } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Moon, Sun, UserRound } from "lucide-react";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -53,35 +53,34 @@ export function Header({ onMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-6">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-zinc-200 bg-white/95 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-6">
       {/* Nút Toggle Sidebar (Chỉ ẩn hiện trên Mobile) */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 cursor-pointer"
+        className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 lg:hidden"
+        aria-label="Mở menu điều hướng"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu className="size-5" />
       </button>
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Nút Chuyển đổi Giao diện Sáng / Tối */}
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-2 px-3.5 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all cursor-pointer shadow-sm active:scale-95"
+          className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white sm:w-auto sm:px-3"
           title="Chuyển đổi giao diện Sáng / Tối"
         >
           {theme === "light" ? (
             <>
               <Sun className="w-4 h-4 text-amber-500 fill-amber-500/20" />
-              <span>Giao diện: Sáng</span>
+              <span className="hidden sm:inline">Giao diện sáng</span>
             </>
           ) : (
             <>
               <Moon className="w-4 h-4 text-indigo-400 fill-indigo-400/20" />
-              <span>Giao diện: Tối</span>
+              <span className="hidden sm:inline">Giao diện tối</span>
             </>
           )}
         </button>
@@ -90,7 +89,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 pl-3 border-l border-zinc-200 dark:border-zinc-800 cursor-pointer focus:outline-none hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:bg-zinc-900"
           >
             {user?.avatar_url ? (
               <img
@@ -112,6 +111,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 {user?.role === "teacher" ? "Giáo viên" : "Học sinh"}
               </span>
             </div>
+            <ChevronDown className="hidden size-4 text-zinc-400 sm:block" />
           </button>
 
           {dropdownOpen && (
@@ -128,7 +128,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-md transition-colors"
                   >
-                    Xem Profile
+                    <UserRound className="size-4" /> Hồ sơ cá nhân
                   </Link>
                 )}
                 <button
@@ -138,7 +138,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                   }}
                   className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-md transition-colors cursor-pointer"
                 >
-                  Đăng xuất
+                  <LogOut className="size-4" /> Đăng xuất
                 </button>
               </div>
             </>

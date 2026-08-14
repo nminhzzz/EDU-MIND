@@ -36,20 +36,13 @@ export default function StudentDashboard() {
   });
 
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-8 text-left">
       <StudentWelcomeBanner
         fullName={user?.full_name || "Học sinh"}
         onJoinClassClick={() => setShowJoinModal(true)}
       />
 
       <DashboardKpiRow stats={stats} statsLoading={statsLoading} />
-
-      <ClassroomSection
-        classrooms={classrooms}
-        loading={classroomsLoading}
-        onJoinClick={() => setShowJoinModal(true)}
-        onSelectClassroom={setActiveClassroom}
-      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <TodayTasksCard
@@ -59,6 +52,13 @@ export default function StudentDashboard() {
         />
         <AiTutorPromoCard stats={stats} statsLoading={statsLoading} />
       </div>
+
+      <ClassroomSection
+        classrooms={classrooms}
+        loading={classroomsLoading}
+        onJoinClick={() => setShowJoinModal(true)}
+        onSelectClassroom={setActiveClassroom}
+      />
 
       <ClassroomJoinModal
         isOpen={showJoinModal}

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Plus, Sparkles, Target, ArrowRight } from "lucide-react";
 import { ROUTES } from "@/features/student/constants";
-import { motion } from "framer-motion";
+import { Badge } from "@/components/ui";
 
 interface StudentWelcomeBannerProps {
   fullName: string;
@@ -13,26 +13,16 @@ interface StudentWelcomeBannerProps {
 
 export function StudentWelcomeBanner({ fullName, onJoinClassClick }: StudentWelcomeBannerProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-md bg-gradient-to-br from-sky-50 via-blue-50/60 to-cyan-50/40 dark:from-sky-950/60 dark:via-blue-950/40 dark:to-slate-900 p-8 md:p-10 text-sky-950 dark:text-sky-50 border border-sky-200/80 dark:border-sky-900/50 shadow-sm"
-    >
-      {/* Soft Sky Blue Glow Circle */}
-      <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-sky-200/60 dark:bg-sky-800/20 rounded-md blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div className="space-y-3 max-w-xl text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/80 dark:bg-sky-900/60 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[11px] font-bold tracking-wider uppercase shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
-            Hệ thống Gia sư Học tập Thông minh AI
-          </div>
+          <Badge className="border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-300"><Sparkles className="size-3.5" /> Trợ lý học tập AI</Badge>
           
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-sky-950 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 dark:text-white md:text-3xl">
             Chào mừng quay lại, {fullName || "Học sinh"}! 👋
           </h1>
           
-          <p className="text-xs md:text-sm text-sky-900/80 dark:text-sky-200/80 leading-relaxed font-medium">
+          <p className="max-w-2xl text-sm font-normal leading-6 text-zinc-600 dark:text-zinc-400">
             Lộ trình học cá nhân hóa được tự động giám sát và cập nhật liên tục từ AI Agent của bạn. Hãy sẵn sàng cho bài học hôm nay!
           </p>
         </div>
@@ -56,7 +46,7 @@ export function StudentWelcomeBanner({ fullName, onJoinClassClick }: StudentWelc
           </Link>
         </div>
       </div>
-    </motion.div>
+    </section>
   );
 }
 

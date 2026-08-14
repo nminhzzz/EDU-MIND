@@ -11,6 +11,7 @@ import { DocumentRow } from "@/components/teacher/document-row";
 import { EmptyState } from "@/components/teacher/empty-state";
 import { StudyDocument } from "@/types/document";
 import { Subject } from "@/types/subject";
+import { Button, PageHeader, Skeleton } from "@/components/ui";
 
 export default function TeacherDocumentsPage() {
   const { user } = useAuth();
@@ -92,32 +93,12 @@ export default function TeacherDocumentsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="py-24 text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-md animate-spin mx-auto" />
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Đang tải danh sách tài liệu...</p>
-      </div>
-    );
+    return <div className="space-y-5"><Skeleton className="h-20" /><Skeleton className="h-12" /><Skeleton className="h-72" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-zinc-900 dark:text-white">Kho Tài liệu Giảng dạy</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Tải lên và quản lý tài liệu cho các môn học. AI sẽ tự động phân tích nội dung để hỗ trợ sinh đề.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
-        >
-          <Upload className="w-4 h-4" />
-          Tải tài liệu
-        </button>
-      </div>
+      <PageHeader eyebrow="Không gian giáo viên" title="Kho tài liệu giảng dạy" description="Quản lý nguồn học liệu để AI hỗ trợ tạo nội dung và đề kiểm tra." actions={<Button onClick={() => setShowModal(true)}><Upload className="size-4" /> Tải tài liệu</Button>} />
 
       {/* Tabs Filter */}
       <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-6">

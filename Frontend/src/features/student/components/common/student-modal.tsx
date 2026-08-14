@@ -34,7 +34,7 @@ export function StudentModal({
   maxWidth = "md",
   overlayZIndex = "z-45",
   panelClassName = "",
-  contentClassName = "p-8 text-left",
+  contentClassName = "p-5 sm:p-7 text-left",
   animation = { scale: 0.95, y: 20 },
   withAnimatePresence = true,
   showCloseButton = true,
@@ -54,10 +54,10 @@ export function StudentModal({
         initial={{ opacity: 0, scale: animation.scale ?? 0.95, y: animation.y ?? 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: animation.scale ?? 0.95, y: animation.y ?? 20 }}
-        className={`fixed inset-0 ${panelZIndex} flex items-center justify-center p-4 ${panelClassName}`.trim()}
+        className={`fixed inset-0 ${panelZIndex} flex items-center justify-center overflow-y-auto p-3 sm:p-4 ${panelClassName}`.trim()}
       >
         <div
-          className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl w-full ${maxWidthClasses[maxWidth]} ${contentClassName}`.trim()}
+          className={`max-h-[calc(100dvh-1.5rem)] w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 ${maxWidthClasses[maxWidth]} ${contentClassName}`.trim()}
         >
           {title !== undefined && (
             <div className="flex items-center justify-between mb-6">

@@ -58,6 +58,20 @@ export function QuizDetailView({
 
   return (
     <div className="space-y-6 text-left max-w-4xl mx-auto">
+      {isReview && quiz.latest_attempt?.score !== undefined && (
+        <div className="flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-extrabold">Nộp bài thành công</p>
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              Đúng {quiz.latest_attempt.correct_count ?? 0}/{quiz.questions.length} câu
+            </p>
+          </div>
+          <div className="text-3xl font-black tabular-nums">
+            {Number(quiz.latest_attempt.score).toFixed(1)}<span className="text-base">/10</span>
+          </div>
+        </div>
+      )}
+
       {/* Tab Switcher for Review Mode */}
       {isReview && (
         <div className="flex items-center gap-2 p-1.5 bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-900/50 rounded-md shadow-xs">

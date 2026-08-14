@@ -22,6 +22,7 @@ export interface StudentQuiz {
   time_limit_minutes?: number;
   max_tab_violations?: number;
   classroom_id?: number;
+  created_at?: string;
   latest_attempt?: any;
 }
 
@@ -52,9 +53,14 @@ export interface AIAssessment {
 }
 
 export interface QuizAttemptResult {
+  id: number;
+  quiz_id: number;
+  student_id: number;
   score: number;
   correct_count: number;
   wrong_count: number;
+  duration_seconds: number;
+  submitted_at: string;
   tab_violations_count?: number;
   ai_assessment?: AIAssessment | null;
   answers?: {

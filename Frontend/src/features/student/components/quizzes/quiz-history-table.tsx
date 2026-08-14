@@ -30,7 +30,7 @@ export function QuizHistoryTable({ attempts }: QuizHistoryTableProps) {
           <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 text-xs font-bold uppercase tracking-wider">
             <th className="text-left py-3 px-4">Tên đề thi / Bài tập</th>
             <th className="text-center py-3 px-4">Điểm số</th>
-            <th className="text-center py-3 px-4">Kết quả đúng</th>
+            <th className="text-center py-3 px-4">Số câu đúng</th>
             <th className="text-center py-3 px-4">Thời gian làm</th>
             <th className="text-right py-3 px-4">Ngày nộp</th>
             <th className="py-3 px-4"></th>
@@ -63,7 +63,9 @@ export function QuizHistoryTable({ attempts }: QuizHistoryTableProps) {
               <td className="py-3.5 px-4 text-center text-zinc-500">
                 <span className="text-emerald-500 font-bold">{att.correct_count}</span>
                 <span className="mx-1">/</span>
-                <span className="text-red-400 font-bold">{att.wrong_count}</span>
+                <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                  {att.correct_count + att.wrong_count}
+                </span>
               </td>
               <td className="py-3.5 px-4 text-center text-zinc-500">
                 <span className="inline-flex items-center gap-1">

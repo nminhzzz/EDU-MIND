@@ -2,20 +2,14 @@
 
 import { useChat } from "@/features/student/hooks/use-chat";
 import { ChatLayout } from "@/features/student/components/chat";
+import { PageHeader } from "@/components/ui";
 
 export default function StudentChatPage() {
   const chat = useChat();
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-          Trợ lý Gia sư AI
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Thảo luận trực tiếp cùng Gia sư AI để giải đáp thắc mắc bài học, giải toán, viết văn và định hướng học tập.
-        </p>
-      </div>
+      <PageHeader eyebrow="AI Tutor" title="Trợ lý gia sư AI" description="Trao đổi về bài học, giải đáp thắc mắc và nhận gợi ý học tập phù hợp với bạn." />
 
       <ChatLayout
         sessions={chat.sessions}
