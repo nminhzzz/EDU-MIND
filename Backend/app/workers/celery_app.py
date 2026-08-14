@@ -40,7 +40,6 @@ celery.conf.update(
     task_routes={
         "app.workers.tasks.task_generate_quiz": {"queue": "ai_tasks"},
         "app.workers.tasks.task_update_analytics": {"queue": "ai_tasks"},
-        "app.workers.tasks.task_generate_plan_materials": {"queue": "ai_tasks"},
         "app.workers.tasks.task_generate_attempt_assessment": {"queue": "ai_tasks"},
         "app.workers.tasks.task_generate_single_plan_material": {"queue": "ai_tasks"},
         "app.workers.tasks.task_index_study_document": {"queue": "ai_tasks"},

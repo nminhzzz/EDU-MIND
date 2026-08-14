@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, datetime, time, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload
@@ -202,6 +202,61 @@ class PlanRepository(BaseRepository[StudyPlan, StudyPlanCreate, StudyPlanUpdate]
     ) -> None:
         """Persist generated lecture content on a plan (caller commits)."""
         plan.rag_content = rag_content
+        db.add(plan)
+
+    def queue_generation(self, db: Session, plan: StudyPlan) -> bool:
+        """Move a plan to queued once; caller owns commit and outbox staging."""
+        if plan.generation_status in {"queued", "generating", "ready"}:
+            return False
+        plan.generation_status = "queued"
+        plan.lesson_status = "queued"
+        plan.quiz_status = "queued"
+        plan.generation_error = None
+        plan.generation_attempts = (plan.generation_attempts or 0) + 1
+        plan.generation_started_at = None
+        plan.generation_finished_at = None
+        db.add(plan)
+        return True
+
+    def claim_generation(self, db: Session, plan_id: int) -> bool:
+        """Atomically claim one queued plan for a worker (no commit)."""
+        updated = (
+            db.query(StudyPlan)
+            .filter(
+                StudyPlan.id == plan_id,
+                StudyPlan.generation_status == "queued",
+            )
+            .update(
+                {
+                    StudyPlan.generation_status: "generating",
+                    StudyPlan.lesson_status: "generating",
+                    StudyPlan.quiz_status: "generating",
+                    StudyPlan.generation_started_at: datetime.now(timezone.utc),
+                    StudyPlan.generation_error: None,
+                },
+                synchronize_session=False,
+            )
+        )
+        return updated == 1
+
+    def finish_generation(self, db: Session, plan: StudyPlan) -> None:
+        plan.generation_status = "ready"
+        plan.lesson_status = "ready"
+        plan.quiz_status = "ready"
+        plan.generation_error = None
+        plan.generation_finished_at = datetime.now(timezone.utc)
+        db.add(plan)
+
+    def fail_generation(self, db: Session, plan: StudyPlan, error: str) -> None:
+        plan.generation_status = "failed"
+        if plan.rag_content:
+            plan.lesson_status = "ready"
+            plan.quiz_status = "failed"
+        else:
+            plan.lesson_status = "failed"
+            plan.quiz_status = "failed"
+        plan.generation_error = error[:1000]
+        plan.generation_finished_at = datetime.now(timezone.utc)
         db.add(plan)
 
     def mark_completed(

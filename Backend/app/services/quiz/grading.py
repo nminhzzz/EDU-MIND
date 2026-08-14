@@ -4,6 +4,7 @@ Quiz grading and AI question normalisation helpers.
 
 import mimetypes
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import docx
@@ -20,6 +21,18 @@ from app.schemas.quiz_attempt import QuizAttemptAnswer
 logger = get_logger(__name__)
 
 PLAN_PASS_SCORE_THRESHOLD = 8.0
+
+
+def normalize_choice_answer(value: Any) -> str:
+    """Return a canonical choice key while preserving non-choice answers.
+
+    AI providers occasionally return ``"A. option text"`` instead of the
+    requested ``"A"``. The browser submits only the option key, so both forms
+    must compare as the same answer.
+    """
+    normalized = str(value or "").strip().upper()
+    match = re.match(r"^([A-F])(?:\s*$|[.):\-]\s*|\s+)", normalized)
+    return match.group(1) if match else normalized
 
 
 def build_rag_context(materials: List[Dict[str, Any]]) -> str:
@@ -221,8 +234,8 @@ def grade_submission(
             # Trắc nghiệm (MCQ) hoặc Đúng/Sai (True/False)
             student_ans = submitted_map.get(idx, "")
             correct_ans = q_item.get("correct_answer", "")
-            is_correct = (
-                str(student_ans).strip().upper() == str(correct_ans).strip().upper()
+            is_correct = normalize_choice_answer(student_ans) == normalize_choice_answer(
+                correct_ans
             )
 
             score_val = 10.0 if is_correct else 0.0

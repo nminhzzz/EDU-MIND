@@ -13,6 +13,7 @@ from sqlalchemy import (
     Index,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from app.models.base import Base
 
 
@@ -33,7 +34,15 @@ class StudyPlan(Base):
 
     title = Column(String(255), nullable=False)
     task_description = Column(Text, nullable=True)
-    rag_content = Column(Text, nullable=True)
+    rag_content = Column(Text().with_variant(MEDIUMTEXT(), "mysql"), nullable=True)
+    lesson_summary = Column(Text, nullable=True)
+    generation_status = Column(String(20), nullable=False, default="not_started")
+    lesson_status = Column(String(20), nullable=False, default="not_started")
+    quiz_status = Column(String(20), nullable=False, default="not_started")
+    generation_error = Column(Text, nullable=True)
+    generation_attempts = Column(BigInteger, nullable=False, default=0)
+    generation_started_at = Column(DateTime, nullable=True)
+    generation_finished_at = Column(DateTime, nullable=True)
 
     study_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)

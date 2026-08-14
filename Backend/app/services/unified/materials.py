@@ -1,16 +1,10 @@
-"""
-Background generation of RAG lecture content and quizzes for unified goals.
-
-Generates lecture materials (rag_content) for the first five study plans of a
-learning goal, then creates one quiz per plan using the freshly generated content.
-Both phases run sequentially inside a single background task to stay within LLM
-rate limits and keep the database session consistent.
-"""
+"""Lazy generation of lecture content and a quiz for one requested study plan."""
 
 import asyncio
+import json
 
 from app.core.logging import get_logger
-from app.database.mongodb import get_mongodb_db
+from app.database.mongodb import make_mongodb_db
 from app.database.mysql import SessionLocal
 from app.repositories.plan_repository import plan_repository
 from app.repositories.quiz_repository import quiz_repository
@@ -32,10 +26,8 @@ _THEORY_SUBJECT_KEYWORDS = (
     "mác",
 )
 
-_PLANS_TO_GENERATE = 5
-_LECTURE_MIN_WORD_COUNT = 1500
-_BATCH_SLEEP_SECONDS = 0.05
-_RAG_TOP_K = 5
+_LECTURE_MIN_WORD_COUNT = 800
+_RAG_TOP_K = 3
 
 _SYSTEM_INSTRUCTION_THEORY = (
     "Bạn là một giáo sư đại học có thâm niên giảng dạy. Hãy viết tài liệu bài học bằng tiếng Việt "
@@ -82,7 +74,7 @@ def _build_rag_context(materials: list) -> str:
     from app.infrastructure.ai.safety import wrap_untrusted_context
 
     raw = "\n\n".join(m["content"] for m in materials if "content" in m)
-    return wrap_untrusted_context(raw)
+    return wrap_untrusted_context(raw, max_chars=10_000)
 
 
 def _build_lecture_user_message(plan_title: str, context_str: str) -> str:
@@ -108,7 +100,9 @@ def _build_lecture_user_message_no_rag(plan_title: str) -> str:
     )
 
 
-async def _generate_and_save_rag_content(db, plan, subject_id: int, sys_instruction: str) -> None:
+async def _generate_and_save_rag_content(
+    db, db_mongo, plan, subject_id: int, sys_instruction: str
+) -> None:
     """
     Retrieve RAG materials for *plan*, generate a lecture document, and
     persist it to the database.
@@ -117,8 +111,6 @@ async def _generate_and_save_rag_content(db, plan, subject_id: int, sys_instruct
     no documents indexed for this subject), the AI generates the lecture from
     its own academic knowledge so every plan always gets rag_content.
     """
-    db_mongo = get_mongodb_db()
-
     try:
         materials = await vector_search_materials(
             db_mongo=db_mongo,
@@ -130,56 +122,66 @@ async def _generate_and_save_rag_content(db, plan, subject_id: int, sys_instruct
         logger.error("[BG] RAG search failed for plan %d: %s", plan.id, exc)
         materials = []
 
-    from app.agents.roadmap_planner.agent import generate_lecture_material_agent
+    from app.infrastructure.ai.content import capture_ai_usage
+    from app.infrastructure.ai import generate_content_deepseek
+    from app.schemas.learning_bundle import LearningBundle
+    from app.services.ai_usage_service import build_usage_recorder
 
     context_str = _build_rag_context(materials) if materials else None
     try:
-        rag_content = await asyncio.to_thread(
-            generate_lecture_material_agent,
-            plan_title=plan.title,
-            system_instruction=sys_instruction,
-            context_str=context_str,
-        )
-        plan_repository.save_rag_content(db, plan, rag_content)
+        with capture_ai_usage(
+            build_usage_recorder("learning_bundle", goal_id=plan.goal_id, plan_id=plan.id)
+        ):
+            raw_bundle = await asyncio.to_thread(
+                generate_content_deepseek,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Táº¡o gÃ³i há»c táº­p cho chá»§ Ä‘á»: {plan.title}. "
+                        "BÃ i há»c 700-900 tá»«, tá»‘i Ä‘a 6 pháº§n Markdown. "
+                        "Táº¡o Ä‘ÃšNG 10 cÃ¢u há»i: CHÃNH XÃC 7 cÃ¢u tráº¯c nghiá»‡m "
+                        "4 lá»±a chá»n A-D vÃ  CHÃNH XÃC 3 cÃ¢u tá»± luáº­n. "
+                        "Má»i cÃ¢u pháº£i cÃ³ Ä‘Ã¡p Ã¡n vÃ  giáº£i thÃ­ch hoáº·c hÆ°á»›ng dáº«n cháº¥m ngáº¯n."
+                        + (f"\nTÃ i liá»‡u tham kháº£o:\n{context_str}" if context_str else "")
+                    ),
+                }],
+                system_instruction=sys_instruction,
+                response_schema=LearningBundle,
+                temperature=0.2,
+                max_tokens=4500,
+                request_timeout=120,
+            )
+        start = raw_bundle.find("{")
+        end = raw_bundle.rfind("}")
+        bundle = LearningBundle.model_validate(json.loads(raw_bundle[start : end + 1]))
+
+        # Enforce a storage/display budget even if the provider ignores max_tokens.
+        lesson = bundle.lesson_markdown[:20_000]
+        plan_repository.save_rag_content(db, plan, lesson)
+        plan.lesson_summary = bundle.lesson_summary[:6000]
+        if not quiz_repository.get_by_study_plan_id(db, plan.id):
+            questions = [question.model_dump() for question in bundle.questions]
+            quiz_repository.stage_ai_generated(
+                db,
+                student_id=plan.student_id,
+                subject_id=subject_id,
+                study_plan_id=plan.id,
+                title=bundle.quiz_title,
+                difficulty="medium",
+                questions=questions,
+            )
         db.commit()
         db.refresh(plan)
         logger.info(
-            "[BG] RAG content generated and committed for plan %d: %s",
+            "[BG] Learning bundle with 10 quiz questions committed for plan %d: %s",
             plan.id,
             plan.title,
         )
     except Exception as exc:
-        logger.error("[BG] RAG content generation failed for plan %d: %s", plan.id, exc)
-
-
-async def _generate_quiz_for_plan(db, db_mongo, plan, student_id: int, subject_id: int) -> None:
-    """
-    Generate and persist a quiz for *plan* if one does not already exist.
-
-    Skips silently when a quiz is already present; logs on generation failure
-    without propagating the exception so other plans are not blocked.
-    """
-    # Deferred to avoid a circular import between unified.materials and quiz_service.
-    from app.services.quiz_service import generate_and_save_quiz  # noqa: PLC0415
-
-    db.refresh(plan)
-    if quiz_repository.get_by_study_plan_id(db, plan.id):
-        return
-
-    try:
-        await generate_and_save_quiz(
-            db=db,
-            db_mongo=db_mongo,
-            student_id=student_id,
-            subject_id=subject_id,
-            topic=plan.title,
-            difficulty="medium",
-            total_questions=10,
-            study_plan_id=plan.id,
-        )
-        logger.info("[BG] Quiz generated for plan %d using its rag_content", plan.id)
-    except Exception as exc:
-        logger.error("[BG] Quiz generation failed for plan %d: %s", plan.id, exc)
+        plan_id = plan.id
+        db.rollback()
+        logger.error("[BG] RAG content generation failed for plan %d: %s", plan_id, exc)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -187,77 +189,22 @@ async def _generate_quiz_for_plan(db, db_mongo, plan, student_id: int, subject_i
 # ---------------------------------------------------------------------------
 
 
-async def generate_materials_and_quizzes_for_plans_bg(
-    goal_id: int, student_id: int, subject_id: int
-) -> None:
-    """
-    Background task: generate lecture content and quizzes for the first
-    ``_PLANS_TO_GENERATE`` study plans of a learning goal.
-
-    Phase 1 — Lecture content: for each plan, retrieve RAG source materials,
-    generate a detailed lecture document, and save it to the plan record.
-
-    Phase 2 — Quizzes: after all lecture documents are ready, generate one
-    quiz per plan using the freshly saved rag_content as context.
-
-    A small sleep between items (``_BATCH_SLEEP_SECONDS``) prevents hitting
-    rate limits when many plans are processed in rapid succession.
-    """
-    db = SessionLocal()
-    db_mongo = get_mongodb_db()
-
-    try:
-        plans = plan_repository.get_by_goal_and_student(db, goal_id, student_id)
-
-        subject_obj = subject_repository.get(db, subject_id)
-        subject_name = subject_obj.name if subject_obj else ""
-        sys_instruction = _lecture_system_instruction(_is_theory_subject(subject_name))
-
-        plans_to_generate = sorted(plans, key=lambda p: p.study_date)[:_PLANS_TO_GENERATE]
-
-        logger.info(
-            "[BG] Generating materials for goal %d — first %d of %d plans",
-            goal_id,
-            len(plans_to_generate),
-            len(plans),
-        )
-
-        # Sinh nối tiếp (Tài liệu -> Đề thi) cho từng task để học sinh mở task nào là có ngay bài thi cho task đó
-        for plan in plans_to_generate:
-            if not plan.rag_content:
-                await _generate_and_save_rag_content(db, plan, subject_id, sys_instruction)
-                await asyncio.sleep(_BATCH_SLEEP_SECONDS)
-
-            if not quiz_repository.get_by_study_plan_id(db, plan.id):
-                await _generate_quiz_for_plan(db, db_mongo, plan, student_id, subject_id)
-                await asyncio.sleep(_BATCH_SLEEP_SECONDS)
-
-        logger.info("[BG] Finished background generation for goal %d", goal_id)
-
-    except Exception as exc:
-        logger.exception(
-            "[BG] Critical error in background task for goal %d: %s", goal_id, exc
-        )
-        raise
-    finally:
-        db.close()
-
-
-async def generate_single_plan_material_bg(plan_id: int, student_id: int) -> None:
+async def generate_single_plan_material_bg(plan_id: int) -> None:
     """
     Background task: generate lecture content (rag_content) and quiz for a SINGLE plan on-demand.
     Triggered when a student clicks on a daily task whose material or quiz is not yet ready.
     """
     db = SessionLocal()
-    db_mongo = get_mongodb_db()
+    mongo_client, db_mongo = make_mongodb_db()
     try:
+        if not plan_repository.claim_generation(db, plan_id):
+            db.rollback()
+            return
+        db.commit()
+
         plan = plan_repository.get(db, plan_id)
         if not plan:
             return
-
-        # The plan row is authoritative. Never trust a queued/caller-supplied
-        # student id for ownership of generated quizzes.
-        student_id = plan.student_id
 
         subject_id = plan.subject_id
         subject_obj = subject_repository.get(db, subject_id) if subject_id else None
@@ -266,17 +213,23 @@ async def generate_single_plan_material_bg(plan_id: int, student_id: int) -> Non
 
         if not plan.rag_content:
             logger.info("[BG] On-demand generating material for plan %d: %s", plan.id, plan.title)
-            await _generate_and_save_rag_content(db, plan, subject_id or 0, sys_instruction)
+            await _generate_and_save_rag_content(
+                db, db_mongo, plan, subject_id or 0, sys_instruction
+            )
             db.refresh(plan)
 
-        if not quiz_repository.get_by_study_plan_id(db, plan.id):
-            logger.info("[BG] On-demand generating quiz for plan %d: %s", plan.id, plan.title)
-            await _generate_quiz_for_plan(db, db_mongo, plan, student_id, subject_id or 0)
-
-        logger.info("[BG] On-demand generation completed for plan %d", plan.id)
+        logger.info("[BG] Learning bundle generation completed for plan %d", plan.id)
+        plan_repository.finish_generation(db, plan)
+        db.commit()
     except Exception as exc:
+        db.rollback()
+        plan = plan_repository.get(db, plan_id)
+        if plan:
+            plan_repository.fail_generation(db, plan, str(exc))
+            db.commit()
         logger.exception("[BG] Error in on-demand generation for plan %d: %s", plan_id, exc)
         raise
     finally:
+        mongo_client.close()
         db.close()
 

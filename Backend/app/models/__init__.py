@@ -24,6 +24,7 @@ from app.models.quiz_attempt import QuizAttempt
 from app.models.learning_analytic import LearningAnalytic
 from app.models.notification import Notification
 from app.models.outbox_job import OutboxJob
+from app.models.ai_usage import AIUsage
 
 # ── MongoDB Models (Pydantic — không dùng SQLAlchemy) ────────
 from app.models.mongo import (
@@ -52,6 +53,7 @@ __all__ = [
     "LearningAnalytic",
     "Notification",
     "OutboxJob",
+    "AIUsage",
     # MongoDB
     "ChatSession",
     "ChatMessage",

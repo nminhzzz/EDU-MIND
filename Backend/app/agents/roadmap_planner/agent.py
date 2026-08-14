@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from typing import Any, Dict, Optional
 
 from app.infrastructure.ai import generate_content_deepseek, generate_content_deepseek_stream
+from app.infrastructure.ai.retry import is_retryable_ai_error
 from app.agents.tools.db_tools import get_recent_attempts_db, get_student_analytics_db
 from app.core.logging import get_logger
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
@@ -285,16 +286,22 @@ async def generate_unified_plan(
     ]
 
     last_error: Exception | None = None
-    for attempt in range(3):
+    max_attempts = 2
+    for attempt in range(max_attempts):
         try:
-            logger.debug("roadmap_planner: Calling generate_content_deepseek (attempt %d/3)...", attempt + 1)
-            response_text = generate_content_deepseek(
-                messages=messages,
-                system_instruction=system_instruction,
-                response_schema=UnifiedGoalPlanResponse,
-                temperature=0.2 + attempt * 0.1,
-                tools=None,
-            )
+            logger.debug("roadmap_planner: AI request attempt %d/%d", attempt + 1, max_attempts)
+            from app.infrastructure.ai.content import capture_ai_usage
+            from app.services.ai_usage_service import build_usage_recorder
+
+            with capture_ai_usage(build_usage_recorder("roadmap_draft")):
+                response_text = generate_content_deepseek(
+                    messages=messages,
+                    system_instruction=system_instruction,
+                    response_schema=UnifiedGoalPlanResponse,
+                    temperature=0.2 + attempt * 0.1,
+                    tools=None,
+                    max_tokens=4000,
+                )
             data = _parse_llm_roadmap_json(response_text)
             data = normalize_roadmap_keys(data)
             _reassign_daily_schedule_dates(
@@ -308,38 +315,10 @@ async def generate_unified_plan(
             raise ve
         except Exception as exc:
             last_error = exc
-            logger.warning("Roadmap Planner: attempt %d/3 failed: %s", attempt + 1, exc)
+            logger.warning("Roadmap Planner: attempt %d/%d failed: %s", attempt + 1, max_attempts, exc)
+            if not is_retryable_ai_error(exc):
+                break
 
     raise RuntimeError(
-        f"Không thể lập lộ trình học tập sau 3 lần thử. Lỗi cuối: {last_error}"
+        f"Không thể lập lộ trình học tập. Lỗi cuối: {last_error}"
     )
-
-
-def generate_lecture_material_agent(
-    plan_title: str,
-    system_instruction: str,
-    context_str: Optional[str] = None,
-) -> str:
-    """
-    AI Lecture Generation Agent: Generates detailed, structured lecture materials (markdown)
-    for a study plan using RAG context or general domain knowledge.
-    """
-    if context_str:
-        user_message = (
-            f"Dưới đây là các đoạn văn bản trích xuất từ giáo trình/tài liệu tham khảo liên quan:\n\n"
-            f"{context_str}\n\n"
-            f"Dựa trên các tài liệu trên và kiến thức chuyên môn của bạn, hãy viết tài liệu bài học "
-            f"hoàn chỉnh, sâu sắc và cực kỳ chi tiết cho chủ đề: \"{plan_title}\"."
-        )
-    else:
-        user_message = (
-            f"Hãy viết một bài giảng/tài liệu học tập hoàn chỉnh, chi tiết và sâu sắc cho chủ đề: \"{plan_title}\"."
-        )
-
-    return generate_content_deepseek(
-        messages=[{"role": "user", "content": user_message}],
-        system_instruction=system_instruction,
-        temperature=0.3,
-    )
-
-

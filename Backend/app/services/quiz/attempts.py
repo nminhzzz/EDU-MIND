@@ -148,6 +148,30 @@ def submit_quiz_attempt(
             plan_repository.mark_completed(
                 db, plan, student_id, datetime.now(timezone.utc)
             )
+            next_plans = [
+                candidate
+                for candidate in plan_repository.get_by_goal_and_student(
+                    db, plan.goal_id, student_id
+                )
+                if candidate.id != plan.id
+                and candidate.generation_status == "not_started"
+                and candidate.study_date >= plan.study_date
+            ]
+            next_plan = (
+                min(next_plans, key=lambda item: (item.study_date, item.start_time))
+                if next_plans
+                else None
+            )
+            if next_plan and plan_repository.queue_generation(db, next_plan):
+                stage_outbox_job(
+                    db,
+                    task_name="app.workers.tasks.task_generate_single_plan_material",
+                    args=[next_plan.id],
+                    unique_key=(
+                        f"plan-generation:{next_plan.id}:"
+                        f"{next_plan.generation_attempts}"
+                    ),
+                )
             commit_or_rollback(db)
 
     return db_attempt, quiz.title or "Đề thi", quiz.questions or [], answers_json

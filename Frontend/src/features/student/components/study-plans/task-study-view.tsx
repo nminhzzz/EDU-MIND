@@ -9,6 +9,7 @@ import { TaskStudyFooter } from "./task-study-footer";
 import { TaskStudyHeader } from "./task-study-header";
 import { TaskStudyTabs } from "./task-study-tabs";
 import { Sparkles } from "lucide-react";
+import { studyPlanApi } from "@/services/study-plan";
 
 interface TaskStudyViewProps {
   task: StudyPlan;
@@ -22,21 +23,36 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
     onRefresh,
   );
 
+  // Start lazily only when the learner opens this task. The backend transition
+  // and outbox unique key make this safe under React Strict Mode.
+  useEffect(() => {
+    if (!task.ai_generated || task.rag_content || task.lesson_status !== "not_started") return;
+    void studyPlanApi
+      .startGeneration(task.id)
+      .then(() => onRefresh?.(true))
+      .catch(() => undefined);
+  }, [task.id, task.ai_generated, task.rag_content, task.lesson_status, onRefresh]);
+
   // Tự động tải lại thông tin nhiệm vụ nếu chưa có tài liệu lý thuyết (AI đang sinh ngầm ở background)
   useEffect(() => {
-    if (task.rag_content) return;
+    if (
+      task.rag_content ||
+      task.lesson_status === "failed" ||
+      task.lesson_status === "not_started"
+    ) return;
 
     const interval = setInterval(() => {
       if (onRefresh) {
         onRefresh(true); // Gọi silent refresh (không hiện màn hình loading chính)
       }
-    }, 4000);
+    }, 6000);
 
     return () => clearInterval(interval);
-  }, [task.rag_content, onRefresh]);
+  }, [task.rag_content, task.lesson_status, onRefresh]);
 
   // Nếu bài học do AI sinh và tài liệu lý thuyết chưa hoàn thành
   if (task.ai_generated && !task.rag_content) {
+    const failed = task.lesson_status === "failed";
     return (
       <div className="flex flex-col min-h-[calc(100vh-8rem)] border border-zinc-200/80 dark:border-zinc-800 rounded-md overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
         <TaskStudyHeader title={task.title} backHref={backHref} />
@@ -51,12 +67,25 @@ export function TaskStudyView({ task, backHref, onRefresh }: TaskStudyViewProps)
           
           <div className="space-y-2 max-w-md">
             <h3 className="text-base font-extrabold text-zinc-800 dark:text-zinc-150">
-              AI đang chuẩn bị nội dung bài học...
+              {failed ? "Không thể tạo nội dung bài học" : "AI đang chuẩn bị nội dung bài học..."}
             </h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed font-semibold">
-              Hệ thống đang tự động soạn thảo bài giảng lý thuyết chi tiết và thiết kế đề kiểm tra nhanh cho chủ đề này.
-              Quá trình này thường mất từ 30–60 giây. Bài học sẽ tự động mở ra ngay khi hoàn tất!
+              {failed
+                ? "Dịch vụ AI gặp lỗi. Bạn có thể thử lại mà không tạo job trùng."
+                : "Hệ thống đang soạn bài giảng và bài kiểm tra. Trang sẽ tự cập nhật khi hoàn tất."}
             </p>
+            {failed && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await studyPlanApi.retryGeneration(task.id);
+                  onRefresh?.(true);
+                }}
+                className="mt-4 px-4 py-2 rounded-md bg-indigo-600 text-white text-xs font-bold"
+              >
+                Thử tạo lại
+              </button>
+            )}
           </div>
 
           <div className="pt-2">

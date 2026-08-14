@@ -120,6 +120,7 @@ def get_langchain_deepseek(temperature: float = 0.2, **kwargs):
         openai_api_base=settings.AI_BASE_URL,
         temperature=temperature,
         request_timeout=kwargs.pop("request_timeout", 180),
-        max_retries=kwargs.pop("max_retries", 1),
+        # Explicit use-case retry policy prevents SDK and agent retries from multiplying.
+        max_retries=kwargs.pop("max_retries", 0),
         **kwargs,
     )

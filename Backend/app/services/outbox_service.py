@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 MAX_DISPATCH_ATTEMPTS = 20
 ALLOWED_TASKS = frozenset(
     {
-        "app.workers.tasks.task_generate_plan_materials",
+        "app.workers.tasks.task_generate_single_plan_material",
         "app.workers.tasks.task_generate_attempt_assessment",
         "app.workers.tasks.task_update_analytics",
         "app.workers.tasks.task_index_study_document",

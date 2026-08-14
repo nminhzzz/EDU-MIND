@@ -4,7 +4,7 @@ Unified AI Flow endpoints (Phase 1 + 2 + 3):
     POST /api/v1/goals/unified/confirm  — Persist the draft to MySQL
 """
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_student, get_db, rate_limiter
@@ -14,7 +14,6 @@ from app.schemas.study_goal import StudyGoalConfirm, StudyGoalDraftCreate
 from app.services.subject_service import get_subject
 from app.services.unified_service import (
     confirm_unified_draft,
-    generate_materials_and_quizzes_for_plans_bg,
     generate_unified_draft,
     validate_goal_deadline,
 )
@@ -68,7 +67,6 @@ async def create_or_update_unified_draft(
 )
 async def confirm_unified(
     body: StudyGoalConfirm,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ) -> dict:

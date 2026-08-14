@@ -3,44 +3,23 @@ Unified goal confirmation — persist draft directly into MySQL.
 """
 
 from datetime import datetime, date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import GoalStatus, PlanStatus
 from app.core.logging import get_logger
 from app.database.unit_of_work import commit_or_rollback
-from app.models.quiz import Quiz
 from app.models.study_goal import StudyGoal
 from app.models.study_plan import StudyPlan
 from app.models.subject import Subject
 from app.models.user import User
 from app.repositories.goal_repository import goal_repository
-from app.services.outbox_service import stage_outbox_job
+from app.repositories.plan_repository import plan_repository
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
+from app.services.outbox_service import stage_outbox_job
 
 logger = get_logger(__name__)
-
-_QUIZ_TITLE_NOISE = [
-    "quiz",
-    "bài kiểm tra",
-    "tuần",
-    "luyện tập",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "0",
-    ":",
-    "-",
-    "_",
-]
-
 
 def _cancel_active_goals(
     db: Session, student_id: int, subject_id: int
@@ -96,66 +75,6 @@ def _create_study_plans(
     return db_plans
 
 
-def _match_quiz_to_plan(quiz_title: str, db_plans: List[StudyPlan]) -> Optional[int]:
-    clean_quiz_title = quiz_title.lower()
-    for token in _QUIZ_TITLE_NOISE:
-        clean_quiz_title = clean_quiz_title.replace(token, "")
-    clean_quiz_title = clean_quiz_title.strip()
-
-    for plan in db_plans:
-        if len(clean_quiz_title) >= 3 and (
-            clean_quiz_title in plan.title.lower()
-            or plan.title.lower() in clean_quiz_title
-        ):
-            return plan.id
-
-    return db_plans[-1].id if db_plans else None
-
-
-def _persist_plan_quizzes(
-    db: Session,
-    plan: UnifiedGoalPlanResponse,
-    db_plans: List[StudyPlan],
-    student_id: int,
-    subject_id: int,
-) -> int:
-    total_quizzes = 0
-
-    for quiz_item in plan.quizzes:
-        questions_json = []
-        for q in quiz_item.questions:
-            options_data = (
-                [{"key": opt.key, "value": opt.value} for opt in q.options]
-                if q.options
-                else []
-            )
-            questions_json.append(
-                {
-                    "question_text": q.question_text,
-                    "options": options_data,
-                    "correct_answer": q.correct_answer,
-                    "explanation": q.explanation,
-                }
-            )
-
-        matched_plan_id = _match_quiz_to_plan(quiz_item.title, db_plans)
-
-        db_quiz = Quiz(
-            student_id=student_id,
-            subject_id=subject_id,
-            study_plan_id=matched_plan_id,
-            title=quiz_item.title,
-            difficulty="medium",
-            total_questions=len(questions_json),
-            questions=questions_json,
-            generated_by_ai=True,
-        )
-        db.add(db_quiz)
-        total_quizzes += 1
-
-    return total_quizzes
-
-
 async def confirm_unified_draft(
     db: Session,
     student: User,
@@ -181,16 +100,20 @@ async def confirm_unified_draft(
     db.flush()
 
     db_plans = _create_study_plans(db, plan, db_goal.id, student.id)
-    total_quizzes = _persist_plan_quizzes(
-        db, plan, db_plans, student.id, subject_obj.id
-    )
+    total_quizzes = 0
 
-    stage_outbox_job(
-        db,
-        task_name="app.workers.tasks.task_generate_plan_materials",
-        args=[db_goal.id, student.id, subject_obj.id],
-        unique_key=f"goal-materials:{db_goal.id}",
+    first_plan = (
+        min(db_plans, key=lambda item: (item.study_date, item.start_time))
+        if db_plans
+        else None
     )
+    if first_plan and plan_repository.queue_generation(db, first_plan):
+        stage_outbox_job(
+            db,
+            task_name="app.workers.tasks.task_generate_single_plan_material",
+            args=[first_plan.id],
+            unique_key=f"plan-generation:{first_plan.id}:{first_plan.generation_attempts}",
+        )
 
     commit_or_rollback(db)
     db.refresh(db_goal)

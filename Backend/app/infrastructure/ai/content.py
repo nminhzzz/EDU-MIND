@@ -8,7 +8,9 @@ transport layer in nim_client.py — this module stays provider-agnostic.
 """
 
 import json
-from typing import Any, Dict, Generator, List, Optional
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 from pydantic import BaseModel
 
@@ -17,6 +19,45 @@ from app.core.logging import get_logger
 from app.infrastructure.ai.nim_client import get_langchain_deepseek, get_deepseek_client
 
 logger = get_logger(__name__)
+_usage_recorder: ContextVar[Optional[Callable[[dict], None]]] = ContextVar(
+    "ai_usage_recorder", default=None
+)
+
+
+@contextmanager
+def capture_ai_usage(recorder: Callable[[dict], None]):
+    token = _usage_recorder.set(recorder)
+    try:
+        yield
+    finally:
+        _usage_recorder.reset(token)
+
+
+def _record_response_usage(response: Any) -> None:
+    recorder = _usage_recorder.get()
+    if recorder is None:
+        return
+    usage = getattr(response, "usage_metadata", None) or {}
+    response_metadata = getattr(response, "response_metadata", None) or {}
+    token_usage = response_metadata.get("token_usage", {})
+    prompt_tokens = usage.get("input_tokens", token_usage.get("prompt_tokens", 0)) or 0
+    completion_tokens = usage.get("output_tokens", token_usage.get("completion_tokens", 0)) or 0
+    payload = {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": (
+            usage.get("total_tokens", token_usage.get("total_tokens", 0))
+            or prompt_tokens + completion_tokens
+        ),
+        "cached_tokens": (
+            usage.get("input_token_details", {}).get("cache_read", 0)
+            or token_usage.get("prompt_cache_hit_tokens", 0)
+        ),
+    }
+    try:
+        recorder(payload)
+    except Exception:
+        logger.exception("Could not persist AI usage metadata")
 
 
 # ---------------------------------------------------------------------------
@@ -76,10 +117,22 @@ def _build_schema_instruction(response_schema: Optional[Any]) -> str:
         else:
             return ""
 
+        def compact(value):
+            if isinstance(value, dict):
+                return {
+                    key: compact(item)
+                    for key, item in value.items()
+                    if key not in {"title", "description", "default", "examples"}
+                }
+            if isinstance(value, list):
+                return [compact(item) for item in value]
+            return value
+
+        json_schema = compact(json_schema)
         return (
             "\n\n[CRITICAL FORMATTING REQUIREMENT]\n"
             "Bạn PHẢI trả về một đối tượng JSON hợp lệ khớp chính xác 100% với JSON Schema dưới đây:\n"
-            f"{json.dumps(json_schema, ensure_ascii=False, indent=2)}\n"
+            f"{json.dumps(json_schema, ensure_ascii=False, separators=(',', ':'))}\n"
             "Hãy chắc chắn tất cả các trường bắt buộc (required) đều có mặt và đúng kiểu dữ liệu. "
             "Chỉ trả về JSON thuần túy, tuyệt đối không kèm lời dẫn hay ký tự định dạng nào khác ngoài JSON."
         )
@@ -109,6 +162,7 @@ def generate_content_deepseek(
     temperature: float = 0.7,
     tools: Optional[List[Any]] = None,
     max_tokens: Optional[int] = None,
+    request_timeout: int = 150,
 ) -> str:
     """
     Call the configured OpenAI-compatible AI provider via LangChain (sync).
@@ -123,7 +177,11 @@ def generate_content_deepseek(
     if max_tokens:
         extra_params["max_tokens"] = max_tokens
 
-    llm = get_langchain_deepseek(temperature=temperature, **extra_params)
+    llm = get_langchain_deepseek(
+        temperature=temperature,
+        request_timeout=request_timeout,
+        **extra_params,
+    )
 
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
@@ -131,23 +189,20 @@ def generate_content_deepseek(
     sys_instruction_text = formatted_messages[0]["content"] if formatted_messages else ""
     user_msgs_text = json.dumps(formatted_messages[1:], ensure_ascii=False, indent=2) if len(formatted_messages) > 1 else ""
 
-    print(
-        f"\n============================== [PROMPT SENT TO LANGCHAIN LLM] ==============================\n"
-        f"SYSTEM INSTRUCTION / PROMPT:\n{sys_instruction_text}\n\n"
-        f"USER MESSAGES:\n{user_msgs_text}\n"
-        f"================================================================================================",
-        flush=True,
-    )
     logger.info(
-        "PROMPT SENT TO LANGCHAIN LLM:\n%s\n%s",
-        sys_instruction_text,
-        user_msgs_text,
+        "AI request prepared: system_chars=%d user_chars=%d",
+        len(sys_instruction_text),
+        len(user_msgs_text),
     )
 
     if tools:
-        return llm.bind_tools(tools).invoke(formatted_messages).content
+        response = llm.bind_tools(tools).invoke(formatted_messages)
+        _record_response_usage(response)
+        return response.content
 
-    return llm.invoke(formatted_messages).content
+    response = llm.invoke(formatted_messages)
+    _record_response_usage(response)
+    return response.content
 
 
 def generate_content_deepseek_stream(
@@ -178,16 +233,22 @@ async def generate_content_deepseek_async(
     response_schema: Optional[Any] = None,
     temperature: float = 0.7,
     max_tokens: Optional[int] = None,
+    request_timeout: int = 150,
 ) -> str:
     """Async version of ``generate_content_deepseek`` — see sync version for full docs."""
     extra_params: Dict[str, Any] = {}
     if max_tokens:
         extra_params["max_tokens"] = max_tokens
 
-    llm = get_langchain_deepseek(temperature=temperature, **extra_params)
+    llm = get_langchain_deepseek(
+        temperature=temperature,
+        request_timeout=request_timeout,
+        **extra_params,
+    )
 
     schema_instruction = _build_schema_instruction(response_schema)
     formatted_messages = _format_messages(messages, system_instruction, schema_instruction)
 
     response = await llm.ainvoke(formatted_messages)
+    _record_response_usage(response)
     return response.content

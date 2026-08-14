@@ -43,9 +43,9 @@ async def generate_and_save_quiz(
     if study_plan_id:
         from app.models.study_plan import StudyPlan
         plan = db.query(StudyPlan).filter(StudyPlan.id == study_plan_id).first()
-        if plan and plan.rag_content:
+        if plan and (plan.lesson_summary or plan.rag_content):
             logger.info("Sinh đề thi: Sử dụng trực tiếp lý thuyết (rag_content) của study plan %d làm ngữ cảnh.", study_plan_id)
-            context = plan.rag_content
+            context = plan.lesson_summary or plan.rag_content[:6000]
 
     if not context:
         logger.info("Sinh đề thi: Không có rag_content sẵn, chạy tìm kiếm vector MongoDB cho chủ đề: %s", topic)

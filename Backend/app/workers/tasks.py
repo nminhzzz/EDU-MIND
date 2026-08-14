@@ -143,45 +143,6 @@ def task_update_analytics(
 
 
 @celery.task(
-    name="app.workers.tasks.task_generate_plan_materials",
-    bind=True,
-    max_retries=2,
-    default_retry_delay=60,
-)
-def task_generate_plan_materials(
-    self, goal_id: int, student_id: int, subject_id: int
-) -> dict:
-    """
-    Generate RAG content and quizzes for all plans linked to a goal in the background.
-    Called after the user confirms a new unified learning goal.
-    The service function opens its own DB/Mongo sessions internally.
-    """
-    from app.services.unified_service import generate_materials_and_quizzes_for_plans_bg
-
-    lock_key = f"goal_materials:{goal_id}"
-    lock_token = _acquire_task_lock(lock_key, 1800)
-    if not lock_token:
-        return {"status": "already_running", "goal_id": goal_id}
-
-    logger.info(
-        "task_generate_plan_materials: student=%d goal=%d subject=%d",
-        student_id, goal_id, subject_id,
-    )
-    try:
-        asyncio.run(
-            generate_materials_and_quizzes_for_plans_bg(
-                goal_id=goal_id, student_id=student_id, subject_id=subject_id
-            )
-        )
-        return {"status": "ok", "goal_id": goal_id}
-    except Exception as exc:
-        logger.error("task_generate_plan_materials failed: %s", exc)
-        raise self.retry(exc=exc)
-    finally:
-        _release_task_lock(lock_key, lock_token)
-
-
-@celery.task(
     name="app.workers.tasks.task_generate_attempt_assessment",
     bind=True,
     max_retries=3,
@@ -220,22 +181,14 @@ def task_generate_attempt_assessment(self, attempt_id: int) -> None:
 @celery.task(
     name="app.workers.tasks.task_generate_single_plan_material",
     bind=True,
-    max_retries=2,
-    default_retry_delay=60,
+    max_retries=0,
+    soft_time_limit=150,
+    time_limit=180,
 )
-def task_generate_single_plan_material(self, plan_id: int, student_id: int) -> None:
+def task_generate_single_plan_material(self, plan_id: int) -> None:
     from app.services.unified.materials import generate_single_plan_material_bg
 
-    lock_key = f"plan_material:{plan_id}"
-    lock_token = _acquire_task_lock(lock_key, 1200)
-    if not lock_token:
-        return
-    try:
-        asyncio.run(generate_single_plan_material_bg(plan_id, student_id))
-    except Exception as exc:
-        raise self.retry(exc=exc)
-    finally:
-        _release_task_lock(lock_key, lock_token)
+    asyncio.run(generate_single_plan_material_bg(plan_id))
 
 
 @celery.task(

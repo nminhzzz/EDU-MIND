@@ -5,12 +5,11 @@ API quản lý kế hoạch học tập chi tiết hàng ngày (Study Plans).
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_student, get_db
 from app.database.redis import get_redis
-from app.core.logging import get_logger
 from app.models.user import User
 from app.schemas.study_plan import StudyPlanResponse, StudyPlanUpdate
 from app.services.plan_service import (
@@ -18,9 +17,9 @@ from app.services.plan_service import (
     list_student_plans,
     update_student_plan,
 )
+from app.services.plan_generation_service import request_plan_generation
 
 router = APIRouter()
-logger = get_logger(__name__)
 
 
 @router.get(
@@ -53,29 +52,55 @@ def get_my_plans(
 )
 def get_plan_detail(
     plan_id: int,
-    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
+    try:
+        return get_student_plan(db, plan_id, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/{plan_id}/generation",
+    response_model=StudyPlanResponse,
+    summary="Start lazy AI generation for one study plan",
+)
+def start_plan_generation(
+    plan_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ):
     try:
         plan = get_student_plan(db, plan_id, current_user.id)
-        from app.repositories.quiz_repository import quiz_repository
-        has_quiz = bool(quiz_repository.get_by_study_plan_id(db, plan.id))
-        
-        if plan.ai_generated and (not plan.rag_content or not has_quiz):
-            redis = get_redis()
-            enqueue_key = f"enqueue:plan_material:{plan.id}"
-            if redis.set(enqueue_key, "1", nx=True, ex=1200):
-                try:
-                    from app.workers.tasks import task_generate_single_plan_material
-
-                    task_generate_single_plan_material.delay(plan.id, current_user.id)
-                except Exception:
-                    redis.delete(enqueue_key)
-                    logger.exception("Could not enqueue material generation for plan %d", plan.id)
+        if not plan.ai_generated:
+            raise HTTPException(status_code=400, detail="Task does not use AI-generated content.")
+        request_plan_generation(db, plan, recover_stale=True)
         return plan
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/{plan_id}/generation/retry",
+    response_model=StudyPlanResponse,
+    summary="Thử lại việc sinh nội dung cho một task bị lỗi",
+)
+def retry_plan_generation(
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
+    try:
+        plan = get_student_plan(db, plan_id, current_user.id)
+        if not plan.ai_generated:
+            raise HTTPException(status_code=400, detail="Task này không sử dụng nội dung AI.")
+        if plan.generation_status not in {"failed", "not_started"}:
+            return plan
+        request_plan_generation(db, plan)
+        return plan
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.patch(

@@ -25,6 +25,7 @@ from app.agents.quiz_generator.prompts import (
 from app.agents.quiz_generator.schemas import QuizQuestionItem, QuizResponse
 from app.core.logging import get_logger
 from app.infrastructure.ai import generate_content_deepseek
+from app.infrastructure.ai.retry import is_retryable_ai_error
 
 logger = get_logger(__name__)
 
@@ -32,7 +33,7 @@ logger = get_logger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-_MAX_RETRY_ATTEMPTS = 3
+_MAX_RETRY_ATTEMPTS = 2
 _BATCH_THRESHOLD = 50          # questions above this trigger parallel batching
 _MIN_ACCEPTABLE_RATIO = 0.7   # accept at least 70 % of requested questions
 _OPTION_KEYS = ["A", "B", "C", "D", "E", "F"]
@@ -240,6 +241,7 @@ def _call_llm_with_retry(
                 system_instruction=system_instruction,
                 response_schema=QuizResponse,
                 temperature=temperature,
+                max_tokens=2500,
             )
         except Exception as exc:
             last_error = exc
@@ -249,6 +251,8 @@ def _call_llm_with_retry(
                 _MAX_RETRY_ATTEMPTS,
                 exc,
             )
+            if not is_retryable_ai_error(exc):
+                break
 
     raise RuntimeError(
         f"Quiz generation failed after {_MAX_RETRY_ATTEMPTS} attempts. "
@@ -433,6 +437,7 @@ def generate_quiz(
                 system_instruction=_SYSTEM_INSTRUCTION_GENERATE,
                 response_schema=QuizResponse,
                 temperature=0.3 + attempt * 0.1,
+                max_tokens=2500,
             )
             quiz = _parse_and_validate_quiz(raw_response)
 
@@ -464,6 +469,8 @@ def generate_quiz(
                 _MAX_RETRY_ATTEMPTS,
                 exc,
             )
+            if not is_retryable_ai_error(exc):
+                break
 
     raise RuntimeError(
         f"Quiz generation failed after {_MAX_RETRY_ATTEMPTS} attempts. "
