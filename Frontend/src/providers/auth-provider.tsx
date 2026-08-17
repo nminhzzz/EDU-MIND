@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { User, AuthState, RegisterRequest } from "@/types/user";
 import { userApi } from "@/services/user";
 import { ROUTES } from "@/constants/routes";
@@ -29,8 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     isLoading: true,
   });
-  const router = useRouter();
-
   const updateCurrentUser = (partialUser: Partial<User>) => {
     setState((prev) => {
       if (!prev.user) return prev;
@@ -122,7 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isLoading: false,
       });
-      router.push(ROUTES.LOGIN);
+      // A full navigation prevents the protected dashboard guard from racing
+      // logout and producing /login?redirect=/student. The middleware consumes
+      // logged_out, clears stale cookies, then redirects to the clean /login URL.
+      window.location.replace(`${ROUTES.LOGIN}?logged_out=1`);
     }
   };
 
