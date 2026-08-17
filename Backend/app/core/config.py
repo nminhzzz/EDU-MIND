@@ -10,7 +10,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        # Runtime configuration has one source: process environment variables.
+        # Docker Compose loads the repository-root .env file. Local commands
+        # outside Docker should use: uvicorn --env-file ../.env ...
+        extra="ignore"
     )
     PROJECT_NAME: str = "AI Learning Assistant Platform"
     API_V1_STR: str = "/api/v1"
@@ -110,6 +113,12 @@ class Settings(BaseSettings):
                 raise ValueError("Production APP_URL must use HTTPS")
         if self.MAIL_STARTTLS and self.MAIL_SSL_TLS:
             raise ValueError("MAIL_STARTTLS and MAIL_SSL_TLS cannot both be enabled")
+        if self.ACCESS_TOKEN_EXPIRE_MINUTES <= 0:
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be positive")
+        if self.REFRESH_TOKEN_EXPIRE_DAYS <= 0:
+            raise ValueError("REFRESH_TOKEN_EXPIRE_DAYS must be positive")
+        if self.ACCESS_TOKEN_EXPIRE_MINUTES >= self.REFRESH_TOKEN_EXPIRE_DAYS * 1440:
+            raise ValueError("Access token must expire before refresh token")
         if self.DB_POOL_SIZE < 1 or self.DB_MAX_OVERFLOW < 0:
             raise ValueError("Database pool sizes must be valid")
         return self

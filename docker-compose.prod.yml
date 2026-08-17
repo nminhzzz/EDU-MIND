@@ -18,7 +18,7 @@ services:
   migrate:
     build: {context: ./Backend, dockerfile: Dockerfile.prod}
     entrypoint: ["python", "pre_start.py"]
-    env_file: [.env, ./Backend/.env, .env.production.local]
+    env_file: [.env]
     environment: &backend-environment
       ENVIRONMENT: production
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db:3306/${MYSQL_DATABASE:-learning_db}
@@ -31,7 +31,7 @@ services:
 
   backend:
     build: {context: ./Backend, dockerfile: Dockerfile.prod}
-    env_file: [.env, ./Backend/.env, .env.production.local]
+    env_file: [.env]
     environment:
       <<: *backend-environment
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
@@ -130,7 +130,7 @@ services:
   celery-worker:
     build: {context: ./Backend, dockerfile: Dockerfile.prod}
     entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "worker", "--loglevel=info", "-Q", "ai_tasks,default", "--concurrency=${CELERY_CONCURRENCY:-2}", "--max-tasks-per-child=${CELERY_MAX_TASKS_PER_CHILD:-100}"]
-    env_file: [.env, ./Backend/.env, .env.production.local]
+    env_file: [.env]
     environment: *backend-environment
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -147,7 +147,7 @@ services:
   celery-beat:
     build: {context: ./Backend, dockerfile: Dockerfile.prod}
     entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
-    env_file: [.env, ./Backend/.env, .env.production.local]
+    env_file: [.env]
     environment: *backend-environment
     depends_on:
       migrate: {condition: service_completed_successfully}
