@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.subject import SubjectResponse
+
 
 class TopicScoreItem(BaseModel):
     topic: str
@@ -16,6 +18,7 @@ class LearningAnalyticResponse(BaseModel):
     id: int
     student_id: int
     subject_id: int
+    subject: Optional[SubjectResponse] = None
     average_score: float
     quizzes_completed: int
     weak_topics: List[Dict[str, Any]] = []
