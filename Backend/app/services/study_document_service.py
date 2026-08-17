@@ -4,7 +4,9 @@ Study document use cases — upload, list, delete with RAG embedding sync.
 
 import os
 import re
+import time
 from typing import Any, List, Optional
+from urllib.parse import unquote
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -86,7 +88,9 @@ async def upload_study_document(
     file_bytes = await file.read()
     file.file.seek(0)
 
-    file_url = upload_file_helper(file)
+    file_url = upload_file_helper(
+        file, folder="study_documents", restricted=True
+    )
     file_type = (
         os.path.splitext(file.filename or "file")[1].replace(".", "").lower()
         or "binary"
@@ -167,10 +171,24 @@ def list_study_documents(
     return study_document_repository.list_all(db, subject_id=subject_id)
 
 
-def _cloudinary_public_id(file_url: str) -> Optional[str]:
-    """Extract Cloudinary public_id from a delivery URL."""
-    match = re.search(r"/upload/(?:s--[^/]+--/)?(?:v\d+/)?(.+)$", file_url)
-    return match.group(1) if match else None
+def _cloudinary_asset_parts(
+    file_url: str, file_type: str
+) -> Optional[tuple[str, str, str]]:
+    """Return resource type, delivery type and extension-free public ID."""
+    clean_url = file_url.split("?", 1)[0]
+    match = re.search(
+        r"/(image|video|raw)/(upload|private|authenticated)/"
+        r"(?:s--[^/]+--/)?(?:v\d+/)?(.+)$",
+        clean_url,
+    )
+    if not match:
+        return None
+    resource_type, delivery_type, public_id = match.groups()
+    public_id = unquote(public_id)
+    suffix = f".{(file_type or '').lower().lstrip('.')}"
+    if suffix != "." and public_id.lower().endswith(suffix):
+        public_id = public_id[: -len(suffix)]
+    return resource_type, delivery_type, public_id
 
 
 def _configure_cloudinary() -> None:
@@ -184,36 +202,42 @@ def _configure_cloudinary() -> None:
     )
 
 
-def _ensure_cloudinary_extension(file_url: str, file_type: str) -> str:
-    """Raw Cloudinary public_ids omit extensions — append for public delivery."""
-    ft = (file_type or "").lower().lstrip(".")
-    if not ft or not file_url.startswith("http"):
-        return file_url
-
-    base, _, query = file_url.partition("?")
-    last_segment = base.rsplit("/", 1)[-1]
-    if "." in last_segment:
-        return file_url
-
-    suffix = f".{ft}"
-    if query:
-        return f"{base}{suffix}?{query}"
-    return f"{base}{suffix}"
-
-
 def get_document_view_url(doc: StudyDocument) -> str:
-    """Return the Cloudinary (or local static) URL to open in the browser."""
+    """Return a short-lived Cloudinary URL or an authorized local endpoint."""
     file_path = doc.file_path
 
-    # Use Cloudinary secure_url as stored — appending .pdf breaks some raw assets (404).
     if file_path.startswith("http"):
-        return file_path
+        parts = _cloudinary_asset_parts(file_path, doc.file_type)
+        if not parts:
+            raise ValueError("URL lưu trữ tài liệu không thuộc Cloudinary hợp lệ.")
+        resource_type, delivery_type, public_id = parts
+        _configure_cloudinary()
+        import cloudinary.utils
 
-    if file_path.startswith("/static/"):
-        base = settings.API_V1_STR.replace("/api/v1", "")
-        return f"{base}{file_path}"
+        if resource_type == "image":
+            # PDFs stored as image assets keep application/pdf and render in
+            # the browser's native viewer instead of forcing a download.
+            return cloudinary.utils.cloudinary_url(
+                public_id,
+                format=(doc.file_type or "pdf").lower().lstrip("."),
+                resource_type=resource_type,
+                type=delivery_type,
+                sign_url=True,
+                secure=True,
+            )[0]
 
-    return file_path
+        # Raw/office assets are downloads by nature. They still bypass the app
+        # server through a short-lived Cloudinary API URL.
+        return cloudinary.utils.private_download_url(
+            public_id,
+            format=(doc.file_type or "pdf").lower().lstrip("."),
+            resource_type=resource_type,
+            type=delivery_type,
+            expires_at=int(time.time()) + 600,
+            attachment=False,
+        )
+
+    return f"{settings.API_V1_STR}/documents/{doc.id}/file"
 
 
 def _media_type_for(file_type: str) -> str:
@@ -231,11 +255,6 @@ def _uploads_root() -> str:
     return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
 
 
-def _local_disk_path(doc: StudyDocument) -> str:
-    rel = doc.file_path.removeprefix("/static/")
-    return os.path.join(_uploads_root(), rel)
-
-
 def _fetch_cloudinary_bytes(doc: StudyDocument) -> bytes:
     """Download raw file bytes from Cloudinary using authenticated URLs."""
     import urllib.request
@@ -244,21 +263,25 @@ def _fetch_cloudinary_bytes(doc: StudyDocument) -> bytes:
 
     _configure_cloudinary()
     file_path = doc.file_path
-    public_id = _cloudinary_public_id(file_path) or ""
-    base_id = public_id.rsplit(".", 1)[0] if "." in public_id else public_id
+    parts = _cloudinary_asset_parts(file_path, doc.file_type)
+    public_id = parts[2] if parts else ""
+    resource_type = parts[0] if parts else "raw"
+    delivery_type = parts[1] if parts else "upload"
+    base_id = public_id
     fmt = doc.file_type or "pdf"
 
     candidates = []
     if base_id:
         candidates.append(
             cloudinary.utils.private_download_url(
-                base_id, format=fmt, resource_type="raw"
+                base_id,
+                format=fmt,
+                resource_type=resource_type,
+                type=delivery_type,
+                expires_at=int(time.time()) + 600,
+                attachment=False,
             )
         )
-    if file_path.startswith("http"):
-        candidates.append(file_path)
-        candidates.append(_ensure_cloudinary_extension(file_path, fmt))
-
     last_error: Exception | None = None
     for url in dict.fromkeys(candidates):
         try:

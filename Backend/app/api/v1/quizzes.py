@@ -41,11 +41,103 @@ from app.repositories.classroom_student_repository import classroom_student_repo
 from app.models.classroom_student import ClassroomStudent
 from app.models.quiz import Quiz
 from app.infrastructure.uploader import validate_file_signature
+from app.services.ai_job_service import create_ai_job, serialize_ai_job
 
 router = APIRouter()
 
 # Deduplicate self-healing background tasks cho AI assessment
 _ai_assessment_healing: set[int] = set()
+
+
+def _assert_classroom_teacher(db: Session, classroom_id: int, user: User):
+    classroom = classroom_repository.get(db, classroom_id)
+    if not classroom:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lớp học.")
+    if classroom.teacher_id != user.id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Bạn không phải là giáo viên của lớp học này.")
+    return classroom
+
+
+@router.post("/classrooms/{classroom_id}/generate-job", status_code=status.HTTP_202_ACCEPTED)
+def enqueue_classroom_quiz(
+    classroom_id: int,
+    body: ClassroomQuizCreateRequest,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+) -> dict:
+    _assert_classroom_teacher(db, classroom_id, current_teacher)
+    payload = body.model_dump(mode="json")
+    payload["classroom_id"] = classroom_id
+    job = create_ai_job(db, user_id=current_teacher.id, job_type="classroom_quiz", payload=payload)
+    return serialize_ai_job(job)
+
+
+@router.post("/classrooms/{classroom_id}/generate-from-file-job", status_code=status.HTTP_202_ACCEPTED)
+async def enqueue_classroom_quiz_from_files(
+    classroom_id: int,
+    files: Optional[List[UploadFile]] = File(default=None),
+    file: Optional[UploadFile] = File(default=None),
+    subject_id: int = Form(...),
+    topic: Optional[str] = Form(default=None),
+    difficulty: str = Form(default="medium"),
+    total_questions: int = Form(default=5),
+    deadline: Optional[datetime] = Form(default=None),
+    time_limit_minutes: Optional[int] = Form(default=30),
+    max_tab_violations: Optional[int] = Form(default=3),
+    custom_prompt: Optional[str] = Form(default=None),
+    include_essay: bool = Form(default=False),
+    essay_count: int = Form(default=0),
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+) -> dict:
+    _assert_classroom_teacher(db, classroom_id, current_teacher)
+    upload_files = files or ([file] if file else [])
+    if not upload_files:
+        raise HTTPException(status_code=400, detail="Vui lòng tải lên ít nhất một tài liệu.")
+
+    uploads_root = Path(__file__).resolve().parents[3] / "uploads" / "ai_jobs"
+    temp_dir = uploads_root / str(uuid.uuid4())
+    temp_dir.mkdir(parents=True, exist_ok=False)
+    staged = []
+    total_bytes = 0
+    try:
+        for index, upload in enumerate(upload_files):
+            name = upload.filename or f"document_{index}.pdf"
+            ext = Path(name).suffix.lower()
+            if ext not in {".pdf", ".doc", ".docx", ".txt"}:
+                raise HTTPException(status_code=400, detail="Định dạng tài liệu không được hỗ trợ.")
+            content = await upload.read(20 * 1024 * 1024 + 1)
+            total_bytes += len(content)
+            if len(content) > 20 * 1024 * 1024 or total_bytes > 50 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Tệp hoặc tổng dung lượng tài liệu vượt giới hạn.")
+            if not validate_file_signature(content, ext):
+                raise HTTPException(status_code=400, detail="Nội dung tệp không khớp định dạng khai báo.")
+            target = temp_dir / f"{index}{ext}"
+            target.write_bytes(content)
+            staged.append({"path": str(target), "name": name})
+
+        payload = {
+            "subject_id": subject_id,
+            "classroom_id": classroom_id,
+            "file_paths": staged,
+            "topic": topic,
+            "difficulty": difficulty,
+            "total_questions": total_questions,
+            "deadline": deadline.isoformat() if deadline else None,
+            "time_limit_minutes": time_limit_minutes,
+            "max_tab_violations": max_tab_violations,
+            "document_id": None,
+            "custom_prompt": custom_prompt,
+            "include_essay": include_essay,
+            "essay_count": essay_count,
+            "temp_dir": str(temp_dir),
+        }
+        job = create_ai_job(db, user_id=current_teacher.id, job_type="classroom_quiz_files", payload=payload)
+        return serialize_ai_job(job)
+    except BaseException:
+        import shutil
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
 
 
 async def _analytics_background(

@@ -140,6 +140,7 @@ async def generate_classroom_quiz(
     custom_prompt: Optional[str] = None,
     include_essay: bool = False,
     essay_count: int = 0,
+    cancel_check=None,
 ) -> Quiz:
     """
     Generate a quiz for a classroom via RAG: search related materials or use document_ids / document_id ->
@@ -193,6 +194,8 @@ async def generate_classroom_quiz(
 
     question_type = "mixed" if (include_essay and essay_count > 0) else "mcq"
 
+    if cancel_check and cancel_check():
+        raise asyncio.CancelledError()
     ai_quiz = await asyncio.to_thread(
         quiz_generator.generate,
         subject=subject.name,
@@ -205,6 +208,8 @@ async def generate_classroom_quiz(
         custom_prompt=custom_prompt,
     )
 
+    if cancel_check and cancel_check():
+        raise asyncio.CancelledError()
     questions_json = normalize_ai_questions(ai_quiz)
 
     raw_title = (getattr(ai_quiz, "title", None) or "").strip()
@@ -245,6 +250,7 @@ async def generate_classroom_quiz_from_files(
     custom_prompt: Optional[str] = None,
     include_essay: bool = False,
     essay_count: int = 0,
+    cancel_check=None,
 ) -> Quiz:
     """
     Extract text from multiple uploaded files (.pdf, .docx, .txt) and use it as RAG context
@@ -275,6 +281,8 @@ async def generate_classroom_quiz_from_files(
     topic_name = topic or (f"{first_filename} + {len(file_names)-1} tệp" if len(file_names) > 1 else first_filename)
     question_type = "mixed" if (include_essay and essay_count > 0) else "mcq"
 
+    if cancel_check and cancel_check():
+        raise asyncio.CancelledError()
     ai_quiz = await asyncio.to_thread(
         quiz_generator.generate,
         subject=subject.name,
@@ -287,6 +295,8 @@ async def generate_classroom_quiz_from_files(
         custom_prompt=custom_prompt,
     )
 
+    if cancel_check and cancel_check():
+        raise asyncio.CancelledError()
     questions_json = normalize_ai_questions(ai_quiz)
 
     raw_title = (getattr(ai_quiz, "title", None) or "").strip()

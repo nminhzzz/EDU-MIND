@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date, datetime
 from typing import Optional, Dict, Any
 
@@ -33,8 +33,7 @@ class StudyGoalResponse(BaseModel):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 from app.schemas.unified_goal import UnifiedGoalPlanResponse
@@ -60,4 +59,3 @@ class StudyGoalConfirm(BaseModel):
     plan: UnifiedGoalPlanResponse = Field(
         ..., description="Lộ trình học tập chi tiết đã chỉnh sửa thủ công"
     )
-

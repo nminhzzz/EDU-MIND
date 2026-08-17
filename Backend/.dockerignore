@@ -1,0 +1,40 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+
+# Version control and editor metadata
+.git
+.gitignore
+.idea
+.vscode
+
+# Python virtual environments and generated files
+venv
+.venv
+__pycache__
+**/__pycache__
+*.py[cod]
+.pytest_cache
+.coverage
+htmlcov
+
+# Runtime and user-generated data must live outside the image
+uploads
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Development, tests, and local orchestration files
+tests
+scripts
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+create_tables.py
+
+# Documentation and operating-system metadata
+README.md
+Thumbs.db
+.DS_Store

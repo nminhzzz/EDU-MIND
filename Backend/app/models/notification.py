@@ -23,6 +23,7 @@ class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = (
         Index("ix_notification_user_read", "user_id", "is_read"),
+        Index("ux_notification_dedupe_key", "dedupe_key", unique=True),
     )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -40,6 +41,7 @@ class Notification(Base):
     )
 
     is_read = Column(Boolean, default=False)
+    dedupe_key = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=_now)
 
     # Relationships

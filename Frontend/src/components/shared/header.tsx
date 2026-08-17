@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Link from "next/link";
-import { ChevronDown, LogOut, Menu, Moon, Sun, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, Menu, UserRound } from "lucide-react";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -12,36 +12,13 @@ interface HeaderProps {
 
 export function Header({ onMenuToggle }: HeaderProps) {
   const { user, logout } = useAuth();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Đọc theme từ localStorage khi load trang
+  // The product now uses one consistent light appearance.
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const isDarkSystem = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    if (savedTheme === "dark" || (!savedTheme && isDarkSystem)) {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    document.documentElement.classList.remove("dark");
+    localStorage.removeItem("theme");
   }, []);
-
-  // Chuyển đổi Dark/Light mode
-  const toggleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -66,25 +43,6 @@ export function Header({ onMenuToggle }: HeaderProps) {
       <div className="flex-1" />
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Nút Chuyển đổi Giao diện Sáng / Tối */}
-        <button
-          onClick={toggleTheme}
-          className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white sm:w-auto sm:px-3"
-          title="Chuyển đổi giao diện Sáng / Tối"
-        >
-          {theme === "light" ? (
-            <>
-              <Sun className="w-4 h-4 text-amber-500 fill-amber-500/20" />
-              <span className="hidden sm:inline">Giao diện sáng</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-indigo-400 fill-indigo-400/20" />
-              <span className="hidden sm:inline">Giao diện tối</span>
-            </>
-          )}
-        </button>
-
         {/* Khung User Profile Dropdown */}
         <div className="relative">
           <button

@@ -9,7 +9,6 @@ interface DocumentRowProps {
   id: number;
   title: string;
   fileType: string;
-  filePath: string;
   createdAt: string;
   onDelete: (id: number) => void;
   index?: number;
@@ -23,7 +22,7 @@ const fileTypeColors: Record<string, string> = {
   md: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
 };
 
-export function DocumentRow({ id, title, fileType, filePath, createdAt, onDelete, index = 0 }: DocumentRowProps) {
+export function DocumentRow({ id, title, fileType, createdAt, onDelete, index = 0 }: DocumentRowProps) {
   const colorClass = fileTypeColors[fileType] || "text-zinc-500 bg-zinc-100 dark:bg-zinc-800";
   const [opening, setOpening] = useState(false);
 

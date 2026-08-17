@@ -40,6 +40,7 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
     handleUpdatePlan,
     handleSaveSchedule,
     handleCreateDraft,
+    handleCancelDraftGeneration,
     handleConfirmRoadmap,
     handleDeleteGoal,
     toggleTimeSlot,
@@ -91,6 +92,7 @@ export function GoalsWizard({ wizard }: GoalsWizardProps) {
             onDeadlineChange={setDeadline}
             onScheduleEditClick={() => setStep("setup_schedule")}
             onSubmit={handleCreateDraft}
+            onCancelGeneration={handleCancelDraftGeneration}
           />
         )}
 

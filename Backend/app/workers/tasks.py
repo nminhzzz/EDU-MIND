@@ -20,6 +20,109 @@ from app.workers.celery_app import celery  # noqa: F401 — ensures tasks are re
 logger = get_logger(__name__)
 
 
+@celery.task(name="app.workers.tasks.task_run_ai_job", bind=True)
+def task_run_ai_job(self, job_id: str) -> dict:
+    """Run a durable user-cancellable AI job in the dedicated AI queue."""
+    from datetime import date, datetime, timezone
+    from pathlib import Path
+
+    from app.database.mysql import SessionLocal
+    from app.models.ai_job import AIJob
+    from app.models.subject import Subject
+    from app.models.user import User
+    from app.services.ai_job_service import cleanup_job_files
+
+    def now():
+        return datetime.now(timezone.utc)
+
+    def is_cancelled() -> bool:
+        with SessionLocal() as check_db:
+            status = check_db.query(AIJob.status).filter(AIJob.id == job_id).scalar()
+            return status == "cancelled"
+
+    with SessionLocal() as db:
+        job = db.query(AIJob).filter(AIJob.id == job_id).with_for_update().first()
+        if not job or job.status == "cancelled":
+            return {"cancelled": True}
+        job.status = "running"
+        job.started_at = now()
+        db.commit()
+        payload = dict(job.payload)
+        job_type = job.job_type
+
+    try:
+        if job_type in {"classroom_quiz", "classroom_quiz_files"}:
+            from app.database.mongodb import make_mongodb_db
+            from app.services.quiz.generation import (
+                generate_classroom_quiz,
+                generate_classroom_quiz_from_files,
+            )
+
+            async def run_quiz():
+                mongo_client = None
+                with SessionLocal() as quiz_db:
+                    kwargs = dict(payload)
+                    kwargs.pop("temp_dir", None)
+                    if isinstance(kwargs.get("deadline"), str):
+                        kwargs["deadline"] = datetime.fromisoformat(kwargs["deadline"])
+                    if job_type == "classroom_quiz_files":
+                        file_paths = kwargs.pop("file_paths")
+                        kwargs["files"] = [(Path(item["path"]).read_bytes(), item["name"]) for item in file_paths]
+                        return await generate_classroom_quiz_from_files(
+                            db=quiz_db, cancel_check=is_cancelled, **kwargs
+                        )
+                    mongo_client, db_mongo = make_mongodb_db()
+                    try:
+                        return await generate_classroom_quiz(
+                            db=quiz_db, db_mongo=db_mongo, cancel_check=is_cancelled, **kwargs
+                        )
+                    finally:
+                        mongo_client.close()
+
+            quiz = asyncio.run(run_quiz())
+            result = {"quiz_id": quiz.id}
+        elif job_type == "roadmap_draft":
+            from app.services.unified.draft import generate_unified_draft
+
+            with SessionLocal() as roadmap_db:
+                student = roadmap_db.query(User).filter(User.id == payload["student_id"]).first()
+                subject = roadmap_db.query(Subject).filter(Subject.id == payload["subject_id"]).first()
+                generated = asyncio.run(generate_unified_draft(
+                    student=student,
+                    subject_obj=subject,
+                    target_score=payload["target_score"],
+                    deadline=date.fromisoformat(payload["deadline"]),
+                    classroom_id=payload.get("classroom_id"),
+                    db=roadmap_db,
+                ))
+            if is_cancelled():
+                return {"cancelled": True}
+            result = {"plan": generated["plan"].model_dump(mode="json") if hasattr(generated["plan"], "model_dump") else generated["plan"]}
+        else:
+            raise ValueError(f"Unsupported AI job type: {job_type}")
+
+        with SessionLocal() as db:
+            job = db.query(AIJob).filter(AIJob.id == job_id).with_for_update().first()
+            if job.status != "cancelled":
+                job.status = "completed"
+                job.result = result
+                job.finished_at = now()
+                db.commit()
+        return result
+    except BaseException as exc:
+        with SessionLocal() as db:
+            job = db.query(AIJob).filter(AIJob.id == job_id).with_for_update().first()
+            if job and job.status != "cancelled":
+                job.status = "failed"
+                job.error = "Tác vụ AI không thể hoàn thành."
+                job.finished_at = now()
+                db.commit()
+        logger.exception("AI job %s failed: %s", job_id, exc)
+        raise
+    finally:
+        cleanup_job_files(payload)
+
+
 def _acquire_task_lock(key: str, ttl_seconds: int) -> str | None:
     from app.database.redis import get_redis
 
@@ -242,20 +345,21 @@ def task_send_daily_reminders() -> dict:
     Runs every hour; the task internally checks current local time (UTC+7)
     and only sends notifications between 07:00-09:00.
     """
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
 
     # Only send during the 07:00-09:00 window (UTC+7 = UTC+7h)
-    now_vn = datetime.now(timezone.utc) + timedelta(hours=7)
+    now_vn = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
     if not (7 <= now_vn.hour < 9):
         return {"status": "skipped", "reason": "outside notification window"}
 
-    from datetime import date
     from app.database.mysql import SessionLocal
     from app.models.study_plan import StudyPlan
     from app.models.study_goal import StudyGoal
     from app.models.notification import Notification
 
-    logger.info("task_send_daily_reminders: sending notifications for %s", date.today())
+    today = now_vn.date()
+    logger.info("task_send_daily_reminders: sending notifications for %s", today)
     sent = 0
     try:
         with SessionLocal() as db:
@@ -263,7 +367,7 @@ def task_send_daily_reminders() -> dict:
                 db.query(StudyPlan)
                 .join(StudyGoal, StudyPlan.goal_id == StudyGoal.id)
                 .filter(
-                    StudyPlan.study_date == date.today(),
+                    StudyPlan.study_date == today,
                     StudyPlan.status == PlanStatus.TODO,
                     StudyGoal.status == GoalStatus.ACTIVE,
                 )
@@ -274,6 +378,10 @@ def task_send_daily_reminders() -> dict:
             for plan in today_plans:
                 if plan.student_id in notified_students:
                     continue
+                dedupe_key = f"daily-plan:{plan.student_id}:{today.isoformat()}"
+                if db.query(Notification.id).filter(Notification.dedupe_key == dedupe_key).first():
+                    notified_students.add(plan.student_id)
+                    continue
                 db.add(
                     Notification(
                         user_id=plan.student_id,
@@ -281,6 +389,7 @@ def task_send_daily_reminders() -> dict:
                         content="Bạn có kế hoạch học tập cần hoàn thành hôm nay. Hãy kiểm tra lịch học của bạn!",
                         type=NotificationType.PLAN,
                         is_read=False,
+                        dedupe_key=dedupe_key,
                     )
                 )
                 notified_students.add(plan.student_id)
@@ -327,6 +436,9 @@ def task_check_approaching_deadlines() -> dict:
 
             for goal in approaching:
                 days_left = (goal.deadline - today).days
+                dedupe_key = f"goal-deadline:{goal.id}:{days_left}"
+                if db.query(Notification.id).filter(Notification.dedupe_key == dedupe_key).first():
+                    continue
                 db.add(
                     Notification(
                         user_id=goal.student_id,
@@ -337,6 +449,7 @@ def task_check_approaching_deadlines() -> dict:
                         ),
                         type=NotificationType.PLAN,
                         is_read=False,
+                        dedupe_key=dedupe_key,
                     )
                 )
 
@@ -360,7 +473,13 @@ def task_check_approaching_deadlines() -> dict:
         # Single asyncio.run() fires all emails concurrently via gather.
         # return_exceptions=True prevents one failed email from aborting the rest.
         if email_coros:
-            asyncio.run(asyncio.gather(*email_coros, return_exceptions=True))
+            async def _send_all() -> None:
+                results = await asyncio.gather(*email_coros, return_exceptions=True)
+                for result in results:
+                    if isinstance(result, Exception):
+                        logger.warning("Deadline email failed: %s", result)
+
+            asyncio.run(_send_all())
 
     except Exception as exc:
         logger.error("task_check_approaching_deadlines failed: %s", exc)

@@ -4,7 +4,7 @@ Pydantic schemas cho Quiz Attempt (Lượt làm bài) — Giai đoạn 3 & 4.
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuizAttemptAnswer(BaseModel):
@@ -55,5 +55,4 @@ class QuizAttemptResponse(BaseModel):
     submitted_at: datetime
     ai_assessment: Optional[AIAssessmentResponse] = Field(None, description="Đánh giá & Lời phê từ AI Tutor")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

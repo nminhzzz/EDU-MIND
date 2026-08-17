@@ -4,47 +4,40 @@ SMTP email adapter — async plain-text delivery via fastapi-mail.
 All send_* functions are no-ops when SMTP is not configured (MAIL_SERVER is empty).
 """
 
+from email.message import EmailMessage
+from email.utils import formataddr
+
+import aiosmtplib
+
 from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def _get_mail_config():
-    """Lazily build FastMail config to avoid import errors when fastapi-mail is optional."""
-    from fastapi_mail import ConnectionConfig
-
-    return ConnectionConfig(
-        MAIL_USERNAME=settings.MAIL_USERNAME,
-        MAIL_PASSWORD=settings.MAIL_PASSWORD,
-        MAIL_FROM=settings.MAIL_FROM,
-        MAIL_FROM_NAME=settings.MAIL_FROM_NAME,
-        MAIL_PORT=settings.MAIL_PORT,
-        MAIL_SERVER=settings.MAIL_SERVER,
-        MAIL_STARTTLS=settings.MAIL_STARTTLS,
-        MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
-        USE_CREDENTIALS=True,
-        VALIDATE_CERTS=True,
-    )
-
-
 async def _send(to: str, subject: str, body: str) -> None:
     """Internal helper — sends a plain-text email. Silently skips if SMTP is unconfigured."""
+    body = body.replace("https://your-domain.com", settings.APP_URL)
     if not settings.mail_enabled:
         logger.debug("Email skipped (SMTP not configured): subject='%s' to='%s'", subject, to)
         return
 
     try:
-        from fastapi_mail import FastMail, MessageSchema, MessageType
-
-        message = MessageSchema(
-            subject=subject,
-            recipients=[to],
-            body=body,
-            subtype=MessageType.plain,
+        message = EmailMessage()
+        message["From"] = formataddr((settings.MAIL_FROM_NAME, settings.MAIL_FROM))
+        message["To"] = to
+        message["Subject"] = subject
+        message.set_content(body)
+        await aiosmtplib.send(
+            message,
+            hostname=settings.MAIL_SERVER,
+            port=settings.MAIL_PORT,
+            username=settings.MAIL_USERNAME,
+            password=settings.MAIL_PASSWORD,
+            start_tls=settings.MAIL_STARTTLS,
+            use_tls=settings.MAIL_SSL_TLS,
+            timeout=settings.MAIL_TIMEOUT_SECONDS,
         )
-        fm = FastMail(_get_mail_config())
-        await fm.send_message(message)
         logger.info("Email sent: subject='%s' to='%s'", subject, to)
     except Exception as exc:
         logger.warning("Failed to send email to '%s': %s", to, exc)

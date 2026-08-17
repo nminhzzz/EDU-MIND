@@ -98,7 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await userApi.register(data);
       setState((prev: AuthState) => ({ ...prev, isLoading: false }));
-      router.push(ROUTES.LOGIN);
+      // Discard authenticated layouts and in-memory requests completely.
+      // Middleware uses the flag to clear any cookie that is still present.
+      window.location.replace(`${ROUTES.LOGIN}?logged_out=1`);
     } catch (error) {
       setState((prev: AuthState) => ({ ...prev, isLoading: false }));
       throw error;

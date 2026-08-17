@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_teacher, get_current_user, get_db
@@ -92,7 +92,7 @@ def list_documents(
 
 @router.get(
     "/{document_id}/file",
-    summary="Xem/tải file tài liệu (inline PDF trong trình duyệt)",
+    summary="Fallback xem file local; Cloudinary được chuyển hướng trực tiếp",
 )
 def stream_document_file(
     document_id: int,
@@ -107,6 +107,11 @@ def stream_document_file(
             is_teacher=(current_user.role == "teacher"),
             is_admin=(current_user.role == "admin"),
         )
+        if doc.file_path.startswith("http"):
+            return RedirectResponse(
+                url=get_document_view_url(doc),
+                status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+            )
         content, media_type, filename = read_study_document_file(doc)
         return Response(
             content=content,

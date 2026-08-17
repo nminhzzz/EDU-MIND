@@ -17,6 +17,7 @@ interface GoalsCreateStepProps {
   onDeadlineChange: (value: string) => void;
   onScheduleEditClick: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onCancelGeneration: () => void;
 }
 
 export function GoalsCreateStep({
@@ -33,6 +34,7 @@ export function GoalsCreateStep({
   onDeadlineChange,
   onScheduleEditClick,
   onSubmit,
+  onCancelGeneration,
 }: GoalsCreateStepProps) {
   return (
     <motion.div
@@ -120,11 +122,11 @@ export function GoalsCreateStep({
             </button>
 
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full md:w-fit px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-md text-xs tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-500/10"
+              type={loading ? "button" : "submit"}
+              onClick={loading ? onCancelGeneration : undefined}
+              className={`w-full md:w-fit px-8 py-3.5 text-white font-bold rounded-md text-xs tracking-wider transition-all cursor-pointer shadow-md ${loading ? "bg-red-600 hover:bg-red-500 shadow-red-500/10" : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/10"}`}
             >
-              {loading ? "AI ĐANG LẬP LỘ TRÌNH..." : "AI LẬP LỘ TRÌNH THỬ NGAY ->"}
+              {loading ? "HỦY LẬP LỘ TRÌNH" : "AI LẬP LỘ TRÌNH THỬ NGAY ->"}
             </button>
           </div>
         </form>

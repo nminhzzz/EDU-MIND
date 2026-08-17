@@ -4,7 +4,7 @@ Pydantic schemas cho Classroom — Giai đoạn 4.
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from app.schemas.user import UserResponse
 
 
@@ -15,8 +15,7 @@ class SubjectResponse(BaseModel):
     description: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ClassroomCreate(BaseModel):
@@ -42,8 +41,7 @@ class ClassroomResponse(BaseModel):
     created_at: datetime
     student_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ClassroomStudentAdd(BaseModel):
@@ -70,5 +68,4 @@ class ClassroomChatMessageResponse(BaseModel):
     created_at: datetime
     sender: UserResponse
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

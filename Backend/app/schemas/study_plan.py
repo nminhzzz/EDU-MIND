@@ -1,7 +1,7 @@
 from datetime import date, datetime, time
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ── Tạo mới study plan (dùng bởi plan_repository & services) ─
@@ -50,8 +50,7 @@ class StudyPlanResponse(BaseModel):
     status: str  # "todo" | "doing" | "done"
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ── Cập nhật trạng thái task ─────────────────────────────────

@@ -57,3 +57,4 @@ Desktop.ini
 # === Temporary & Local Logs ===
 *.log
 **/scratch/test_db.sqlite
+backups/

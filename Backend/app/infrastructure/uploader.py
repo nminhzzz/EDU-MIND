@@ -5,6 +5,7 @@ File upload adapter — Cloudinary (preferred) or local disk (fallback).
 import os
 import re
 import shutil
+import uuid
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
@@ -66,7 +67,9 @@ def _slugify_public_id(name: str) -> str:
     return slug or "upload"
 
 
-def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
+def upload_file_helper(
+    file: UploadFile, folder: str = "general", *, restricted: bool = False
+) -> str:
     """
     Upload a document or image to Cloudinary (preferred) or local storage (fallback).
 
@@ -103,7 +106,10 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
         )
     file.file.seek(0)
 
-    resource_type = "image" if ext in IMAGE_EXTENSIONS else "raw"
+    # Cloudinary treats PDFs as image assets. This preserves application/pdf
+    # delivery and browser preview support; office/text documents remain raw.
+    resource_type = "image" if ext in IMAGE_EXTENSIONS or ext == ".pdf" else "raw"
+    storage_name = f"{uuid.uuid4().hex}{ext}"
 
     if (
         settings.CLOUDINARY_CLOUD_NAME
@@ -121,15 +127,16 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
                 secure=True,
             )
             # Strip extension for raw files — Cloudinary appends it in the delivery URL.
-            base_name = _slugify_public_id(os.path.splitext(filename)[0])
-            public_id = f"{folder}/{base_name}" if resource_type == "raw" else f"{folder}/{filename}"
-            res = cloudinary.uploader.upload(
-                file.file,
-                resource_type=resource_type,
-                public_id=public_id,
-                type="upload",
-                access_mode="public",
-            )
+            base_name = _slugify_public_id(os.path.splitext(storage_name)[0])
+            public_id = f"{folder}/{base_name}" if resource_type == "raw" else f"{folder}/{storage_name}"
+            upload_options = {
+                "resource_type": resource_type,
+                "public_id": public_id,
+                "type": "authenticated" if restricted else "upload",
+            }
+            if not restricted:
+                upload_options["access_mode"] = "public"
+            res = cloudinary.uploader.upload(file.file, **upload_options)
             return res.get("secure_url") or res.get("url")
         except (HTTPException, Exception) as exc:
             if isinstance(exc, HTTPException):
@@ -144,8 +151,8 @@ def upload_file_helper(file: UploadFile, folder: str = "general") -> str:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Đường dẫn tải lên không hợp lệ.") from exc
     upload_dir.mkdir(parents=True, exist_ok=True)
-    local_path = upload_dir / filename
+    local_path = upload_dir / storage_name
     file.file.seek(0)
     with local_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return f"/static/{folder}/{filename}"
+    return f"/static/{folder}/{storage_name}"

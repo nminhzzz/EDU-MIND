@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 def _now() -> datetime:
@@ -55,9 +55,7 @@ class ChatSession(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True)
 
 
 # ─── 2. CHAT_MESSAGES ───────────────────────────────────────────────────────
@@ -80,9 +78,7 @@ class ChatMessage(BaseModel):
 
     created_at: datetime = Field(default_factory=_now)
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True)
 
 
 # ─── 3. STUDY_MATERIAL_EMBEDDINGS (RAG VECTOR STORE) ─────────────────────────
@@ -110,6 +106,4 @@ class StudyMaterialEmbedding(BaseModel):
 
     created_at: datetime = Field(default_factory=_now)
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True)

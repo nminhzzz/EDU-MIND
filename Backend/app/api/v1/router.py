@@ -5,6 +5,7 @@ Aggregate all API v1 routers into a single router.
 from fastapi import APIRouter
 
 from app.api.v1.analytics import router as analytics_router
+from app.api.v1.ai_jobs import router as ai_jobs_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.chat import router as chat_router
 from app.api.v1.classrooms import router as classrooms_router
@@ -21,6 +22,7 @@ from app.api.v1.users import router as users_router
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix="/auth", tags=["Auth"])
+api_router.include_router(ai_jobs_router, prefix="/ai-jobs", tags=["AI Jobs"])
 api_router.include_router(goals_router, prefix="/goals", tags=["Goal Planner"])
 api_router.include_router(unified_goals_router, prefix="/goals", tags=["Unified Goal Planner"])
 api_router.include_router(plans_router, prefix="/plans", tags=["Daily Planner"])

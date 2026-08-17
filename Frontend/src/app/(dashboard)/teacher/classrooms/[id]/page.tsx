@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -44,8 +44,12 @@ import classroomApi, {
 import { parseApiError } from "@/utils/api-error";
 import { User } from "@/types/user";
 import { MathRenderer } from "@/components/shared/math-renderer";
+import { Pagination } from "@/components/ui/pagination";
+import { aiJobApi, waitForAIJob } from "@/services/ai-job";
 
 type TabId = "students" | "progress" | "quizzes" | "classroom_quizzes";
+
+const QUIZZES_PAGE_SIZE = 6;
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "students", label: "Danh sách học sinh", icon: Users },
@@ -63,6 +67,7 @@ export default function TeacherClassroomDetailPage() {
   const [progress, setProgress] = useState<ClassroomStudentProgress[]>([]);
   const [quizAttempts, setQuizAttempts] = useState<ClassroomQuizAttempt[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [quizzesPage, setQuizzesPage] = useState(1);
   const [previewQuiz, setPreviewQuiz] = useState<StudentQuiz | null>(null);
   const [loadingPreviewId, setLoadingPreviewId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("students");
@@ -76,6 +81,7 @@ export default function TeacherClassroomDetailPage() {
   // Modal tạo đề thi AI:
   const [showGenModal, setShowGenModal] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [activeGenerationJobId, setActiveGenerationJobId] = useState<string | null>(null);
   const [genMode, setGenMode] = useState<"select_doc" | "file">("select_doc");
   const [docsList, setDocsList] = useState<StudyDocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
@@ -89,6 +95,20 @@ export default function TeacherClassroomDetailPage() {
   const [maxTabViolations, setMaxTabViolations] = useState(3);
   const [includeEssay, setIncludeEssay] = useState(false);
   const [essayCount, setEssayCount] = useState(2);
+
+  const sortedQuizzes = useMemo(
+    () => [...quizzes].sort((a, b) => Number(b.id) - Number(a.id)),
+    [quizzes],
+  );
+  const quizzesTotalPages = Math.max(
+    1,
+    Math.ceil(sortedQuizzes.length / QUIZZES_PAGE_SIZE),
+  );
+  const currentQuizzesPage = Math.min(quizzesPage, quizzesTotalPages);
+  const paginatedQuizzes = useMemo(() => {
+    const start = (currentQuizzesPage - 1) * QUIZZES_PAGE_SIZE;
+    return sortedQuizzes.slice(start, start + QUIZZES_PAGE_SIZE);
+  }, [currentQuizzesPage, sortedQuizzes]);
 
   useEffect(() => {
     if (showGenModal && classroom?.subject?.id) {
@@ -254,6 +274,16 @@ export default function TeacherClassroomDetailPage() {
           essay_count: includeEssay ? essayCount : 0,
         });
       }
+      const jobId = res.data.id;
+      setActiveGenerationJobId(jobId);
+      const job = await waitForAIJob<{ quiz_id: number }>(jobId);
+      if (job.status === "cancelled") {
+        toast.info("Đã hủy tạo đề thi.");
+        return;
+      }
+      if (job.status !== "completed" || !job.result?.quiz_id) {
+        throw new Error(job.error || "Tác vụ tạo đề không thể hoàn thành.");
+      }
       toast.success("Đã dùng AI sinh đề và giao bài kiểm tra thành công!");
       setShowGenModal(false);
       setUploadedFiles([]);
@@ -262,15 +292,30 @@ export default function TeacherClassroomDetailPage() {
       setDeadline("");
       setIncludeEssay(false);
       setEssayCount(2);
-      if (res?.data) {
-        setPreviewQuiz(res.data);
-      }
+      const quiz = await quizService.getById(job.result.quiz_id);
+      setPreviewQuiz(quiz.data);
       await fetchAll();
     } catch (err) {
       console.error("Lỗi sinh đề thi:", err);
       toast.error(parseApiError(err, "Không thể sinh đề thi bằng AI. Vui lòng thử lại."));
     } finally {
       setGenerating(false);
+      setActiveGenerationJobId(null);
+    }
+  };
+
+  const cancelQuizGeneration = async () => {
+    if (!generating || !activeGenerationJobId) {
+      setShowGenModal(false);
+      return;
+    }
+    if (!window.confirm("Dừng tạo đề thi? Phần kết quả đang xử lý sẽ bị hủy.")) return;
+    try {
+      await aiJobApi.cancel(activeGenerationJobId);
+      toast.info("Đã gửi yêu cầu hủy tạo đề thi.");
+      setShowGenModal(false);
+    } catch (err) {
+      toast.error(parseApiError(err, "Không thể hủy tác vụ tạo đề."));
     }
   };
 
@@ -510,7 +555,7 @@ export default function TeacherClassroomDetailPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {quizzes.map((q) => (
+                {paginatedQuizzes.map((q) => (
                   <div
                     key={q.id}
                     className="p-5 border border-zinc-100 dark:border-zinc-800 rounded-md bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col justify-between hover:border-zinc-200 dark:hover:border-zinc-700 transition-all"
@@ -565,6 +610,13 @@ export default function TeacherClassroomDetailPage() {
                 ))}
               </div>
             )}
+            <Pagination
+              page={currentQuizzesPage}
+              pageSize={QUIZZES_PAGE_SIZE}
+              totalItems={sortedQuizzes.length}
+              onPageChange={setQuizzesPage}
+              itemLabel="đề kiểm tra"
+            />
           </div>
         )}
       </motion.div>
@@ -591,7 +643,7 @@ export default function TeacherClassroomDetailPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowGenModal(false)}
+                onClick={cancelQuizGeneration}
                 className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-bold cursor-pointer p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
               >
                 <X className="w-5 h-5" />
@@ -902,15 +954,15 @@ export default function TeacherClassroomDetailPage() {
             {/* Sticky Modal Footer Button */}
             <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
               <button
-                type="submit"
-                form="gen-quiz-form"
-                disabled={generating}
-                className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-md transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-violet-500/25"
+                type={generating ? "button" : "submit"}
+                form={generating ? undefined : "gen-quiz-form"}
+                onClick={generating ? cancelQuizGeneration : undefined}
+                className={`w-full py-3.5 text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg ${generating ? "bg-red-600 hover:bg-red-500 shadow-red-500/20" : "bg-violet-600 hover:bg-violet-500 shadow-violet-500/25"}`}
               >
                 {generating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Đang thiết kế đề thi AI...
+                    Hủy tạo đề thi
                   </>
                 ) : (
                   <>

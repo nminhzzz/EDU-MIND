@@ -31,6 +31,11 @@ celery.conf.update(
     task_acks_late=True,           # Re-queue task on worker crash
     worker_prefetch_multiplier=1,  # One task at a time per worker (long AI tasks)
     task_reject_on_worker_lost=True,
+    broker_connection_retry_on_startup=True,
+    task_track_started=True,
+    task_soft_time_limit=270,
+    task_time_limit=300,
+    worker_max_memory_per_child=750000,
 
     # Result expiry (keep results for 1 hour)
     result_expires=3600,
@@ -39,6 +44,7 @@ celery.conf.update(
     task_default_queue="default",
     task_routes={
         "app.workers.tasks.task_generate_quiz": {"queue": "ai_tasks"},
+        "app.workers.tasks.task_run_ai_job": {"queue": "ai_tasks"},
         "app.workers.tasks.task_update_analytics": {"queue": "ai_tasks"},
         "app.workers.tasks.task_generate_attempt_assessment": {"queue": "ai_tasks"},
         "app.workers.tasks.task_generate_single_plan_material": {"queue": "ai_tasks"},

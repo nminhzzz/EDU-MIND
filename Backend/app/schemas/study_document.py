@@ -3,7 +3,7 @@ Pydantic schemas cho StudyDocument (Ngân hàng tài liệu học tập).
 """
 
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StudyDocumentCreate(BaseModel):
@@ -16,9 +16,7 @@ class StudyDocumentResponse(BaseModel):
     subject_id: int
     created_by: int
     title: str
-    file_path: str
     file_type: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

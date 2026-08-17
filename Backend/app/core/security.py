@@ -8,24 +8,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
-
-# passlib 1.7.x expects bcrypt.__about__.__version__, removed in bcrypt 4.x+.
-# We call bcrypt directly (not via passlib), but keep this shim so passlib
-# does not crash on import when other packages pull it in transitively.
-# Pin bcrypt in requirements.txt to match this compatibility range.
-if not hasattr(bcrypt, "__about__"):
-
-    class _BcryptAbout:
-        __version__ = getattr(bcrypt, "__version__", "4.0.0")
-
-    bcrypt.__about__ = _BcryptAbout()
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Return True if *plain_password* matches the stored bcrypt hash."""

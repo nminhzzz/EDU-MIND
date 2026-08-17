@@ -155,7 +155,6 @@ export default function TeacherDocumentsPage() {
               id={doc.id}
               title={doc.title}
               fileType={doc.file_type}
-              filePath={doc.file_path}
               createdAt={doc.created_at}
               onDelete={handleDelete}
               index={idx}

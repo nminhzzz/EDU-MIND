@@ -6,14 +6,13 @@
 
 set -e
 
-echo "==> Initializing database..."
-python pre_start.py
-
 echo "==> Starting Gunicorn..."
 exec gunicorn app.main:app \
-  --workers 4 \
+  --workers "${WEB_CONCURRENCY:-2}" \
   --worker-class uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:8000 \
-  --timeout 300 \
+  --timeout "${GUNICORN_TIMEOUT:-120}" \
+  --graceful-timeout 30 \
+  --keep-alive 5 \
   --access-logfile - \
   --error-logfile -

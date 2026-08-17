@@ -4,7 +4,7 @@ Pydantic schemas cho Quiz sinh bởi AI — Giai đoạn 3 & 4.
 
 from datetime import datetime
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.quiz_attempt import QuizAttemptResponse
 
 
@@ -60,8 +60,7 @@ class QuizResponse(BaseModel):
     created_at: datetime
     questions: List[QuestionItemStudentResponse]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QuizDetailResponse(BaseModel):
@@ -82,8 +81,7 @@ class QuizDetailResponse(BaseModel):
     questions: List[QuestionItemDetailResponse]
     latest_attempt: Optional[QuizAttemptResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QuestionItemUpdateRequest(BaseModel):

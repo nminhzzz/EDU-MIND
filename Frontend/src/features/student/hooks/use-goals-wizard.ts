@@ -13,6 +13,7 @@ import {
 } from "@/features/student/utils/schedule";
 import { parseApiError, getApiErrorStatus } from "@/utils/api-error";
 import { toast } from "sonner";
+import { aiJobApi, waitForAIJob } from "@/services/ai-job";
 
 export type GoalsWizardStep =
   | "checking"
@@ -28,6 +29,7 @@ export function useGoalsWizard(classroomId?: number) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeDraftJobId, setActiveDraftJobId] = useState<string | null>(null);
   const [goals, setGoals] = useState<StudyGoalResponse[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
 
@@ -142,17 +144,39 @@ export function useGoalsWizard(classroomId?: number) {
           target_score: targetScore,
           deadline,
         });
-        setDraft(res.data);
+        const jobId = res.data.id;
+        setActiveDraftJobId(jobId);
+        const job = await waitForAIJob<{ plan: DraftResponse["plan"] }>(jobId);
+        if (job.status === "cancelled") {
+          toast.info("Đã hủy lập lộ trình học tập.");
+          return;
+        }
+        if (job.status !== "completed" || !job.result?.plan) {
+          throw new Error(job.error || "Tác vụ lập lộ trình không thể hoàn thành.");
+        }
+        setDraft({ message: "AI đã phác thảo lộ trình học tập.", plan: job.result.plan });
         toast.success("AI đã phác thảo lộ trình học tập cá nhân!");
         setStep("roadmap_draft");
       } catch (err: unknown) {
         toast.error(parseApiError(err, "Lỗi khi AI xây dựng lộ trình học tập."));
       } finally {
         setLoading(false);
+        setActiveDraftJobId(null);
       }
     },
     [selectedSubjectId, targetScore, deadline, classroomId],
   );
+
+  const handleCancelDraftGeneration = useCallback(async () => {
+    if (!activeDraftJobId) return;
+    if (!window.confirm("Dừng lập lộ trình? Phần kết quả đang xử lý sẽ bị hủy.")) return;
+    try {
+      await aiJobApi.cancel(activeDraftJobId);
+      toast.info("Đã gửi yêu cầu hủy lập lộ trình.");
+    } catch (err) {
+      toast.error(parseApiError(err, "Không thể hủy tác vụ lập lộ trình."));
+    }
+  }, [activeDraftJobId]);
 
   const handleUpdatePlan = useCallback((updatedPlan: NonNullable<typeof draft>["plan"]) => {
     setDraft((prev) => (prev ? { ...prev, plan: updatedPlan } : null));
@@ -281,6 +305,7 @@ export function useGoalsWizard(classroomId?: number) {
     handleUpdatePlan,
     handleSaveSchedule,
     handleCreateDraft,
+    handleCancelDraftGeneration,
     handleConfirmRoadmap,
     handleDeleteGoal,
     toggleTimeSlot,

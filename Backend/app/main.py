@@ -8,6 +8,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -46,6 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
 
 register_middleware(app)
 register_exception_handlers(app)
@@ -84,8 +87,11 @@ async def health_detailed(response: Response) -> dict:
     try:
         from sqlalchemy import text
         from app.database.mysql import engine
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        def _ping_mysql() -> None:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+
+        await run_in_threadpool(_ping_mysql)
         results["mysql"] = "ok"
     except Exception as exc:
         logger.error("MySQL health check failed: %s", exc)
@@ -94,7 +100,7 @@ async def health_detailed(response: Response) -> dict:
     # Redis
     try:
         from app.database.redis import get_redis
-        get_redis().ping()
+        await run_in_threadpool(get_redis().ping)
         results["redis"] = "ok"
     except Exception as exc:
         logger.error("Redis health check failed: %s", exc)

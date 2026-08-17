@@ -5,3 +5,11 @@ build
 .git
 .gitignore
 *.log
+.env
+.env.*
+!.env.example
+.idea
+.vscode
+Dockerfile.dev
+README.md
+tsconfig.tsbuildinfo

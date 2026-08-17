@@ -17,8 +17,36 @@ from app.services.unified_service import (
     generate_unified_draft,
     validate_goal_deadline,
 )
+from app.services.ai_job_service import create_ai_job, serialize_ai_job
 
 router = APIRouter()
+
+
+@router.post(
+    "/unified/draft-job",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(rate_limiter(limit=5, period_seconds=600, action="unified_draft"))],
+)
+def enqueue_unified_draft(
+    body: StudyGoalDraftCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+) -> dict:
+    subject = _get_subject_or_404(db, body.subject_id)
+    validate_goal_deadline(subject.name, body.target_score, body.deadline)
+    job = create_ai_job(
+        db,
+        user_id=current_user.id,
+        job_type="roadmap_draft",
+        payload={
+            "student_id": current_user.id,
+            "subject_id": body.subject_id,
+            "classroom_id": body.classroom_id,
+            "target_score": body.target_score,
+            "deadline": body.deadline.isoformat(),
+        },
+    )
+    return serialize_ai_job(job)
 
 
 def _get_subject_or_404(db: Session, subject_id: int):

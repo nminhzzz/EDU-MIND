@@ -1,4 +1,5 @@
 import { apiClient } from "./api-client";
+import type { AIJob } from "./ai-job";
 import { Classroom } from "@/types/classroom";
 import { User } from "@/types/user";
 
@@ -89,17 +90,15 @@ export const classroomApi = {
       essay_count?: number;
     },
   ) =>
-    apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate`, payload, {
-      timeout: 300_000,
-    }),
+    apiClient.post<AIJob<{ quiz_id: number }>>(`/quizzes/classrooms/${classroomId}/generate-job`, payload),
 
   generateQuizFromFile: (
     classroomId: number,
     formData: FormData,
   ) =>
-    apiClient.post<any>(`/quizzes/classrooms/${classroomId}/generate-from-file`, formData, {
+    apiClient.post<AIJob<{ quiz_id: number }>>(`/quizzes/classrooms/${classroomId}/generate-from-file-job`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
-      timeout: 300_000,
+      timeout: 120_000,
     }),
 
   getSubjectDocuments: (subjectId: number) =>
@@ -162,7 +161,6 @@ export interface StudyDocumentItem {
   title: string;
   description?: string;
   file_type: string;
-  file_path: string;
   subject_id: number;
   created_at: string;
 }

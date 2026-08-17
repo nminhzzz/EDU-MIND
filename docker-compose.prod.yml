@@ -1,145 +1,168 @@
 services:
   nginx:
-    image: nginx:alpine
-    container_name: nginx_proxy
-    ports:
-      - "80:80"
-      - "443:443"
+    image: nginx:1.27-alpine
+    ports: ["80:80", "443:443"]
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ${TLS_CERT_PATH:?Set TLS_CERT_PATH to the full-chain certificate}:/etc/nginx/certs/tls.crt:ro
+      - ${TLS_KEY_PATH:?Set TLS_KEY_PATH to the private key}:/etc/nginx/certs/tls.key:ro
       - nginx_logs:/var/log/nginx
     depends_on:
-      - frontend
-      - backend
-    networks:
-      - app-network
-    restart: always
+      frontend: {condition: service_healthy}
+      backend: {condition: service_healthy}
+    networks: [app-network]
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.50
+
+  migrate:
+    build: {context: ./Backend, dockerfile: Dockerfile.prod}
+    entrypoint: ["python", "pre_start.py"]
+    env_file: [.env, ./Backend/.env, .env.production.local]
+    environment: &backend-environment
+      ENVIRONMENT: production
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db:3306/${MYSQL_DATABASE:-learning_db}
+      MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}:${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}@mongodb:27017/chat_db?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+    depends_on:
+      db: {condition: service_healthy}
+    networks: [app-network]
+    restart: "no"
 
   backend:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile.prod
-    container_name: backend_prod
-    env_file:
-      - .env
+    build: {context: ./Backend, dockerfile: Dockerfile.prod}
+    env_file: [.env, ./Backend/.env, .env.production.local]
     environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db:3306/${MYSQL_DATABASE:-learning_db}
-      - MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}:${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}@mongodb:27017/chat_db?authSource=admin
-      - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+      <<: *backend-environment
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+      FORWARDED_ALLOW_IPS: "*"
     depends_on:
-      - db
-      - mongodb
-      - redis
-    networks:
-      - app-network
-    restart: always
+      migrate: {condition: service_completed_successfully}
+      mongodb: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    volumes: [uploads_data_prod:/app/uploads]
+    networks: [app-network]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    mem_limit: ${BACKEND_MEMORY_LIMIT:-1g}
+    cpus: ${BACKEND_CPU_LIMIT:-1.0}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; r=urllib.request.Request('http://localhost:8000/ready', headers={'Host':'backend'}); urllib.request.urlopen(r, timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile.prod
-    container_name: frontend_prod
-    environment:
-      - NEXT_PUBLIC_API_URL=/api/v1
+      args: {NEXT_PUBLIC_API_URL: /api/v1, API_INTERNAL_URL: http://backend:8000/api/v1}
+    environment: {NODE_ENV: production, NEXT_PUBLIC_API_URL: /api/v1, API_INTERNAL_URL: http://backend:8000/api/v1}
     depends_on:
-      - backend
-    networks:
-      - app-network
-    restart: always
+      backend: {condition: service_healthy}
+    networks: [app-network]
+    restart: unless-stopped
+    init: true
+    mem_limit: ${FRONTEND_MEMORY_LIMIT:-512m}
+    cpus: ${FRONTEND_CPU_LIMIT:-0.75}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   db:
     image: mysql:8.0
-    container_name: mysql_db_prod
     environment:
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-learning_db}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
-      - MYSQL_USER=${MYSQL_USER:?MYSQL_USER is required}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
-    # Khóa cổng 3306 ở prod để tránh bị dò quét database từ bên ngoài
-    volumes:
-      - db_data_prod:/var/lib/mysql
-    networks:
-      - app-network
-    restart: always
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-learning_db}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+    volumes: [db_data_prod:/var/lib/mysql]
+    networks: [app-network]
+    restart: unless-stopped
+    mem_limit: ${MYSQL_MEMORY_LIMIT:-1g}
+    cpus: ${MYSQL_CPU_LIMIT:-1.0}
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 30s
 
   mongodb:
     image: mongo:6.0
-    container_name: mongodb_chat_prod
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}
-    volumes:
-      - mongo_data_prod:/data/db
-    networks:
-      - app-network
-    restart: always
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}
+    volumes: [mongo_data_prod:/data/db]
+    networks: [app-network]
+    restart: unless-stopped
+    mem_limit: ${MONGO_MEMORY_LIMIT:-1g}
+    cpus: ${MONGO_CPU_LIMIT:-1.0}
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\""]
+      test: ["CMD-SHELL", "mongosh --quiet -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin --eval \"quit(db.adminCommand('ping').ok ? 0 : 2)\""]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
-    container_name: redis_cache_prod
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
-    volumes:
-      - redis_data_prod:/data
-    networks:
-      - app-network
-    restart: always
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory", "${REDIS_MAXMEMORY:-384mb}", "--maxmemory-policy", "noeviction"]
+    environment: {REDIS_PASSWORD: "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"}
+    volumes: [redis_data_prod:/data]
+    networks: [app-network]
+    restart: unless-stopped
+    mem_limit: ${REDIS_MEMORY_LIMIT:-512m}
+    cpus: ${REDIS_CPU_LIMIT:-0.50}
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD}' ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping 2>/dev/null | grep -q PONG"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 10s
 
   celery-worker:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile.prod
-    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "worker", "--loglevel=info", "-Q", "ai_tasks,default"]
-    env_file: [.env]
-    environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db:3306/${MYSQL_DATABASE:-learning_db}
-      - MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}:${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}@mongodb:27017/chat_db?authSource=admin
-      - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
-    depends_on: [db, mongodb, redis]
+    build: {context: ./Backend, dockerfile: Dockerfile.prod}
+    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "worker", "--loglevel=info", "-Q", "ai_tasks,default", "--concurrency=${CELERY_CONCURRENCY:-2}", "--max-tasks-per-child=${CELERY_MAX_TASKS_PER_CHILD:-100}"]
+    env_file: [.env, ./Backend/.env, .env.production.local]
+    environment: *backend-environment
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      mongodb: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    volumes: [uploads_data_prod:/app/uploads]
     networks: [app-network]
-    restart: always
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 3m
+    mem_limit: ${CELERY_MEMORY_LIMIT:-2g}
+    cpus: ${CELERY_CPU_LIMIT:-2.0}
 
   celery-beat:
-    build:
-      context: ./Backend
-      dockerfile: Dockerfile.prod
-    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "beat", "--loglevel=info"]
-    env_file: [.env]
-    environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db:3306/${MYSQL_DATABASE:-learning_db}
-      - MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME:?Mongo username is required}:${MONGO_INITDB_ROOT_PASSWORD:?Mongo password is required}@mongodb:27017/chat_db?authSource=admin
-      - REDIS_URL=redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
-    depends_on: [redis]
+    build: {context: ./Backend, dockerfile: Dockerfile.prod}
+    entrypoint: ["celery", "-A", "app.workers.celery_app.celery", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
+    env_file: [.env, ./Backend/.env, .env.production.local]
+    environment: *backend-environment
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
     networks: [app-network]
-    restart: always
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: 0.25
 
 volumes:
   db_data_prod:
   mongo_data_prod:
   redis_data_prod:
+  uploads_data_prod:
   nginx_logs:
 
 networks:

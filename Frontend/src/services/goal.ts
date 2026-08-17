@@ -24,10 +24,10 @@ export type { Subject } from "@/types/subject";
 export type StudyGoalResponse = StudyGoal;
 
 /** AI roadmap generation can take 30–120s (LLM + RAG). Tăng timeout lên 300s (5 phút) để phục vụ AI DeepSeek. */
-const AI_DRAFT_TIMEOUT_MS = 300_000;
 const AI_CONFIRM_TIMEOUT_MS = 120_000;
 
 import { StudyPlan } from "./study-plan";
+import type { AIJob } from "./ai-job";
 
 export const goalApi = {
   getPreferences: () =>
@@ -51,9 +51,7 @@ export const goalApi = {
     apiClient.delete<ApiMessageResponse>(`/goals/${id}`),
 
   createDraft: (data: DraftRequest) =>
-    apiClient.post<DraftResponse>("/goals/unified/draft", data, {
-      timeout: AI_DRAFT_TIMEOUT_MS,
-    }),
+    apiClient.post<AIJob<{ plan: DraftResponse["plan"] }>>("/goals/unified/draft-job", data),
 
   confirmDraft: (data: ConfirmRequest) =>
     apiClient.post<ConfirmDraftResponse>("/goals/unified/confirm", data, {

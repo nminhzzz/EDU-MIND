@@ -43,7 +43,7 @@ The backend delivers JWT tokens exclusively via **HttpOnly cookies**. The fronte
 | API calls | `apiClient` with `withCredentials: true` |
 | Token refresh | Axios interceptor calls `POST /auth/refresh` on 401 |
 | Logout | `POST /auth/logout` → backend revokes tokens and clears cookies |
-| Route guards | `middleware.ts` (edge) + `dashboard-layout-client.tsx` (client) |
+| Route guards | `proxy.ts` (server) + `dashboard-layout-client.tsx` (client) |
 
 ### What the frontend does NOT do
 
