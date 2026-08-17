@@ -86,7 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const destination =
         getSafeRedirectPath(redirectTo, user.role) ?? getDefaultDashboard(user.role);
-      router.push(destination);
+      // A protected route may already be cached as a pre-login redirect by
+      // Next.js. A full navigation makes the middleware evaluate the fresh
+      // HttpOnly auth cookie instead of reusing that stale router response.
+      window.location.replace(destination);
     } catch (error) {
       setState((prev: AuthState) => ({ ...prev, isLoading: false }));
       throw error;
