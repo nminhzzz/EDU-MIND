@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import uuid
 from typing import Dict, Set, Optional
 from fastapi import WebSocket
 import redis.asyncio as aioredis
@@ -15,6 +16,9 @@ class ClassroomChatManager:
     Hỗ trợ multi-instance scaling qua Redis Pub/Sub và theo dõi người dùng online.
     """
     def __init__(self):
+        # Identify this backend process so Redis messages published by this
+        # process are not broadcast to its local sockets for a second time.
+        self.instance_id = uuid.uuid4().hex
         # classroom_id -> set of active WebSockets on THIS process
         self.active_connections: Dict[int, Set[WebSocket]] = {}
         # classroom_id -> { websocket: user_id }
@@ -114,22 +118,28 @@ class ClassroomChatManager:
 
     async def broadcast(self, classroom_id: int, payload: dict):
         """
-        Publish thông điệp lên Redis Pub/Sub channel.
-        Tất cả các server instance sẽ nhận tin nhắn từ Redis và broadcast cho client của họ.
+        Deliver locally first, then publish to other backend processes.
+
+        Local delivery must not depend on Redis Pub/Sub. A subscriber can be
+        starting or reconnecting while a message is published; previously that
+        race caused the message to be committed to MySQL but not displayed
+        until the client reloaded its history.
         """
+        await self.broadcast_local(classroom_id, payload)
+
         r = await self._get_redis()
         channel = f"classroom_chat_{classroom_id}"
-        message_str = json.dumps(payload)
+        message_str = json.dumps({
+            "source_instance": self.instance_id,
+            "payload": payload,
+        })
 
         if r:
             try:
                 await r.publish(channel, message_str)
                 return
             except Exception as e:
-                logger.warning("Lỗi Redis Publish, fallback sang local broadcast: %s", e)
-
-        # Fallback to local process broadcast if Redis fails
-        await self.broadcast_local(classroom_id, payload)
+                logger.warning("Lỗi Redis Publish; tin nhắn đã được phát local: %s", e)
 
     async def broadcast_online_users(self, classroom_id: int):
         """Broadcast danh sách user_id đang online trong phòng."""
@@ -145,33 +155,54 @@ class ClassroomChatManager:
         await self.broadcast(classroom_id, payload)
 
     async def _listen_redis_channel(self, classroom_id: int):
-        """Background task lắng nghe tin nhắn từ kênh Pub/Sub Redis của phòng."""
-        r = await self._get_redis()
-        if not r:
-            return
-
-        pubsub = r.pubsub()
+        """Listen to Redis Pub/Sub and reconnect while the local room is active."""
         channel = f"classroom_chat_{classroom_id}"
 
-        try:
-            await pubsub.subscribe(channel)
-            async for message in pubsub.listen():
-                if message["type"] == "message":
+        while True:
+            async with self.lock:
+                room_is_active = bool(self.active_connections.get(classroom_id))
+            if not room_is_active:
+                return
+
+            r = await self._get_redis()
+            if not r:
+                await asyncio.sleep(1)
+                continue
+
+            pubsub = r.pubsub()
+            try:
+                await pubsub.subscribe(channel)
+                async for message in pubsub.listen():
+                    if message["type"] != "message":
+                        continue
                     try:
-                        payload = json.loads(message["data"])
+                        decoded = json.loads(message["data"])
+                        # New envelope format. Ignore our own publication
+                        # because it was already delivered locally above.
+                        if "payload" in decoded and "source_instance" in decoded:
+                            if decoded["source_instance"] == self.instance_id:
+                                continue
+                            payload = decoded["payload"]
+                        else:
+                            # Backward compatibility during rolling deploys.
+                            payload = decoded
                         await self.broadcast_local(classroom_id, payload)
                     except Exception as err:
                         logger.error("Lỗi parse JSON từ Redis Pub/Sub: %s", err)
-        except asyncio.CancelledError:
-            await pubsub.unsubscribe(channel)
-            await pubsub.close()
-        except Exception as exc:
-            logger.error("Lỗi Redis PubSub Listener phòng %s: %s", classroom_id, exc)
-        finally:
-            try:
-                await pubsub.close()
-            except Exception:
-                pass
+            except asyncio.CancelledError:
+                return
+            except Exception as exc:
+                logger.warning(
+                    "Redis Pub/Sub phòng %s bị gián đoạn, thử kết nối lại: %s",
+                    classroom_id,
+                    exc,
+                )
+                await asyncio.sleep(1)
+            finally:
+                try:
+                    await pubsub.aclose()
+                except Exception:
+                    pass
 
 
 classroom_chat_manager = ClassroomChatManager()
